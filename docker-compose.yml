@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  hygge-carbon-calculator-api:
+    build: /home/hygge-ev-user/code/hygge-carbon-calculator
+    container_name: hygge-carbon-calculator-api
+    ports:
+      - "7089:7089"
+    volumes:
+      - /home/hygge-ev-user/code/hygge-carbon-calculator:/app
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    networks:
+      - queue-network
+
+  p2p-energy-trading-api:
+    build: /home/hygge-ev-user/code/p2p-energy-trading
+    container_name: p2p-energy-trading-api
+    ports:
+      - "7088:7088"
+    volumes:
+      - /home/hygge-ev-user/code/p2p-energy-trading:/app
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    networks:
+      - queue-network
+
+  network-topology-api:
+    build: /home/hygge-ev-user/code/network-topology
+    container_name: network-topology
+    ports:
+      - "7093:7093"
+    volumes:
+      - /home/hygge-ev-user/code/network-topology:/app
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    networks:
+      - queue-network
+
+networks:
+  queue-network:

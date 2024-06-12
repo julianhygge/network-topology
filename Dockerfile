@@ -41,6 +41,6 @@ COPY . .
 RUN mkdir -p /var/log/application/
 ENV PYTHONPATH /app
 
-EXPOSE 7088
+EXPOSE 7093
 
 CMD ["sh", "-c", "chronyd -f /etc/chrony/chrony.conf -d -x & uvicorn app.main:app --host 0.0.0.0 --port 7093"]
