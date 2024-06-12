@@ -2,7 +2,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from fastapi import status
 from starlette.responses import JSONResponse
-from app.api.v1.dependencies.container_instance import c
+from app.api.v1.dependencies.container_instance import get_token_service
 from app.utils.logger import logger
 from jwt import ExpiredSignatureError, InvalidSignatureError, DecodeError
 
@@ -13,12 +13,14 @@ not_needed_auth_urls = [
 ]
 
 
+token_service = get_token_service()
+
+
 class AuthorizationMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
-        token_service = c.token_service()
         if request.method.upper() != 'OPTIONS' and not any(
-                request.url.path.startswith(url) for url in not_needed_auth_urls):
+                url in request.url.path for url in not_needed_auth_urls):
             auth = request.headers.get('Authorization')
             try:
                 if auth is not None:

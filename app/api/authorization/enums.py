@@ -3,6 +3,13 @@ import enum
 
 class Resources(enum.Enum):
     Users = 'users'
+    Groups = 'groups'
+    Roles = 'roles'
+    Houses = 'houses'
+    Accounts = 'accounts'
+    Localities = 'localities'
+    Substations = 'substations'
+    Transformers = 'transformers'
 
 
 class Permission(enum.Enum):

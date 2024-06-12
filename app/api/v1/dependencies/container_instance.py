@@ -1,20 +1,12 @@
 from app.api.v1.dependencies.dependencies_container import Container
 from app.domain.interfaces.iservice import IService
-from app.domain.services.user_service import UserService
+from app.domain.interfaces.net_topology.inet_topology_service import INetTopologyService
 
 c = Container()
 
 
-def get_simulation_service():
-    return c.simulation_service()
-
-
 def get_configuration():
     return c.configuration()
-
-
-def get_battery_service():
-    return c.battery_service()
 
 
 def get_token_service():
@@ -33,25 +25,17 @@ def get_user_service() -> IService:
     return c.user_service()
 
 
-def get_pricing_service():
-    return c.pricing_service()
+def get_net_topology_service() -> INetTopologyService:
+    return c.net_topology_service()
 
 
-def get_load_profile_service():
-    return c.load_profile_service()
+def get_substation_service() -> IService:
+    return c.substation_service()
 
 
-def get_appliance_service():
-    return c.appliance_service()
+def get_transformer_service() -> IService:
+    return c.transformer_service()
 
 
-def get_solar_service():
-    return c.solar_service()
-
-
-def get_panels_service():
-    return c.panels_service()
-
-
-def get_utilities_service():
-    return c.utilities_service()
+def get_house_service() -> IService:
+    return c.house_service()
