@@ -51,7 +51,7 @@ class TransformerUpdateRequestModel(BaseModel):
 class TransformerResponseModel(BaseModel):
     id: UUID4
     is_complete: bool
-    max_capacity_kw: Decimal
+    max_capacity_kw: Optional[Decimal] = None
     active: bool
-    export_efficiency: Decimal
-    allow_export: bool
+    export_efficiency: Optional[Decimal] = None
+    allow_export: Optional[bool] = None
