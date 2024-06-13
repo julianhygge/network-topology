@@ -16,7 +16,9 @@ class TransformerDetailResponseModel(BaseModel):
 
 class SubstationTopologyResponseModel(BaseModel):
     substation_id: UUID4
+    substation_name: str
     locality_id: UUID4
+    locality_name: str
     transformers: List[TransformerDetailResponseModel]
 
 
@@ -26,5 +28,9 @@ class SubstationResponseModel(BaseModel):
     name: str
     active: bool
     created_on: datetime
-    modified_by: Optional[str] = None
+    modified_by: Optional[UUID4] = None
     modified_on: Optional[datetime] = None
+
+
+class SubstationResponseModelList(BaseModel):
+    items: List[SubstationResponseModel]

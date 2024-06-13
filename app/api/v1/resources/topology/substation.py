@@ -9,7 +9,8 @@ from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Resources, Permission
 from app.api.v1.dependencies.container_instance import get_net_topology_service, get_substation_service
 from app.api.v1.models.requests.substation import SubstationTopologyRequestModel, SubstationRequestModel
-from app.api.v1.models.responses.substation import SubstationTopologyResponseModel, SubstationResponseModel
+from app.api.v1.models.responses.substation import SubstationTopologyResponseModel, SubstationResponseModel, \
+    SubstationResponseModelList
 from app.domain.interfaces.iservice import IService
 from app.domain.interfaces.net_topology.inet_topology_service import INetTopologyService
 
@@ -26,7 +27,7 @@ async def get_substation_topology(substation_id: UUID,
     return SubstationTopologyResponseModel(**topology)
 
 
-@substation_router.put("/{substation_id}", response_model=None)
+@substation_router.put("/{substation_id}", response_model=SubstationTopologyResponseModel)
 async def update_substation_topology(substation_id: UUID4,
                                      topology_data: SubstationTopologyRequestModel,
                                      _: str = Depends(permission(Resources.Substations, Permission.Update)),
@@ -44,3 +45,18 @@ async def create(data: SubstationRequestModel,
                  service: IService = Depends(get_substation_service)):
     body = service.create(user_id, **data.model_dump())
     return SubstationResponseModel(**body)
+
+
+@substation_router.get("", response_model=SubstationResponseModelList)
+async def get(_: str = Depends(permission(Resources.Substations, Permission.Retrieve)),
+              service: IService = Depends(get_substation_service)):
+    try:
+        data_list = service.list_all()
+        response = SubstationResponseModelList(items=[
+            SubstationResponseModel(
+                **item
+            ) for item in data_list
+        ])
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

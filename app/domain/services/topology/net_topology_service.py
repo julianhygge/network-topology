@@ -42,7 +42,9 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
 
         return {
             "substation_id": str(substation.id),
+            "substation_name": substation.name,
             "locality_id": str(locality_id),
+            "locality_name": substation.locality.name,
             "transformers": transformers_list
         }
 
