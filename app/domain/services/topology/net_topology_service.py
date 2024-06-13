@@ -89,21 +89,26 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         if not transformer:
             raise NotFoundException(f"Transformer with id {transformer_id} not found")
 
-        transformer.is_complete = data['is_complete']
-        self.transformer_repo.update(transformer_id, transformer)
+        self.transformer_repo.update(transformer_id, **data)
 
         updated_transformer = self.transformer_repo.read(transformer_id)
-        return updated_transformer
+        is_complete = self._is_transformer_complete(updated_transformer)
+        updated_dicts = self.substation_repo.to_dicts(updated_transformer)
+        updated_dicts["is_complete"] = is_complete
+        return updated_dicts
 
     def update_house(self, house_id, data):
         house = self.house_repo.read(house_id)
         if not house:
             raise NotFoundException(f"House with id {house_id} not found")
 
-        house.is_complete = data['is_complete']
-        self.house_repo.update(house_id, house)
+        self.house_repo.update(house_id, **data)
 
         updated_house = self.house_repo.read(house_id)
-        return updated_house
+        is_complete = self._is_house_complete(updated_house)
+        updated_dicts = self.substation_repo.to_dicts(updated_house)
+        updated_dicts["is_complete"] = is_complete
+
+        return updated_dicts
 
 

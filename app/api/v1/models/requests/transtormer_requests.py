@@ -1,29 +1,57 @@
 from decimal import Decimal
-
+from enum import Enum
 from pydantic import BaseModel, UUID4
 from typing import Optional, List
 from datetime import datetime
 
 
+class BatteryEnum(str, Enum):
+    Lithium = "Lithium-ion"
+    LeadAcid = "Lead-acid"
+    NickelMetal = "Nickel-Metal"
+
+
 class HouseUpdateRequestModel(BaseModel):
-    is_complete: bool
+    load_profile: Optional[str] = None
+    has_solar: Optional[bool] = None
+    solar_kw: Optional[Decimal] = None
+    house_type: Optional[str] = None
+    connection_kw: Optional[Decimal] = None
+    battery_type: Optional[BatteryEnum] = None
+    has_battery: Optional[bool] = None
+    voluntary_storage: Optional[bool] = None
+    battery_peak_charging_rate: Optional[Decimal] = None
+    battery_peak_discharging_rate: Optional[Decimal] = None
+    battery_total_kwh: Optional[Decimal] = None
 
 
 class HouseResponseModel(BaseModel):
     id: UUID4
+    transformer: UUID4
     is_complete: bool
+    load_profile: Optional[str] = None
+    has_solar: Optional[bool] = None
+    solar_kw: Optional[Decimal] = None
+    house_type: Optional[str] = None
+    connection_kw: Optional[Decimal] = None
+    battery_type: Optional[BatteryEnum] = None
+    has_battery: Optional[bool] = None
+    voluntary_storage: Optional[bool] = None
+    battery_peak_charging_rate: Optional[Decimal] = None
+    battery_peak_discharging_rate: Optional[Decimal] = None
+    battery_total_kwh: Optional[Decimal] = None
 
 
 class TransformerUpdateRequestModel(BaseModel):
-    is_complete: bool
-    houses_details: Optional[List[HouseResponseModel]]  # Optional list of houses to update
+    max_capacity_kw: Decimal
+    export_efficiency: Decimal
+    allow_export: bool
 
 
 class TransformerResponseModel(BaseModel):
     id: UUID4
     is_complete: bool
-    max_capacity: Decimal
+    max_capacity_kw: Decimal
     active: bool
-    export_efficiency: bool
+    export_efficiency: Decimal
     allow_export: bool
-

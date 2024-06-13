@@ -12,7 +12,7 @@ from app.exceptions.hygge_exceptions import NotFoundException
 house_router = APIRouter(tags=["Houses"])
 
 
-@house_router.put("/{house_id}")
+@house_router.put("/{house_id}", response_model=HouseResponseModel)
 async def update_house(house_id: UUID4,
                        house_data: HouseUpdateRequestModel,
                        _: str = Depends(permission(Resources.Houses, Permission.Update)),
@@ -24,7 +24,7 @@ async def update_house(house_id: UUID4,
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@house_router.get("/{house_id}")
+@house_router.get("/{house_id}", response_model=HouseResponseModel)
 async def get(house_id: UUID4,
               _: str = Depends(permission(Resources.Houses, Permission.Update)),
               service: IService = Depends(get_house_service)):

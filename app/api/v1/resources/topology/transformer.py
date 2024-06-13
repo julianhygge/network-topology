@@ -12,7 +12,7 @@ from app.exceptions.hygge_exceptions import NotFoundException
 transformer_router = APIRouter(tags=["Transformers"])
 
 
-@transformer_router.put("/{transformer_id}")
+@transformer_router.put("/{transformer_id}", response_model=TransformerResponseModel)
 async def update_transformer(transformer_id: UUID4,
                              transformer_data: TransformerUpdateRequestModel,
                              _: str = Depends(permission(Resources.Transformers, Permission.Update)),
@@ -24,7 +24,7 @@ async def update_transformer(transformer_id: UUID4,
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@transformer_router.get("/{transformer_id}")
+@transformer_router.get("/{transformer_id}", response_model=TransformerResponseModel)
 async def get(transformer_id: UUID4,
               _: str = Depends(permission(Resources.Houses, Permission.Update)),
               service: IService = Depends(get_transformer_service)):
