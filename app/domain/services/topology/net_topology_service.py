@@ -71,7 +71,10 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
                 self.transformer_repo.delete(transformer_id)
                 continue
 
-            for house_data in transformer_data.get('houses_details', []):
+            houses_details = transformer_data.get('houses_details', [])
+            if houses_details is None:
+                continue
+            for house_data in houses_details:
                 house_action = house_data.pop('action')
                 if house_action == 'add':
                     new_data = {
