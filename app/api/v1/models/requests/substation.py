@@ -17,7 +17,7 @@ class HouseDetailRequestModel(BaseModel):
 class TransformerDetailRequestModel(BaseModel):
     id: Optional[UUID4] = Field(None, example="824960c0-974c-4c57-8803-85f5f407b304")
     action: ActionEnum = Field(None, example="update")
-    houses_details: List[HouseDetailRequestModel]
+    houses_details: Optional[List[HouseDetailRequestModel]]
 
 
 class SubstationTopologyRequestModel(BaseModel):

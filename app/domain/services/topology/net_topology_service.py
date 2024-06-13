@@ -62,7 +62,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
                 transformer = self.transformer_repo.create(**new_data)
             elif action == 'update':
                 transformer_id = transformer_data.pop('id')
-                transformer = self.transformer_repo.read(transformer_data.pop('id'))
+                transformer = self.transformer_repo.read(transformer_id)
                 if not transformer:
                     raise NotFoundException(f"Transformer with id {transformer_id} not found")
 

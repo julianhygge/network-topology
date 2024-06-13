@@ -51,7 +51,7 @@ class Transformer(Transactional):
 
 
 class House(Transactional):
-    transformer = ForeignKeyField(Transformer, backref='houses')
+    transformer = ForeignKeyField(Transformer, backref='houses', on_delete='CASCADE')
     load_profile = TextField(null=True)
     has_solar = BooleanField(default=False)
     solar_kw = DecimalField(max_digits=10, decimal_places=2, null=True)
