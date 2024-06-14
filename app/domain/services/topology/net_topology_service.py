@@ -22,14 +22,17 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
 
         locality_id = substation.locality.id
 
-        transformers = self.transformer_repo.model.select().where(
-            self.transformer_repo.model.substation == substation_id).order_by(
-            self.transformer_repo.model.created_on.asc())
+        transformers = (self.transformer_repo.model
+                        .select()
+                        .where(self.transformer_repo.model.substation == substation_id)
+                        .order_by(self.transformer_repo.model.created_on.asc()))
 
         transformers_list = []
         for transformer in transformers:
-            houses = self.house_repo.model.select().where(self.house_repo.model.transformer == transformer.id).order_by(
-                self.house_repo.model.created_on.asc())
+            houses = (self.house_repo.model
+                      .select()
+                      .where(self.house_repo.model.transformer == transformer.id)
+                      .order_by(self.house_repo.model.created_on.asc()))
             houses_details = [
                 {
                     "id": str(house.id),
