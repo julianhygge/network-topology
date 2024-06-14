@@ -11,6 +11,7 @@ from app.api.v1.dependencies.container_instance import get_net_topology_service,
 from app.api.v1.models.requests.substation import SubstationTopologyRequestModel, SubstationRequestModel
 from app.api.v1.models.responses.substation import SubstationTopologyResponseModel, SubstationResponseModel, \
     SubstationResponseModelList
+from app.data.interfaces.topology.itopology_simulator import ITopologySimulator
 from app.domain.interfaces.iservice import IService
 from app.domain.interfaces.net_topology.inet_topology_service import INetTopologyService
 
@@ -25,6 +26,17 @@ async def get_substation_topology(substation_id: UUID,
     if not topology:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Substation not found")
     return SubstationTopologyResponseModel(**topology)
+
+
+@substation_router.get("/{substation_id}/simulation", response_model=SubstationTopologyResponseModel)
+async def get_substation_topology(substation_id: UUID,
+                                  _: str = Depends(permission(Resources.Substations, Permission.Update)),
+                                  service: ITopologySimulator = Depends(get_net_topology_service)):
+    topology = service.run(substation_id)
+    if not topology:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Substation not found")
+    return SubstationTopologyResponseModel(**topology)
+
 
 
 @substation_router.put("/{substation_id}", response_model=SubstationTopologyResponseModel)

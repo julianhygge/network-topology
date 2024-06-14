@@ -16,6 +16,7 @@ from app.domain.services.sms_service import SmsService
 from app.domain.services.token_service import TokenService
 from app.domain.services.topology.house_service import HouseService
 from app.domain.services.topology.net_topology_service import NetTopologyService
+from app.domain.services.topology.topology_simulator import TopologySimulator
 from app.domain.services.topology.transformer_service import TransformerService
 from app.domain.services.user_service import UserService
 from app.domain.services.websocket_service import WebSocketConnectionManager
@@ -77,6 +78,12 @@ class Container(containers.DeclarativeContainer):
     net_topology_service = providers.Factory(
         NetTopologyService,
         substation_repo=_substation_repo,
+        transformer_repo=_transformer_repo,
+        house_repo=_house_repo
+    )
+
+    topology_simulator = providers.Factory(
+        TopologySimulator,
         transformer_repo=_transformer_repo,
         house_repo=_house_repo
     )

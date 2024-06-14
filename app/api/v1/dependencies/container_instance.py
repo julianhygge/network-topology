@@ -1,4 +1,5 @@
 from app.api.v1.dependencies.dependencies_container import Container
+from app.data.interfaces.topology.itopology_simulator import ITopologySimulator
 from app.domain.interfaces.iservice import IService
 from app.domain.interfaces.net_topology.inet_topology_service import INetTopologyService
 
@@ -27,6 +28,10 @@ def get_user_service() -> IService:
 
 def get_net_topology_service() -> INetTopologyService:
     return c.net_topology_service()
+
+
+def get_topology_simulator() -> ITopologySimulator:
+    return c.topology_simulator()
 
 
 def get_substation_service() -> IService:
