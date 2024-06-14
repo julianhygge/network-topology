@@ -61,7 +61,6 @@ class TopologySimulator(ITopologySimulator):
                     else:
                         house.load_profile += f", Discharging battery at {house.battery_peak_discharging_rate} kW"
 
-
             for house in houses_under_transformer:
                 if house.has_battery:
                     pass

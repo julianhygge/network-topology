@@ -21,12 +21,15 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             return {}
 
         locality_id = substation.locality.id
+
         transformers = self.transformer_repo.model.select().where(
-            self.transformer_repo.model.substation == substation_id)
+            self.transformer_repo.model.substation == substation_id).order_by(
+            self.transformer_repo.model.created_on.asc())
 
         transformers_list = []
         for transformer in transformers:
-            houses = self.house_repo.model.select().where(self.house_repo.model.transformer == transformer.id)
+            houses = self.house_repo.model.select().where(self.house_repo.model.transformer == transformer.id).order_by(
+                self.house_repo.model.created_on.asc())
             houses_details = [
                 {
                     "id": str(house.id),
@@ -113,5 +116,3 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         updated_dicts["is_complete"] = is_complete
 
         return updated_dicts
-
-
