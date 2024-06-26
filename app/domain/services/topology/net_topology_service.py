@@ -1,5 +1,6 @@
 from typing import Dict, Any
 from app.data.interfaces.irepository import IRepository
+from app.data.interfaces.topology.inode_repository import INodeRepository
 from app.domain.interfaces.net_topology.inet_topology_service import INetTopologyService
 from app.domain.services.topology.topology_service_base import TopologyServiceBase
 from app.exceptions.hygge_exceptions import NotFoundException
@@ -8,7 +9,7 @@ from app.exceptions.hygge_exceptions import NotFoundException
 class NetTopologyService(TopologyServiceBase, INetTopologyService):
     def __init__(self,
                  substation_repo: IRepository,
-                 node_repo: IRepository,
+                 node_repo: INodeRepository,
                  transformer_repo: IRepository,
                  house_repo: IRepository):
         super().__init__(substation_repo)
@@ -23,7 +24,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             return {}
 
         locality_id = substation.locality.id
-        root_node = self.node_repo.model.get(substation=substation_id, parent=None)
+        root_node = self.node_repo.read(substation_id)
 
         return {
             "substation_id": str(substation.id),
@@ -34,7 +35,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         }
 
     def _get_node_details(self, node):
-        children = self.node_repo.model.select().where(self.node_repo.model.parent == node.id)
+        children = self.node_repo.get_children(node.id)
         if node.node_type == 'substation':
             node_details = {"children": []}
             for child in children:
@@ -74,7 +75,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         if not substation:
             raise NotFoundException(f"Substation with id {substation_id} not found")
 
-        root_node = self.node_repo.model.get(substation=substation_id, parent=None)
+        root_node = self.node_repo.read(substation_id)
         self._update_node_topology(user_id, substation_id, root_node, data['nodes'])
 
     def _update_node_topology(self, user_id, substation_id, parent_node, nodes_data):

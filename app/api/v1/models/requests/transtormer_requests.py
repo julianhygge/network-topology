@@ -2,7 +2,6 @@ from decimal import Decimal
 from enum import Enum
 from pydantic import BaseModel, UUID4
 from typing import Optional, List
-from datetime import datetime
 
 
 class BatteryEnum(str, Enum):
@@ -27,7 +26,6 @@ class HouseUpdateRequestModel(BaseModel):
 
 class HouseResponseModel(BaseModel):
     id: UUID4
-    transformer: UUID4
     is_complete: bool
     load_profile: Optional[str] = None
     has_solar: Optional[bool] = None
