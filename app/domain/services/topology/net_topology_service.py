@@ -8,10 +8,12 @@ from app.exceptions.hygge_exceptions import NotFoundException
 class NetTopologyService(TopologyServiceBase, INetTopologyService):
     def __init__(self,
                  substation_repo: IRepository,
+                 node_repo: IRepository,
                  transformer_repo: IRepository,
                  house_repo: IRepository):
         super().__init__(substation_repo)
         self.substation_repo = substation_repo
+        self.node_repo = node_repo
         self.transformer_repo = transformer_repo
         self.house_repo = house_repo
 
@@ -21,77 +23,91 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             return {}
 
         locality_id = substation.locality.id
-
-        transformers = (self.transformer_repo.model
-                        .select()
-                        .where(self.transformer_repo.model.substation == substation_id)
-                        .order_by(self.transformer_repo.model.created_on.asc()))
-
-        transformers_list = []
-        for transformer in transformers:
-            houses = (self.house_repo.model
-                      .select()
-                      .where(self.house_repo.model.transformer == transformer.id)
-                      .order_by(self.house_repo.model.created_on.asc()))
-            houses_details = [
-                {
-                    "id": str(house.id),
-                    "is_complete": self._is_house_complete(house)
-                }
-                for house in houses
-            ]
-            transformers_list.append({
-                "id": str(transformer.id),
-                "is_complete": self._is_transformer_complete(transformer),
-                "houses_details": houses_details
-            })
+        root_node = self.node_repo.model.get(substation=substation_id, parent=None)
 
         return {
             "substation_id": str(substation.id),
             "substation_name": substation.name,
             "locality_id": str(locality_id),
             "locality_name": substation.locality.name,
-            "transformers": transformers_list
+            "nodes": self._get_node_details(root_node)
         }
 
-    def update_topology(self, substation_id, data):
+    def _get_node_details(self, node):
+        children = self.node_repo.model.select().where(self.node_repo.model.parent == node.id)
+        if node.node_type == 'substation':
+            node_details = {"children": []}
+            for child in children:
+                node_details["children"].append(self._get_node_details(child))
+            return node_details["children"]
+        node_details = {
+            "id": str(node.id),
+            "type": node.node_type
+        }
+
+        if node.name is not None:
+            node_details.update({
+                "name": node.name
+            })
+
+        if node.node_type == 'transformer':
+            transformer = self.transformer_repo.read(node.id)
+            node_details.update({
+                "is_complete": self._is_transformer_complete(transformer)
+            })
+        elif node.node_type == 'house':
+            house = self.house_repo.read(node.id)
+            node_details.update({
+                "is_complete": self._is_house_complete(house)
+            })
+        if node.node_type != 'house':
+            node_details.update({
+                "children": []
+            })
+        for child in children:
+            node_details["children"].append(self._get_node_details(child))
+
+        return node_details
+
+    def update_topology(self, user_id, substation_id, data):
         substation = self.substation_repo.read(substation_id)
         if not substation:
             raise NotFoundException(f"Substation with id {substation_id} not found")
 
-        for transformer_data in data['transformers']:
-            action = transformer_data.pop('action')
+        root_node = self.node_repo.model.get(substation=substation_id, parent=None)
+        self._update_node_topology(user_id, substation_id, root_node, data['nodes'])
+
+    def _update_node_topology(self, user_id, substation_id, parent_node, nodes_data):
+        for node_data in nodes_data:
+            action = node_data.pop('action', None)
+            node_type = node_data.pop('type')
+            node_id = node_data.pop('id', None)
             if action == 'add':
+                new_node_data = {
+                    "parent": parent_node.id,
+                    "node_type": node_type,
+                    "created_by": user_id,
+                    "modified_by": user_id,
+                    "substation_id": substation_id
+
+                }
+                new_node = self.node_repo.create(**new_node_data)
                 new_data = {
                     "substation_id": substation_id,
+                    "node": new_node.id,
+                    "id": new_node.id
                 }
-                transformer = self.transformer_repo.create(**new_data)
-            elif action == 'update':
-                transformer_id = transformer_data.pop('id')
-                transformer = self.transformer_repo.read(transformer_id)
-                if not transformer:
-                    raise NotFoundException(f"Transformer with id {transformer_id} not found")
-
-            elif action == 'delete':
-                transformer_id = transformer_data['id']
-                self.transformer_repo.delete(transformer_id)
-                continue
-
-            houses_details = transformer_data.get('houses_details', [])
-            if houses_details is None:
-                continue
-            for house_data in houses_details:
-                house_action = house_data.pop('action')
-                if house_action == 'add':
-                    new_data = {
-                        "transformer_id": transformer
-                    }
+                node_id = new_node.id
+                if node_type == 'transformer':
+                    self.transformer_repo.create(**new_data)
+                elif node_type == 'house':
                     self.house_repo.create(**new_data)
-                elif house_action == 'update':
-                    pass
-                elif house_action == 'delete':
-                    house_id = house_data['id']
-                    self.house_repo.delete(house_id)
+            elif action == 'delete':
+                self.node_repo.delete(node_id)
+                continue
+
+            if 'children' in node_data and node_data['children'] is not None:
+                self._update_node_topology(user_id, substation_id, self.node_repo.read(node_id), node_data['children'])
 
     def update_transformer(self, transformer_id, data):
         transformer = self.transformer_repo.read(transformer_id)
@@ -102,7 +118,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
 
         updated_transformer = self.transformer_repo.read(transformer_id)
         is_complete = self._is_transformer_complete(updated_transformer)
-        updated_dicts = self.substation_repo.to_dicts(updated_transformer)
+        updated_dicts = self.transformer_repo.to_dicts(updated_transformer)
         updated_dicts["is_complete"] = is_complete
         return updated_dicts
 
@@ -115,7 +131,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
 
         updated_house = self.house_repo.read(house_id)
         is_complete = self._is_house_complete(updated_house)
-        updated_dicts = self.substation_repo.to_dicts(updated_house)
+        updated_dicts = self.house_repo.to_dicts(updated_house)
         updated_dicts["is_complete"] = is_complete
 
         return updated_dicts

@@ -2,7 +2,7 @@ import uuid
 
 from peewee import UUIDField, BooleanField, CharField, ForeignKeyField, DecimalField, TextField
 from app.data.schemas.auth.auditable_base import AuditableBase
-from app.data.schemas.schema_base import BaseModel, InfDateTimeField
+from app.data.schemas.schema_base import InfDateTimeField
 
 
 class Transactional(AuditableBase):
@@ -40,8 +40,18 @@ class Substation(Transactional):
         table_name = 'substations'
 
 
+class Node(Transactional):
+    parent = ForeignKeyField('self', backref='children', null=True)
+    node_type = CharField(max_length=50)  # 'substation', 'transformer', or 'house'
+    name = CharField(max_length=50, null=True)  # Optional name for substations
+    substation = ForeignKeyField(Substation, backref='nodes', null=True)
+
+    class Meta:
+        table_name = 'nodes'
+
+
 class Transformer(Transactional):
-    substation = ForeignKeyField(Substation, backref='transformers')
+    node = ForeignKeyField(Node, backref='transformers', null=True)
     max_capacity_kw = DecimalField(max_digits=10, decimal_places=2)
     export_efficiency = DecimalField(max_digits=5, decimal_places=2, null=True)
     allow_export = BooleanField(default=False)
@@ -51,7 +61,7 @@ class Transformer(Transactional):
 
 
 class House(Transactional):
-    transformer = ForeignKeyField(Transformer, backref='houses', on_delete='CASCADE')
+    node = ForeignKeyField(Node, backref='houses', null=True, on_delete='CASCADE')
     load_profile = TextField(null=True)
     has_solar = BooleanField(default=False)
     solar_kw = DecimalField(max_digits=10, decimal_places=2, null=True)

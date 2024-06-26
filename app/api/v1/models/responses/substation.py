@@ -3,23 +3,25 @@ from pydantic import BaseModel, UUID4
 from typing import List, Optional
 
 
-class HouseDetailResponseModel(BaseModel):
+class Node(BaseModel):
     id: UUID4
+    type: str
     is_complete: bool
+    children: Optional[List['Node']] = None
+
+    class Config:
+        from_attributes = True
 
 
-class TransformerDetailResponseModel(BaseModel):
-    id: UUID4
-    is_complete: bool
-    houses_details: List[HouseDetailResponseModel]
-
-
-class SubstationTopologyResponseModel(BaseModel):
+class SubstationTopology(BaseModel):
     substation_id: UUID4
     substation_name: str
     locality_id: UUID4
     locality_name: str
-    transformers: List[TransformerDetailResponseModel]
+    nodes: List[Node]
+
+    class Config:
+        from_attributes = True
 
 
 class SubstationResponseModel(BaseModel):

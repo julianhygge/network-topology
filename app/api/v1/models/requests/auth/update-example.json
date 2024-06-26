@@ -1,0 +1,72 @@
+{
+    "substation_id": "d85385fe-89fe-4b54-8bb2-6221805c9636",
+    "substation_name": "substation 1",
+    "locality_id": "94522a0a-c8f1-40f8-a2e5-9aed2dc55555",
+    "locality_name": "Locality 1",
+    "nodes": [
+        {
+            "id": "b647981b-32ce-4e23-99f0-d82bf5503151",
+            "type": "transformer",
+            "is_complete": false,
+            "children": []
+        },
+        {
+            "id": "c68b831e-cf28-4774-8f62-4b185fc385f0",
+            "type": "transformer",
+            "is_complete": false,
+            "children": []
+        },
+        {
+            "id": "a45eb8d8-b57f-4044-b867-752db756e4ac",
+            "type": "transformer",
+            "is_complete": false,
+            "children": []
+        },
+        {
+            "id": "69570efd-503f-471c-b413-3e6f57ed1f65",
+            "type": "transformer",
+            "is_complete": false,
+            "children": [
+                {
+                    "id": "5e0de5bb-b351-46ac-b3c9-6fd8fb080baa",
+                    "type": "house",
+                    "is_complete": false
+                },
+                {
+                    "id": "72067643-9bd5-4bbd-8413-20c90a97e609",
+                    "type": "transformer",
+                    "is_complete": false,
+                    "children": [
+                        {
+                            "id": "5e0de5bb-b351-46ac-b3c9-6fd8fb080baa",
+                            "type": "house",
+                            "action": "add",
+                            "is_complete": false
+                        },
+                        {
+                            "id": "72067643-9bd5-4bbd-8413-20c90a97e609",
+                            "type": "transformer",
+                            "action": "add",
+                            "is_complete": false,
+                            "children": [
+                                {
+                                    "id": "5e0de5bb-b351-46ac-b3c9-6fd8fb080baa",
+                                    "type": "house",
+                                    "action": "add",
+                                    "is_complete": false
+                                },
+                                {
+                                    "id": "72067643-9bd5-4bbd-8413-20c90a97e609",
+                                    "type": "transformer",
+                                    "action": "add",
+                                    "is_complete": false,
+                                    "children": []
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

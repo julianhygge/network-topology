@@ -4,7 +4,7 @@ from app.data.interfaces.topology.ihouse_repository import IHouseRepository
 from app.data.interfaces.topology.itransformer_repository import ITransformerRepository
 from app.data.repositories.base_repository import BaseRepository
 from app.data.schemas.transactional.topology_schema import Account, Locality, Substation, Transformer, \
-    House
+    House, Node
 
 
 class AccountRepository(BaseRepository):
@@ -41,3 +41,8 @@ class HouseRepository(BaseRepository, IHouseRepository):
                   .join(Transformer)
                   .where(Transformer.substation == substation_id))
         return houses
+
+
+class NodeRepository(BaseRepository):
+    model = Node
+    id_field = Node.id

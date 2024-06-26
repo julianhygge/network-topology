@@ -7,7 +7,7 @@ from app.data.repositories.authorization.group_repository import GroupRepository
 from app.data.repositories.authorization.user_group_rel_repository import UserGroupRelRepository
 from app.data.repositories.authorization.user_repository import UserRepository, AccountRepository
 from app.data.repositories.topology.topology_repository import SubstationRepository, TransformerRepository, \
-    HouseRepository
+    HouseRepository, NodeRepository
 from app.data.schemas.hygge_database import HyggeDatabase
 from app.domain.services.auth_service import AuthService
 from app.domain.services.base_service import BaseService
@@ -33,6 +33,7 @@ class Container(containers.DeclarativeContainer):
     _substation_repo: IRepository = providers.Singleton(SubstationRepository)
     _transformer_repo: IRepository = providers.Singleton(TransformerRepository)
     _house_repo: IRepository = providers.Singleton(HouseRepository)
+    _node_repo: IRepository = providers.Singleton(NodeRepository)
 
     token_service = providers.Factory(
         TokenService,
@@ -79,7 +80,8 @@ class Container(containers.DeclarativeContainer):
         NetTopologyService,
         substation_repo=_substation_repo,
         transformer_repo=_transformer_repo,
-        house_repo=_house_repo
+        house_repo=_house_repo,
+        node_repo=_node_repo
     )
 
     topology_simulator = providers.Factory(

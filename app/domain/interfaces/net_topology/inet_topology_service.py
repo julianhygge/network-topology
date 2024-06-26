@@ -9,7 +9,7 @@ class INetTopologyService(ABC):
         pass
 
     @abstractmethod
-    def update_topology(self, substation_id: str, data: Dict[str, Any]) -> None:
+    def update_topology(self, user_id, substation_id, data: Dict[str, Any]) -> None:
         pass
 
     @abstractmethod
