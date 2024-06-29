@@ -54,6 +54,12 @@ class NotFoundException(ServiceException):
         super().__init__(self.message)
 
 
+class InvalidDataException(ServiceException):
+    def __init__(self, message="Invalid topology data"):
+        self.message = message
+        super().__init__(self.message)
+
+
 class UnauthorizedError(HyggeException):
     def __init__(self, message="Unauthorized"):
         self.message = message
