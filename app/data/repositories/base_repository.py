@@ -72,3 +72,6 @@ class BaseRepository(IRepository[T]):
         else:
             return obj
 
+    def list_by_user_id(self, user_id) -> List[T]:
+        return list(self.model.select().where((self.model.created_by == user_id) &
+                                              self.model.active))

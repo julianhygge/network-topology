@@ -30,4 +30,6 @@ class SubstationRequestModel(BaseModel):
     name: str = Field(..., example="Substation number 1")
 
 
-
+class SubstationsRequestModel(BaseModel):
+    locality_id: UUID4 = Field(..., example="94522a0a-c8f1-40f8-a2e5-9aed2dc55555")
+    number_of_substations: int = Field(..., example="2")

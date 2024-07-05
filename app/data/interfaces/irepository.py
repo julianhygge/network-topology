@@ -65,6 +65,6 @@ class IRepository(ABC, Generic[T]):
     def to_dicts(self, obj) -> Union[Dict[str, Any], List[Dict[str, Any]], Any]:
         pass
 
-    # @abstractmethod
-    # def get_filtered_bids(self, user_id, bid_type, min_price, max_price):
-    #     pass
+    def list_by_user_id(self, user_id) -> List[T]:
+        return list(self.model.select().where((self.model.created_by == user_id) &
+                                              self.model.active))

@@ -8,11 +8,13 @@ from starlette import status
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Resources, Permission
 from app.api.v1.dependencies.container_instance import get_net_topology_service, get_substation_service
-from app.api.v1.models.requests.substation import SubstationTopologyRequestModel, SubstationRequestModel
+from app.api.v1.models.requests.substation import SubstationTopologyRequestModel, SubstationRequestModel, \
+    SubstationsRequestModel
 from app.api.v1.models.responses.substation import SubstationResponseModel, \
     SubstationResponseModelList, SubstationTopology
 from app.domain.interfaces.iservice import IService
 from app.domain.interfaces.net_topology.inet_topology_service import INetTopologyService
+from app.domain.interfaces.net_topology.isubstation_service import ISubstationService
 
 substation_router = APIRouter(tags=["Substations"])
 
@@ -45,8 +47,22 @@ async def create(data: SubstationRequestModel,
                  service: IService = Depends(get_substation_service)):
     body = service.create(user_id, **data.model_dump())
     return SubstationResponseModel(**body)
-# todo: insert in table node also
-# check read and update transformers and houses nodes.
+
+
+@substation_router.post("/generate", response_model=SubstationResponseModelList)
+async def create(data: SubstationsRequestModel,
+                 user_id: uuid = Depends(permission(Resources.Substations, Permission.Create)),
+                 service: ISubstationService = Depends(get_substation_service)):
+    try:
+        data_list = service.create_bulk(user_id, **data.model_dump())
+        response = SubstationResponseModelList(items=[
+            SubstationResponseModel(
+                **item
+            ) for item in data_list
+        ])
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @substation_router.get("", response_model=SubstationResponseModelList)
@@ -60,5 +76,15 @@ async def get(_: str = Depends(permission(Resources.Substations, Permission.Retr
             ) for item in data_list
         ])
         return response
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@substation_router.delete(path="/{substation_id}/delete")
+async def delete(bid_round_id: UUID,
+                 service: IService = Depends(get_substation_service),
+                 _: str = Depends(permission(Resources.Substations, Permission.Delete))):
+    try:
+        service.delete(bid_round_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
