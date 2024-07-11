@@ -7,6 +7,8 @@ class Node(BaseModel):
     id: UUID4
     type: str
     is_complete: bool
+    name: str
+    alias: str
     children: Optional[List['Node']] = None
 
     class Config:

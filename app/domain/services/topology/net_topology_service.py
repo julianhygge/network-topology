@@ -20,6 +20,11 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         self.transformer_repo = transformer_repo
         self.house_repo = house_repo
 
+    INITIALS = {
+        NodeType.TRANSFORMER.value: "T",
+        NodeType.HOUSE.value: "H"
+    }
+
     def get_topology_by_substation_id(self, substation_id: UUID) -> Dict[str, Any]:
         """
         Get the topology for a given substation ID.
@@ -66,10 +71,11 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         """Get basic details of a node."""
         details = {
             "id": str(node.id),
-            "type": node.node_type
+            "type": node.node_type,
+            "name": node.name,
+            "alias": node.alias
         }
-        if node.name:
-            details["name"] = node.name
+
         return details
 
     def _get_transformer_details(self, node_id: UUID) -> Dict[str, bool]:
@@ -108,12 +114,15 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             action = node_data.pop('action')
             node_type = node_data.pop('type')
             node_id = node_data.pop('id')
+            alias = node_data.get('alias')
 
             if action == 'add':
                 node_id = self._add_new_node(user_id, substation_id, parent_node, node_type)
             elif action == 'delete':
                 self._delete_node(node_id)
                 continue
+            elif action == 'update' and alias is not None:
+                self.node_repo.update(node_id, alias=alias)
 
             if node_id and 'children' in node_data and node_data['children'] is not None:
                 child_node = self.node_repo.read(node_id)
@@ -121,24 +130,56 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
 
     def _add_new_node(self, user_id: UUID, substation_id: UUID, parent_node, node_type: str):
         """Add a new node to the topology."""
-        new_node_data = {
+        try:
+            children_count = self._get_children_count(parent_node)
+            nomenclature = self._generate_node_name(parent_node.name, node_type, children_count)
+
+            new_node_data = self._prepare_new_node_data(user_id, substation_id, parent_node, node_type, nomenclature)
+
+            new_node = self.node_repo.create(**new_node_data)
+
+            self._save_new_node(substation_id, new_node.id, node_type)
+
+            return new_node
+        except Exception as e:
+            print(f"Error adding the new node: {e}")
+            raise
+
+    def _get_children_count(self, parent_node):
+        children = self.node_repo.get_children(parent_node)
+        return len(children)
+
+    def _generate_node_name(self, parent_name: str, node_type: str, children_count: int) -> str:
+        name_parent = parent_name.replace(" ", "")
+        initial = self.INITIALS.get(node_type, "N")  # Default to "N" if node type is unknown
+        words = name_parent.split('-')
+        return f"{initial}-{words[1]}.{children_count + 1}"
+
+    @staticmethod
+    def _prepare_new_node_data(user_id: UUID, substation_id: UUID, parent_node, node_type: str,
+                               nomenclature: str) -> dict:
+        return {
             "parent": parent_node.id,
             "node_type": node_type,
             "created_by": user_id,
             "modified_by": user_id,
-            "substation_id": substation_id
+            "substation_id": substation_id,
+            "name": nomenclature,
+            "alias": nomenclature
         }
-        new_node = self.node_repo.create(**new_node_data)
+
+    def _save_new_node(self, substation_id: UUID, new_node_id: UUID, node_type: str):
+        """Save the new node in the appropriate repository."""
         new_data = {
             "substation_id": substation_id,
-            "node": new_node.id,
-            "id": new_node.id
+            "node": new_node_id,
+            "id": new_node_id
         }
+
         if node_type == NodeType.TRANSFORMER.value:
             self.transformer_repo.create(**new_data)
         elif node_type == NodeType.HOUSE.value:
             self.house_repo.create(**new_data)
-        return new_node
 
     def _delete_node(self, node_id: UUID):
         """Delete a node from the topology."""
