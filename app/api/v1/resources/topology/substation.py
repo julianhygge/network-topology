@@ -81,10 +81,10 @@ async def get(_: str = Depends(permission(Resources.Substations, Permission.Retr
 
 
 @substation_router.delete(path="/{substation_id}/delete")
-async def delete(bid_round_id: UUID,
+async def delete(substation_id: UUID,
                  service: IService = Depends(get_substation_service),
                  _: str = Depends(permission(Resources.Substations, Permission.Delete))):
     try:
-        service.delete(bid_round_id)
+        service.delete(substation_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
