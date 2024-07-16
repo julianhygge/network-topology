@@ -18,7 +18,7 @@ class NodeDetailRequestModel(BaseModel):
     id: Optional[UUID4] = Field(None, example="824960c0-974c-4c57-8803-85f5f407b304")
     action: Optional[ActionEnum] = Field('update', example="update")
     type: Optional[NodeType] = Field(None, example="transformer")
-    alias: Optional[constr(max_length=12)] = Field(None, example="John's house")
+    name: Optional[constr(max_length=12)] = Field(None, example="John's house")
     children: Optional[List['NodeDetailRequestModel']] = Field(None, example=[])
 
 

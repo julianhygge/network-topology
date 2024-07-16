@@ -44,7 +44,7 @@ class Node(Transactional):
     parent = ForeignKeyField('self', backref='children', null=True)
     node_type = CharField(max_length=50)  # 'substation', 'transformer', or 'house'
     name = CharField(max_length=50, null=True)  # Optional name for substations
-    alias = CharField(max_length=50, null=True)  # Optional name for substations
+    nomenclature = CharField(max_length=50, null=True)  # Optional name for substations
     substation = ForeignKeyField(Substation, backref='nodes', null=True)
 
     class Meta:

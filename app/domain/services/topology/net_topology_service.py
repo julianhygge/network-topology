@@ -73,7 +73,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             "id": str(node.id),
             "type": node.node_type,
             "name": node.name,
-            "alias": node.alias
+            "nomenclature": node.name
         }
 
         return details
@@ -114,15 +114,15 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             action = node_data.pop('action')
             node_type = node_data.pop('type')
             node_id = node_data.pop('id')
-            alias = node_data.get('alias')
+            name = node_data.get('name')
 
             if action == 'add':
                 node_id = self._add_new_node(user_id, substation_id, parent_node, node_type)
             elif action == 'delete':
                 self._delete_node(node_id)
                 continue
-            elif action == 'update' and alias is not None:
-                self.node_repo.update(node_id, alias=alias)
+            elif action == 'update' and name is not None:
+                self.node_repo.update(node_id, name=name)
 
             if node_id and 'children' in node_data and node_data['children'] is not None:
                 child_node = self.node_repo.read(node_id)
@@ -131,8 +131,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
     def _add_new_node(self, user_id: UUID, substation_id: UUID, parent_node, node_type: str):
         """Add a new node to the topology."""
         try:
-            children_count = self._get_children_count(parent_node)
-            nomenclature = self._generate_node_name(parent_node.name, node_type, children_count)
+            nomenclature = self._generate_node_name(parent_node, node_type)
 
             new_node_data = self._prepare_new_node_data(user_id, substation_id, parent_node, node_type, nomenclature)
 
@@ -149,11 +148,20 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         children = self.node_repo.get_children(parent_node)
         return len(children)
 
-    def _generate_node_name(self, parent_name: str, node_type: str, children_count: int) -> str:
-        name_parent = parent_name.replace(" ", "")
-        initial = self.INITIALS.get(node_type, "N")  # Default to "N" if node type is unknown
+    def _generate_node_name(self, parent, node_type: str) -> str:
+        children = self.node_repo.get_children(parent)
+        node_number = 0
+        names = [x.name for x in children if x.node_type == node_type]
+        if names:
+            names.sort()
+            last_node = names[-1]
+            nodes = last_node.split('.')
+            node_number = int(nodes[-1])
+
+        name_parent = parent.name.replace(" ", "")
+        initial = self.INITIALS.get(node_type, "N")
         words = name_parent.split('-')
-        return f"{initial}-{words[1]}.{children_count + 1}"
+        return f"{initial}-{words[1]}.{node_number + 1}"
 
     @staticmethod
     def _prepare_new_node_data(user_id: UUID, substation_id: UUID, parent_node, node_type: str,
@@ -165,7 +173,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             "modified_by": user_id,
             "substation_id": substation_id,
             "name": nomenclature,
-            "alias": nomenclature
+            "nomenclature": nomenclature
         }
 
     def _save_new_node(self, substation_id: UUID, new_node_id: UUID, node_type: str):

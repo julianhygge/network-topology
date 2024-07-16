@@ -8,7 +8,7 @@ class Node(BaseModel):
     type: str
     is_complete: bool
     name: str
-    alias: str
+    nomenclature: str
     children: Optional[List['Node']] = None
 
     class Config:
