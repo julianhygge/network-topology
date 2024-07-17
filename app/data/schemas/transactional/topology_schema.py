@@ -1,6 +1,6 @@
 import uuid
 
-from peewee import UUIDField, BooleanField, CharField, ForeignKeyField, DecimalField, TextField
+from peewee import UUIDField, BooleanField, CharField, ForeignKeyField, DecimalField, TextField, IntegerField
 from app.data.schemas.auth.auditable_base import AuditableBase
 from app.data.schemas.schema_base import InfDateTimeField
 
@@ -54,8 +54,14 @@ class Node(Transactional):
 class Transformer(Transactional):
     node = ForeignKeyField(Node, backref='transformers', null=True)
     max_capacity_kw = DecimalField(max_digits=10, decimal_places=2)
-    export_efficiency = DecimalField(max_digits=5, decimal_places=2, null=True)
     allow_export = BooleanField(default=False)
+    name = CharField(max_length=255, null=True)
+    backward_efficiency = DecimalField(max_digits=5, decimal_places=2, null=True)
+    primary_ampacity = DecimalField(max_digits=5, decimal_places=2, null=True)
+    secondary_ampacity = DecimalField(max_digits=5, decimal_places=2, null=True)
+    years_of_service = IntegerField(null=True)
+    forward_efficiency = DecimalField(max_digits=5, decimal_places=2, null=True)
+    digital_twin_model = BooleanField(default=False)
 
     class Meta:
         table_name = 'transformers'

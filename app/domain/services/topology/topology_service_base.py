@@ -30,8 +30,17 @@ class TopologyServiceBase(BaseService):
 
     @staticmethod
     def _is_transformer_complete(transformer: Transformer) -> bool:
-        if transformer.max_capacity_kw is None:
-            return False
-        if transformer.allow_export and transformer.export_efficiency is None:
+        required_fields = [
+            'max_capacity_kw',
+            'name',
+            'primary_ampacity',
+            'secondary_ampacity',
+            'years_of_service',
+            'digital_twin_model'
+        ]
+        for field in required_fields:
+            if getattr(transformer, field) is None:
+                return False
+        if transformer.allow_export and transformer.forward_efficiency is None:
             return False
         return True

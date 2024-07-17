@@ -6,6 +6,7 @@ from app.domain.interfaces.enums.node_type import NodeType
 from app.domain.interfaces.net_topology.inet_topology_service import INetTopologyService
 from app.domain.services.topology.topology_service_base import TopologyServiceBase
 from app.exceptions.hygge_exceptions import NotFoundException, InvalidDataException
+from app.utils.datetime_util import datetime_now
 
 
 class NetTopologyService(TopologyServiceBase, INetTopologyService):
@@ -193,10 +194,11 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         """Delete a node from the topology."""
         self.node_repo.delete(node_id)
 
-    def update_transformer(self, transformer_id: UUID, data: Dict[str, Any]) -> Dict[str, Any]:
+    def update_transformer(self, user_id, transformer_id: UUID, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Update a transformer's details.
 
+        :param user_id: user performing the update
         :param transformer_id: UUID of the transformer
         :param data: Dictionary containing the update data
         :return: Updated transformer details
@@ -206,18 +208,22 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         if not transformer:
             raise NotFoundException(f"Transformer with id {transformer_id} not found")
 
+        data["modified_on"] = datetime_now()
+        data["modified_by"] = user_id
         self.transformer_repo.update(transformer_id, **data)
 
+        self.node_repo.update(transformer_id, name = data["name"])
         updated_transformer = self.transformer_repo.read(transformer_id)
         is_complete = self._is_transformer_complete(updated_transformer)
         updated_dict = self.transformer_repo.to_dicts(updated_transformer)
         updated_dict["is_complete"] = is_complete
         return updated_dict
 
-    def update_house(self, house_id: UUID, data: Dict[str, Any]) -> Dict[str, Any]:
+    def update_house(self, user_id, house_id: UUID, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Update a house's details.
 
+        :param user_id: user performing the update
         :param house_id: UUID of the house
         :param data: Dictionary containing the update data
         :return: Updated house details
@@ -227,9 +233,11 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         if not house:
             raise NotFoundException(f"House with id {house_id} not found")
 
+        data["modified_on"] = datetime_now()
+        data["modified_by"] = user_id
         self.house_repo.update(house_id, **data)
-
         updated_house = self.house_repo.read(house_id)
+        self.node_repo.update(house_id, name=data["name"])
         is_complete = self._is_house_complete(updated_house)
         updated_dict = self.house_repo.to_dicts(updated_house)
         updated_dict["is_complete"] = is_complete

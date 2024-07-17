@@ -13,9 +13,9 @@ class INetTopologyService(ABC):
         pass
 
     @abstractmethod
-    def update_transformer(self, transformer_id, data):
+    def update_transformer(self, user_id, transformer_id, data):
         pass
 
     @abstractmethod
-    def update_house(self, house_id, data):
+    def update_house(self, user_id, house_id, data):
         pass

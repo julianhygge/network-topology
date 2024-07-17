@@ -15,10 +15,10 @@ transformer_router = APIRouter(tags=["Transformers"])
 @transformer_router.put("/{transformer_id}", response_model=TransformerResponseModel)
 async def update_transformer(transformer_id: UUID4,
                              transformer_data: TransformerUpdateRequestModel,
-                             _: str = Depends(permission(Resources.Transformers, Permission.Update)),
+                             user_id: str = Depends(permission(Resources.Transformers, Permission.Update)),
                              service: INetTopologyService = Depends(get_net_topology_service)):
     try:
-        updated_transformer = service.update_transformer(str(transformer_id), transformer_data.model_dump())
+        updated_transformer = service.update_transformer(user_id, str(transformer_id), transformer_data.model_dump())
         return updated_transformer
     except NotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

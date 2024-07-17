@@ -41,9 +41,15 @@ class HouseResponseModel(BaseModel):
 
 
 class TransformerUpdateRequestModel(BaseModel):
-    max_capacity_kw: Decimal
-    export_efficiency: Decimal
+    max_capacity_kw: Optional[Decimal] = None
     allow_export: bool
+    name: Optional[str] = None
+    backward_efficiency: Optional[Decimal] = None
+    primary_ampacity: Optional[Decimal] = None
+    secondary_ampacity: Optional[Decimal] = None
+    years_of_service: Optional[int] = None
+    forward_efficiency: Optional[Decimal] = None
+    digital_twin_model: Optional[bool] = None
 
 
 class TransformerResponseModel(BaseModel):
@@ -51,5 +57,11 @@ class TransformerResponseModel(BaseModel):
     is_complete: bool
     max_capacity_kw: Optional[Decimal] = None
     active: bool
-    export_efficiency: Optional[Decimal] = None
     allow_export: Optional[bool] = None
+    name: Optional[str] = None
+    backward_efficiency: Optional[Decimal] = None
+    primary_ampacity: Optional[Decimal] = None
+    secondary_ampacity: Optional[Decimal] = None
+    years_of_service: Optional[int] = None
+    forward_efficiency: Optional[Decimal] = None
+    digital_twin_model: Optional[bool] = None
