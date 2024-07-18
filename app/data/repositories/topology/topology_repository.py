@@ -82,3 +82,21 @@ class NodeRepository(BaseRepository, INodeRepository):
             except DoesNotExist:
                 return None
         return None
+
+    def get_substation(self, node_id: UUID) -> Optional[Node]:
+        node = self.read(node_id)
+        if node and node.substation:
+            try:
+                return Substation.get(Substation.id == node.substation.id)
+            except DoesNotExist:
+                return None
+        return None
+
+    def get_locality(self, node_id: UUID) -> Optional[Locality]:
+        substation = self.get_substation(node_id)
+        if substation and substation.locality:
+            try:
+                return Locality.get(Locality.id == substation.locality.id)
+            except DoesNotExist:
+                return None
+        return None
