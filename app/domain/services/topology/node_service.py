@@ -14,8 +14,8 @@ class NodeService(INodeService):
         if node:
             return {
                 "id": node.id,
-                "name": node.name,
-                "nomenclature": node.nomenclature
+                "name": node.name or "Unknown",
+                "nomenclature": node.nomenclature or "Unknown"
             }
         return None
 
