@@ -24,11 +24,12 @@ class NodeService(INodeService):
         current_node = self.node_repo.read(node_id)
 
         while current_node:
-            path.append(BreadcrumbItem(
-                id=current_node.id,
-                name=current_node.name or "Unknown",
-                nomenclature=current_node.nomenclature or "Unknown"
-            ))
+            if current_node.node_type != "substation": 
+                path.append(BreadcrumbItem(
+                    id=current_node.id,
+                    name=current_node.name or "Unknown",
+                    nomenclature=current_node.nomenclature or "Unknown"
+                ))
             current_node = self.node_repo.get_parent(current_node.id)
 
         path.reverse()
