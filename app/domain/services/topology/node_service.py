@@ -26,8 +26,8 @@ class NodeService(INodeService):
         while current_node:
             path.append(BreadcrumbItem(
                 id=current_node.id,
-                name=current_node.name,
-                nomenclature=current_node.nomenclature
+                name=current_node.name or "Unknown",
+                nomenclature=current_node.nomenclature or "Unknown"
             ))
             current_node = self.node_repo.get_parent(current_node.id)
 
@@ -46,5 +46,9 @@ class NodeService(INodeService):
             substation_id=substation_id,
             substation_name=substation_name,
             substation_nomenclature=substation_nomenclature,
-            path=path
+            path=[BreadcrumbItem(
+                id=item.id,
+                name=item.name or "Unknown",
+                nomenclature=item.nomenclature or "Unknown"
+            ) for item in path]
         )
