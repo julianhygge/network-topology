@@ -74,7 +74,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             "id": str(node.id),
             "type": node.node_type,
             "name": node.name,
-            "nomenclature": node.name
+            "nomenclature": node.nomenclature
         }
 
         return details
