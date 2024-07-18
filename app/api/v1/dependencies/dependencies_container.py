@@ -14,6 +14,7 @@ from app.domain.services.mqtt_service import MQTTService
 from app.domain.services.sms_service import SmsService
 from app.domain.services.token_service import TokenService
 from app.domain.services.topology.house_service import HouseService
+from app.domain.services.topology.node_service import NodeService
 from app.domain.services.topology.net_topology_service import NetTopologyService
 from app.domain.services.topology.substation_service import SubstationService
 from app.domain.services.topology.topology_simulator import TopologySimulator
@@ -103,4 +104,9 @@ class Container(containers.DeclarativeContainer):
     house_service = providers.Factory(
         HouseService,
         repository=_house_repo
+    )
+
+    node_service = providers.Factory(
+        NodeService,
+        node_repo=_node_repo
     )

@@ -1,6 +1,7 @@
 from app.api.v1.dependencies.dependencies_container import Container
 from app.data.interfaces.topology.itopology_simulator import ITopologySimulator
 from app.domain.interfaces.iservice import IService
+from app.domain.interfaces.inode_service import INodeService
 from app.domain.interfaces.net_topology.inet_topology_service import INetTopologyService
 
 c = Container()
@@ -44,3 +45,6 @@ def get_transformer_service() -> IService:
 
 def get_house_service() -> IService:
     return c.house_service()
+
+def get_node_service() -> INodeService:
+    return c.node_service()
