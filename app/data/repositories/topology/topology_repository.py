@@ -1,6 +1,7 @@
 from uuid import UUID
 
-from peewee import IntegrityError
+from peewee import IntegrityError, DoesNotExist
+from typing import Optional, List
 
 from app.data.interfaces.topology.ihouse_repository import IHouseRepository
 from app.data.interfaces.topology.inode_repository import INodeRepository
@@ -64,6 +65,20 @@ class NodeRepository(BaseRepository, INodeRepository):
     model = Node
     id_field = Node.id
 
-    def get_children(self, parent_id):
-        children = self.model.select().where(self.model.parent == parent_id).execute()
-        return children
+    def read(self, id_value: UUID) -> Optional[Node]:
+        try:
+            return Node.get(Node.id == id_value)
+        except DoesNotExist:
+            return None
+
+    def get_children(self, parent_id: UUID) -> List[Node]:
+        return list(Node.select().where(Node.parent == parent_id))
+
+    def get_parent(self, node_id: UUID) -> Optional[Node]:
+        node = self.read(node_id)
+        if node and node.parent:
+            try:
+                return Node.get(Node.id == node.parent.id)
+            except DoesNotExist:
+                return None
+        return None

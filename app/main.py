@@ -5,6 +5,7 @@ from app.api.middlewares.db_session_middleware import DatabaseMiddleware
 from app.api.middlewares.logger_middleware import LoggerMiddleware
 from app.api.v1.resources.auth.auth import auth_router
 from app.api.v1.resources.topology.house import house_router
+from app.api.v1.resources.topology.breadcrumb import breadcrumb_router
 from app.api.v1.resources.topology.substation import substation_router
 from app.api.v1.resources.topology.transformer import transformer_router
 from app.api.v1.resources.users.group import group_router
@@ -29,6 +30,8 @@ def add_routes(cc_app: FastAPI):
     cc_app.include_router(substation_router, prefix=f'{version_1}substations')
     cc_app.include_router(transformer_router, prefix=f'{version_1}transformers')
     cc_app.include_router(house_router, prefix=f'{version_1}houses')
+    cc_app.include_router(breadcrumb_router, prefix=f'{version_1}breadcrumb')
+
 
 
 app = FastAPI(title="Network topology", root_path="/net-topology-api")
