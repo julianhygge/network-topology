@@ -1,4 +1,4 @@
-from uuid import UUID
+import uuid
 from typing import Dict, Any, Optional
 from app.data.interfaces.topology.inode_repository import INodeRepository
 from app.api.v1.models.responses.breadcrumb import BreadcrumbResponseModel, BreadcrumbItem
@@ -8,7 +8,7 @@ class NodeService(INodeService):
     def __init__(self, node_repo: INodeRepository):
         self.node_repo = node_repo
 
-    def read(self, item_id: UUID) -> Optional[Dict[str, Any]]:
+    def read(self, item_id: uuid.UUID) -> Optional[Dict[str, Any]]:
         node = self.node_repo.read(item_id)
         if node:
             return {
@@ -18,7 +18,7 @@ class NodeService(INodeService):
             }
         return None
 
-    def get_breadcrumb_navigation_path(self, node_id: UUID) -> BreadcrumbResponseModel:
+    def get_breadcrumb_navigation_path(self, node_id: uuid.UUID) -> BreadcrumbResponseModel:
         path = []
         current_node = self.node_repo.read(node_id)
 
@@ -33,7 +33,7 @@ class NodeService(INodeService):
         path.reverse()
 
         locality = path[0].name if path else "Unknown Locality"
-        substation_id = path[1].id if len(path) > 1 else UUID("00000000-0000-0000-0000-000000000000")
+        substation_id = path[1].id if len(path) > 1 else uuid.uuid4()
         substation_name = path[1].name if len(path) > 1 else "Unknown Substation"
         substation_nomenclature = path[1].nomenclature if len(path) > 1 else "Unknown Nomenclature"
 
