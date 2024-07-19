@@ -33,7 +33,6 @@ def add_routes(cc_app: FastAPI):
     cc_app.include_router(breadcrumb_router, prefix=f'{version_1}breadcrumb')
 
 
-
 app = FastAPI(title="Network topology", root_path="/net-topology-api")
 
 app.servers = hygge_servers

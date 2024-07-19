@@ -5,6 +5,7 @@ from app.data.interfaces.topology.inode_repository import INodeRepository
 from app.api.v1.models.responses.breadcrumb import BreadcrumbResponseModel, BreadcrumbItem
 from app.domain.interfaces.inode_service import INodeService
 
+
 class NodeService(INodeService):
     def __init__(self, node_repo: INodeRepository):
         self.node_repo = node_repo
@@ -24,7 +25,7 @@ class NodeService(INodeService):
         current_node = self.node_repo.read(node_id)
 
         while current_node:
-            if current_node.node_type != "substation": 
+            if current_node.node_type != "substation":
                 path.append(BreadcrumbItem(
                     id=current_node.id,
                     name=current_node.name or "Unknown",
