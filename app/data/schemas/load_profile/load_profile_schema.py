@@ -19,9 +19,10 @@ class LoadProfileBase(BaseModel):
 
 
 class LoadProfiles(LoadProfileAuditableBase):
-    load_profile_id = IntegerField(primary_key=True)
+    id = IntegerField(primary_key=True)
     user_id = ForeignKeyField(User, backref='load_profiles')
     profile_name = CharField(max_length=50)
+    source = CharField(max_length=50)
     public = BooleanField()
 
     class Meta:
