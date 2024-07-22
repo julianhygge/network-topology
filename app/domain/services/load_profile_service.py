@@ -3,7 +3,7 @@ from app.data.interfaces.iload_load_profile_repository import ILoadProfileReposi
 from app.data.interfaces.iload_profile_details_repository import ILoadProfileDetailsRepository
 from io import BytesIO
 import pandas as pd
-from pandas import Timestamp
+# from pandas import Timestamp
 
 from app.data.interfaces.iuser_repository import IUserRepository
 from app.data.interfaces.load.iload_profile_files_repository import ILoadProfileFilesRepository
@@ -186,13 +186,13 @@ class LoadProfileService(BaseService):
             columns = list(detail.keys())
             datetime_column = columns[0]
             production_column = columns[1]
-
-            processed_detail = {
-                "profile_id": load_profile.id,
-                "timestamp": detail[datetime_column] if isinstance(detail[datetime_column], Timestamp)
-                else datetime.datetime.strptime(detail[datetime_column], "%d/%m/%Y %H:%M"),
-                "consumption_kwh": detail[production_column]
-            }
+            processed_detail = {}
+            # processed_detail = {
+            #     "profile_id": load_profile.id,
+            #     "timestamp": detail[datetime_column] if isinstance(detail[datetime_column], Timestamp)
+            #     else datetime.datetime.strptime(detail[datetime_column], "%d/%m/%Y %H:%M"),
+            #     "consumption_kwh": detail[production_column]
+            # }
             processed_details.append(processed_detail)
 
         return processed_details, load_profile
