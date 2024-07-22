@@ -2,15 +2,14 @@ import datetime
 from app.data.interfaces.iload_load_profile_repository import ILoadProfileRepository
 from app.data.interfaces.iload_profile_details_repository import ILoadProfileDetailsRepository
 from io import BytesIO
-# import pandas as pd
-# from pandas import Timestamp
+import pandas as pd
+from pandas import Timestamp
 
 from app.data.interfaces.iuser_repository import IUserRepository
 from app.data.interfaces.load.iload_profile_files_repository import ILoadProfileFilesRepository
 from app.domain.interfaces.enums.load_source_enum import LoadSource
 from app.domain.services.base_service import BaseService
 
-pd = 'delete'
 
 class LoadProfileService(BaseService):
     def __init__(self,
@@ -168,7 +167,7 @@ class LoadProfileService(BaseService):
         df = pd.read_csv(BytesIO(content))
         return df
 
-    def process_dataframe(self, user_id, df, profile_name: str):
+    def process_dataframe(self, user_id, df: pd.DataFrame, profile_name: str):
         profile_data = {
             "active": True,
             "created_by": user_id,
@@ -187,13 +186,12 @@ class LoadProfileService(BaseService):
             columns = list(detail.keys())
             datetime_column = columns[0]
             production_column = columns[1]
-            processed_detail = {}
-            # processed_detail = {
-            #     "profile_id": load_profile.id,
-            #     "timestamp": detail[datetime_column] if isinstance(detail[datetime_column], Timestamp)
-            #     else datetime.datetime.strptime(detail[datetime_column], "%d/%m/%Y %H:%M"),
-            #     "consumption_kwh": detail[production_column]
-            # }
+            processed_detail = {
+                "profile_id": load_profile.id,
+                "timestamp": detail[datetime_column] if isinstance(detail[datetime_column], Timestamp)
+                else datetime.datetime.strptime(detail[datetime_column], "%d/%m/%Y %H:%M"),
+                "consumption_kwh": detail[production_column]
+            }
             processed_details.append(processed_detail)
 
         return processed_details, load_profile
@@ -205,7 +203,7 @@ class LoadProfileService(BaseService):
         return self._load_profile_repository.get_public_profiles()
 
     @staticmethod
-    def _validate_15_minute_intervals(df):
+    def _validate_15_minute_intervals(df: pd.DataFrame):
         timestamps = df.iloc[:, 0]
         timestamps = [datetime.datetime.strptime(ts, "%d/%m/%Y %H:%M") for ts in timestamps]
         interval_to_validate = 15  # minutes
