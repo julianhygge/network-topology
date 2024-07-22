@@ -168,7 +168,7 @@ class LoadProfileService(BaseService):
         df = pd.read_csv(BytesIO(content))
         return df
 
-    def process_dataframe(self, user_id, df: pd.DataFrame, profile_name: str):
+    def process_dataframe(self, user_id, df, profile_name: str):
         profile_data = {
             "active": True,
             "created_by": user_id,
