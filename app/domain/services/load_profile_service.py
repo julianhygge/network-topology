@@ -2,7 +2,7 @@ import datetime
 from app.data.interfaces.iload_load_profile_repository import ILoadProfileRepository
 from app.data.interfaces.iload_profile_details_repository import ILoadProfileDetailsRepository
 from io import BytesIO
-import pandas as pd
+# import pandas as pd
 # from pandas import Timestamp
 
 from app.data.interfaces.iuser_repository import IUserRepository
@@ -10,6 +10,7 @@ from app.data.interfaces.load.iload_profile_files_repository import ILoadProfile
 from app.domain.interfaces.enums.load_source_enum import LoadSource
 from app.domain.services.base_service import BaseService
 
+pd = 'delete'
 
 class LoadProfileService(BaseService):
     def __init__(self,
