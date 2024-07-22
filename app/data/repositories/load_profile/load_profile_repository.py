@@ -2,8 +2,9 @@ from typing import List
 from peewee import DoesNotExist
 from app.data.interfaces.iload_load_profile_repository import ILoadProfileRepository
 from app.data.interfaces.iload_profile_details_repository import ILoadProfileDetailsRepository
+from app.data.interfaces.load.iload_profile_files_repository import ILoadProfileFilesRepository
 from app.data.repositories.base_repository import BaseRepository
-from app.data.schemas.load_profile.load_profile_schema import LoadProfiles, LoadProfileDetails
+from app.data.schemas.load_profile.load_profile_schema import LoadProfiles, LoadProfileDetails, LoadProfileFiles
 
 
 class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
@@ -26,7 +27,7 @@ class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
 
 class LoadProfileDetailsRepository(BaseRepository, ILoadProfileDetailsRepository):
     model = LoadProfileDetails
-    id_field = LoadProfileDetails.profile_detail_id
+    id_field = LoadProfileDetails.id
 
     def delete_by_profile_id(self, profile_id) -> int:
         return self.model.delete().where(self.model.profile_id == profile_id).execute()
@@ -42,3 +43,14 @@ class LoadProfileDetailsRepository(BaseRepository, ILoadProfileDetailsRepository
                               .dicts())
 
         return list(load_details_dicts) if load_details_dicts else None
+
+
+class LoadProfileFilesRepository(BaseRepository, ILoadProfileFilesRepository):
+    model = LoadProfileFiles
+    id_field = LoadProfileFiles.id
+
+    def save_file(self, profile_id, filename, content):
+        return self.model.create(profile_id=profile_id, filename=filename, content=content)
+
+    def get_file(self, profile_id):
+        return self.model.get(self.model.profile_id == profile_id)

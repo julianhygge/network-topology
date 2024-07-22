@@ -15,3 +15,9 @@ class ILoadProfileDetailsRepository(IRepository[T]):
     @abstractmethod
     def get_load_details_by_load_id(self, load_id):
         pass
+
+    def save_file(self, profile_id, filename, content):
+        pass
+
+    def get_file(self, file_id):
+        pass

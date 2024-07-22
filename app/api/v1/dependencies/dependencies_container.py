@@ -7,7 +7,7 @@ from app.data.repositories.authorization.group_repository import GroupRepository
 from app.data.repositories.authorization.user_group_rel_repository import UserGroupRelRepository
 from app.data.repositories.authorization.user_repository import UserRepository, AccountRepository
 from app.data.repositories.load_profile.load_profile_repository import LoadProfilesRepository, \
-    LoadProfileDetailsRepository
+    LoadProfileDetailsRepository, LoadProfileFilesRepository
 from app.data.repositories.topology.topology_repository import SubstationRepository, TransformerRepository, \
     HouseRepository, NodeRepository
 from app.data.schemas.hygge_database import HyggeDatabase
@@ -40,6 +40,7 @@ class Container(containers.DeclarativeContainer):
     _node_repo: IRepository = providers.Singleton(NodeRepository)
     _load_profiles_repository = providers.Singleton(LoadProfilesRepository)
     _load_profile_details_repository = providers.Singleton(LoadProfileDetailsRepository)
+    _load_profile_files_repository = providers.Singleton(LoadProfileFilesRepository)
 
     token_service = providers.Factory(
         TokenService,
@@ -119,5 +120,7 @@ class Container(containers.DeclarativeContainer):
     load_profile_service = providers.Factory(
         LoadProfileService,
         repository=_load_profiles_repository(),
-        load_details_repository=_load_profile_details_repository
+        load_details_repository=_load_profile_details_repository,
+        load_profile_files_repository=_load_profile_files_repository,
+        user_repository=_user_repository
     )

@@ -1,4 +1,4 @@
-from peewee import ForeignKeyField, CharField, BooleanField, IntegerField, DateTimeField, DoubleField
+from peewee import ForeignKeyField, CharField, BooleanField, IntegerField, DateTimeField, DoubleField, BlobField
 from app.data.schemas.auth.auditable_base import AuditableBase
 from app.data.schemas.schema_base import BaseModel
 from app.data.schemas.transactional.user_schema import User
@@ -30,10 +30,20 @@ class LoadProfiles(LoadProfileAuditableBase):
 
 
 class LoadProfileDetails(LoadProfileBase):
-    profile_detail_id = IntegerField(primary_key=True)
+    id = IntegerField(primary_key=True)
     profile_id = ForeignKeyField(LoadProfiles, backref='details')
     timestamp = DateTimeField()
     consumption_kwh = DoubleField()
 
     class Meta:
         table_name = 'load_profile_details'
+
+
+class LoadProfileFiles(LoadProfileBase):
+    id = IntegerField(primary_key=True)
+    profile_id = ForeignKeyField(LoadProfiles, backref='files', on_delete='CASCADE')
+    filename = CharField(max_length=255)
+    content = BlobField()
+
+    class Meta:
+        table_name = 'load_profile_files'

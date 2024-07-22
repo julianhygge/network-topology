@@ -5,27 +5,40 @@ from io import BytesIO
 import pandas as pd
 from pandas import Timestamp
 
+from app.data.interfaces.iuser_repository import IUserRepository
+from app.data.interfaces.load.iload_profile_files_repository import ILoadProfileFilesRepository
+from app.domain.interfaces.enums.load_source_enum import LoadSource
 from app.domain.services.base_service import BaseService
 
 
 class LoadProfileService(BaseService):
-    def __init__(self, repository: ILoadProfileRepository,
+    def __init__(self,
+                 repository: ILoadProfileRepository,
+                 load_profile_files_repository: ILoadProfileFilesRepository,
+                 user_repository: IUserRepository,
                  load_details_repository: ILoadProfileDetailsRepository):
         super().__init__(repository)
         self._load_profile_repository = repository
         self._load_details_repository = load_details_repository
+        self._load_profile_files_repository = load_profile_files_repository
+        self._user_repository = user_repository
 
-    @staticmethod
-    def _map_profile_to_dict(profile):
-        return {
-            "load_profile_id": profile.load_profile_id,
+    def _map_profile_to_dict(self, profile):
+        data = {
+            "profile_id": profile.id,
             "active": profile.active,
             "profile_name": profile.profile_name,
             "user_id": str(profile.user_id),
+            "user": profile.user_id.name,
             "created_on": profile.created_on,
             "modified_on": profile.modified_on,
-            "public": profile.public,
+            "source": profile.source
         }
+        if profile.source == LoadSource.File.value:
+            file_name = self._load_profile_files_repository.get_file(profile.id).filename
+            data["file_name"] = file_name
+
+        return data
 
     @staticmethod
     def _apply_general_adjustments(consumption_pattern, interval_minutes):
@@ -112,16 +125,35 @@ class LoadProfileService(BaseService):
         combined_profiles = get_public_profiles + get_private_profile_by_user
         return [self._map_profile_to_dict(profile) for profile in combined_profiles]
 
-    async def upload_profile_service_file(self, user_id, profile_name: str, file):
+    async def upload_profile_service_file(self, user_id, profile_name: str, file,
+                                          interval_15_minutes: bool):
+        content = await file.read()
         if file.filename.endswith('.xlsx'):
-            df = await self.read_excel(file)
+            df = pd.read_excel(BytesIO(content))
         elif file.filename.endswith('.csv'):
-            df = await self.read_csv(file)
+            df = pd.read_csv(BytesIO(content))
         else:
             raise ValueError("Unsupported file type")
 
-        details = self.process_dataframe(user_id, df, profile_name)
-        self._load_details_repository.create_details_in_bulk(details)
+        if interval_15_minutes:
+            self._validate_15_minute_intervals(df)
+
+        with self.repository.database_instance.atomic():
+            details, load_profile = self.process_dataframe(user_id, df, profile_name)
+            self._load_details_repository.create_details_in_bulk(details)
+            new_file = self._load_profile_files_repository.save_file(details[0]['profile_id'], file.filename, content)
+
+            response = {
+                "profile_id": load_profile.id,
+                "file_id": new_file.id,
+                "file_name": file.filename,
+                "user": load_profile.user_id.name
+            }
+            return response
+
+    def get_load_profile_file(self, profile_id):
+        file = self._load_profile_files_repository.get_file(profile_id)
+        return file
 
     @staticmethod
     async def read_excel(file):
@@ -142,7 +174,8 @@ class LoadProfileService(BaseService):
             "modified_by": user_id,
             "user_id": user_id,
             "public": False,
-            "profile_name": profile_name
+            "profile_name": profile_name,
+            "source": LoadSource.File
         }
 
         load_profile = self._load_profile_repository.create(**profile_data)
@@ -155,17 +188,27 @@ class LoadProfileService(BaseService):
             production_column = columns[1]
 
             processed_detail = {
-                "profile_id": load_profile.load_profile_id,
+                "profile_id": load_profile.id,
                 "timestamp": detail[datetime_column] if isinstance(detail[datetime_column], Timestamp)
                 else datetime.datetime.strptime(detail[datetime_column], "%d/%m/%Y %H:%M"),
                 "consumption_kwh": detail[production_column]
             }
             processed_details.append(processed_detail)
 
-        return processed_details
+        return processed_details, load_profile
 
     def _get_load_profiles_by_user_id(self, user_id):
         return self._load_profile_repository.get_load_profiles_by_user_id(user_id)
 
     def _get_public_profiles(self):
         return self._load_profile_repository.get_public_profiles()
+
+    @staticmethod
+    def _validate_15_minute_intervals(df: pd.DataFrame):
+        timestamps = df.iloc[:, 0]
+        timestamps = [datetime.datetime.strptime(ts, "%d/%m/%Y %H:%M") for ts in timestamps]
+        interval_to_validate = 15  # minutes
+        interval_in_seconds = 60 * interval_to_validate
+        for i in range(1, len(timestamps)):
+            if (timestamps[i] - timestamps[i - 1]).total_seconds() != interval_in_seconds:
+                raise ValueError("Data is not in 15-minute intervals")
