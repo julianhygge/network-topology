@@ -205,7 +205,7 @@ class LoadProfileService(BaseService):
         return self._load_profile_repository.get_public_profiles()
 
     @staticmethod
-    def _validate_15_minute_intervals(df: pd.DataFrame):
+    def _validate_15_minute_intervals(df):
         timestamps = df.iloc[:, 0]
         timestamps = [datetime.datetime.strptime(ts, "%d/%m/%Y %H:%M") for ts in timestamps]
         interval_to_validate = 15  # minutes
