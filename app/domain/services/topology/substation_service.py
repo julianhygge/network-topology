@@ -30,6 +30,7 @@ class SubstationService(BaseService, ISubstationService):
                 new_substation = {
                     "locality_id": locality_id,
                     "name": name + str(new_index),
+                    "nomenclature": name + str(new_index),
                     "created_by": user_id,
                     "modified_by": user_id
                 }

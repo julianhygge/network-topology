@@ -6,11 +6,14 @@ from app.data.repositories.authorization.auth_attempt_repository import AuthAtte
 from app.data.repositories.authorization.group_repository import GroupRepository
 from app.data.repositories.authorization.user_group_rel_repository import UserGroupRelRepository
 from app.data.repositories.authorization.user_repository import UserRepository, AccountRepository
+from app.data.repositories.load_profile.load_profile_repository import LoadProfilesRepository, \
+    LoadProfileDetailsRepository, LoadProfileFilesRepository
 from app.data.repositories.topology.topology_repository import SubstationRepository, TransformerRepository, \
     HouseRepository, NodeRepository
 from app.data.repositories.topology.electrical_appliances_repository import ElectricalAppliancesRepository
 from app.data.schemas.hygge_database import HyggeDatabase
 from app.domain.services.auth_service import AuthService
+from app.domain.services.load_profile_service import LoadProfileService
 from app.domain.services.mqtt_service import MQTTService
 from app.domain.services.sms_service import SmsService
 from app.domain.services.token_service import TokenService
@@ -38,6 +41,9 @@ class Container(containers.DeclarativeContainer):
     _house_repo: IRepository = providers.Singleton(HouseRepository)
     _node_repo: IRepository = providers.Singleton(NodeRepository)
     _electrical_appliances_repo = providers.Singleton(ElectricalAppliancesRepository)
+    _load_profiles_repository = providers.Singleton(LoadProfilesRepository)
+    _load_profile_details_repository = providers.Singleton(LoadProfileDetailsRepository)
+    _load_profile_files_repository = providers.Singleton(LoadProfileFilesRepository)
 
     token_service = providers.Factory(
         TokenService,
@@ -117,4 +123,12 @@ class Container(containers.DeclarativeContainer):
     node_service = providers.Factory(
         NodeService,
         node_repo=_node_repo
+    )
+
+    load_profile_service = providers.Factory(
+        LoadProfileService,
+        repository=_load_profiles_repository(),
+        load_details_repository=_load_profile_details_repository,
+        load_profile_files_repository=_load_profile_files_repository,
+        user_repository=_user_repository
     )

@@ -1,8 +1,7 @@
 from uuid import UUID
-
 from peewee import IntegrityError, DoesNotExist
 from typing import Optional, List
-
+from peewee import fn
 from app.data.interfaces.topology.ihouse_repository import IHouseRepository
 from app.data.interfaces.topology.inode_repository import INodeRepository
 from app.data.interfaces.topology.itransformer_repository import ITransformerRepository
@@ -72,7 +71,9 @@ class NodeRepository(BaseRepository, INodeRepository):
             return None
 
     def get_children(self, parent_id: UUID) -> List[Node]:
-        return list(Node.select().where(Node.parent == parent_id))
+        return list(Node.select()
+                    .where(Node.parent == parent_id)
+                    .order_by(Node.created_on, fn.COALESCE(Node.nomenclature, '')))
 
     def get_parent(self, node_id: UUID) -> Optional[Node]:
         node = self.read(node_id)

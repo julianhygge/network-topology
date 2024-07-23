@@ -16,6 +16,6 @@ def permission(resource: Resources, action: Permission):
         #         detail="You don't have permission to perform this action."
         #     )
         # return user_id
-        return "94522a0a-c8f1-40f8-a2e5-9aed2dc00000"
+        return "94522a0a-c8f1-40f8-a2e5-9aed2dc00001"
 
     return permission_dependency

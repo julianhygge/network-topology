@@ -11,6 +11,9 @@ class Resources(enum.Enum):
     Substations = 'substations'
     Transformers = 'transformers'
     Electrical = 'electrical'
+    LoadProfileDetails = 'load_profile_details'
+    LoadProfiles = 'load_profiles'
+
 
 
 class Permission(enum.Enum):
