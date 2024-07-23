@@ -152,14 +152,14 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
     def _generate_node_name(self, parent, node_type: str) -> str:
         children = self.node_repo.get_children(parent)
         node_number = 0
-        names = [x.name for x in children if x.node_type == node_type]
+        names = [x.nomenclature for x in children if x.node_type == node_type]
         if names:
             names.sort()
             last_node = names[-1]
             nodes = last_node.split('.')
             node_number = int(nodes[-1])
 
-        name_parent = parent.name.replace(" ", "")
+        name_parent = parent.nomenclature.replace(" ", "")
         initial = self.INITIALS.get(node_type, "N")
         words = name_parent.split('-')
         return f"{initial}-{words[1]}.{node_number + 1}"
