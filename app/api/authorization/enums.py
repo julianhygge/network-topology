@@ -10,6 +10,7 @@ class Resources(enum.Enum):
     Localities = 'localities'
     Substations = 'substations'
     Transformers = 'transformers'
+    Electrical = 'electrical'
 
 
 class Permission(enum.Enum):

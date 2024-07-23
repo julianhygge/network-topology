@@ -8,6 +8,7 @@ from app.data.repositories.authorization.user_group_rel_repository import UserGr
 from app.data.repositories.authorization.user_repository import UserRepository, AccountRepository
 from app.data.repositories.topology.topology_repository import SubstationRepository, TransformerRepository, \
     HouseRepository, NodeRepository
+from app.data.repositories.topology.electrical_appliances_repository import ElectricalAppliancesRepository
 from app.data.schemas.hygge_database import HyggeDatabase
 from app.domain.services.auth_service import AuthService
 from app.domain.services.mqtt_service import MQTTService
@@ -19,6 +20,7 @@ from app.domain.services.topology.net_topology_service import NetTopologyService
 from app.domain.services.topology.substation_service import SubstationService
 from app.domain.services.topology.topology_simulator import TopologySimulator
 from app.domain.services.topology.transformer_service import TransformerService
+from app.domain.services.topology.electrical_appliances_service import ElectricalAppliancesService
 from app.domain.services.user_service import UserService
 from app.domain.services.websocket_service import WebSocketConnectionManager
 
@@ -35,6 +37,7 @@ class Container(containers.DeclarativeContainer):
     _transformer_repo: IRepository = providers.Singleton(TransformerRepository)
     _house_repo: IRepository = providers.Singleton(HouseRepository)
     _node_repo: IRepository = providers.Singleton(NodeRepository)
+    _electrical_appliances_repo = providers.Singleton(ElectricalAppliancesRepository)
 
     token_service = providers.Factory(
         TokenService,
@@ -89,6 +92,11 @@ class Container(containers.DeclarativeContainer):
         TopologySimulator,
         transformer_repo=_transformer_repo,
         house_repo=_house_repo
+    )
+
+    electrical_appliances_service = providers.Factory(
+        ElectricalAppliancesService,
+        repository=_electrical_appliances_repo
     )
 
     substation_service = providers.Factory(

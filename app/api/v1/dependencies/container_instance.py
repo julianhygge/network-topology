@@ -46,5 +46,10 @@ def get_transformer_service() -> IService:
 def get_house_service() -> IService:
     return c.house_service()
 
+
 def get_node_service() -> INodeService:
     return c.node_service()
+
+
+def get_electrical_appliances_service() -> IService:
+    return c.electrical_appliances_service()

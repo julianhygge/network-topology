@@ -10,6 +10,7 @@ from app.api.v1.resources.topology.substation import substation_router
 from app.api.v1.resources.topology.transformer import transformer_router
 from app.api.v1.resources.users.group import group_router
 from app.api.v1.resources.users.user import user_router
+from app.api.v1.resources.electrical_devices.electrical_appliances import appliances_router
 from app.config.servers import hygge_servers
 from app.exceptions.exception_handlers import add_exception_handlers
 
@@ -31,6 +32,7 @@ def add_routes(cc_app: FastAPI):
     cc_app.include_router(transformer_router, prefix=f'{version_1}transformers')
     cc_app.include_router(house_router, prefix=f'{version_1}houses')
     cc_app.include_router(breadcrumb_router, prefix=f'{version_1}breadcrumb')
+    cc_app.include_router(appliances_router, prefix=f'{version_1}appliances')
 
 
 app = FastAPI(title="Network topology", root_path="/net-topology-api")
@@ -38,3 +40,8 @@ app = FastAPI(title="Network topology", root_path="/net-topology-api")
 app.servers = hygge_servers
 add_app_middleware(app)
 add_routes(app)
+
+if __name__ == '__main__':
+    import uvicorn
+
+    uvicorn.run(app, port=8022, host='localhost')
