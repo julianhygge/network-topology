@@ -40,8 +40,3 @@ app = FastAPI(title="Network topology", root_path="/net-topology-api")
 app.servers = hygge_servers
 add_app_middleware(app)
 add_routes(app)
-
-if __name__ == '__main__':
-    import uvicorn
-
-    uvicorn.run(app, port=8022, host='localhost')
