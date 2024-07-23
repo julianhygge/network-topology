@@ -1,4 +1,6 @@
 from io import BytesIO
+from uuid import UUID
+
 from fastapi import File, Form, APIRouter, HTTPException, status, Request, UploadFile, Depends
 from fastapi.responses import JSONResponse
 from peewee import DoesNotExist
@@ -52,17 +54,18 @@ async def delete_load_profile(load_profile_id: int,
 
 @load_router.get("/", response_model=LoadProfilesListResponse, status_code=status.HTTP_200_OK)
 async def list_load_profiles(request: Request,
+                             house_id: UUID,
                              user_id: str = Depends(permission(Resources.LoadProfiles,
                                                                Permission.Retrieve)),
                              load_profile_service=Depends(get_load_profile_service)):
     try:
-        return await _get_load_profiles(load_profile_service, user_id, request)
+        return await _get_load_profiles(load_profile_service, user_id, house_id, request)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-async def _get_load_profiles(load_profile_service, user_id, request):
-    profiles = load_profile_service.list_profiles(user_id)
+async def _get_load_profiles(load_profile_service, user_id, house_id, request):
+    profiles = load_profile_service.list_profiles(user_id, house_id)
     items = []
     for profile in profiles:
         self = str(request.url.path)
@@ -82,19 +85,33 @@ async def _get_load_profiles(load_profile_service, user_id, request):
 
 
 @load_router.post("/upload/", status_code=status.HTTP_202_ACCEPTED)
-async def upload_load_profile(request: Request,
-                              profile_name: str = Form(...), file: UploadFile = File(...),
-                              interval_15_minutes: bool = Form(...),
-                              user_id: str = Depends(permission(Resources.LoadProfiles, Permission.Create)),
-                              load_profile_service=Depends(get_load_profile_service)):
+async def upload_load_profile(
+    request: Request,
+    file: UploadFile = File(...),
+    interval_15_minutes: bool = Form(...),
+    house_id: UUID = Form(...),
+    profile_name: str = Form(None),
+    user_id: str = Depends(permission(Resources.LoadProfiles, Permission.Create)),
+    load_profile_service=Depends(get_load_profile_service)
+):
+    if not profile_name:
+        profile_name = file.filename
+
     try:
-        data = await load_profile_service.upload_profile_service_file(user_id, profile_name, file, interval_15_minutes)
+        data = await load_profile_service.upload_profile_service_file(
+            user_id,
+            profile_name,
+            file,
+            interval_15_minutes,
+            house_id
+        )
         self = str(request.url.path)
         download = self.replace("/upload/", "/download/")
         download = f"{download}file?profile_id={data['profile_id']}"
         delete = self.replace("/upload/", "/")
         delete = f"{delete}{data['profile_id']}/"
         content = {
+            "house_id": str(data['house_id']),
             "message": "File uploaded successfully",
             "profile_id": data['profile_id'],
             "file_name": data['file_name'],
@@ -107,7 +124,7 @@ async def upload_load_profile(request: Request,
         }
         return JSONResponse(content=content, status_code=status.HTTP_202_ACCEPTED)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        return JSONResponse(content={"message": str(e)}, status_code=status.HTTP_400_BAD_REQUEST)
 
 
 @load_router.get("/download/file", status_code=status.HTTP_202_ACCEPTED)

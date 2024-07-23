@@ -1,4 +1,6 @@
 import datetime
+from uuid import UUID
+
 from app.data.interfaces.iload_load_profile_repository import ILoadProfileRepository
 from app.data.interfaces.iload_profile_details_repository import ILoadProfileDetailsRepository
 from io import BytesIO
@@ -25,6 +27,7 @@ class LoadProfileService(BaseService):
 
     def _map_profile_to_dict(self, profile):
         data = {
+            "house_id": profile.house_id.id,
             "profile_id": profile.id,
             "active": profile.active,
             "profile_name": profile.profile_name,
@@ -119,14 +122,15 @@ class LoadProfileService(BaseService):
         delete_profile_result = self._load_profile_repository.delete(profile_id)
         return delete_profile_result
 
-    def list_profiles(self, user_id):
-        get_private_profile_by_user = list(self._get_load_profiles_by_user_id(user_id))
+    def list_profiles(self, user_id, house_id):
+        get_private_profile_by_user = list(self._get_load_profiles_by_user_id(user_id, house_id))
         get_public_profiles = list(self._get_public_profiles())
         combined_profiles = get_public_profiles + get_private_profile_by_user
         return [self._map_profile_to_dict(profile) for profile in combined_profiles]
 
     async def upload_profile_service_file(self, user_id, profile_name: str, file,
-                                          interval_15_minutes: bool):
+                                          interval_15_minutes: bool,
+                                          house_id: UUID):
         content = await file.read()
         if file.filename.endswith('.xlsx'):
             df = pd.read_excel(BytesIO(content))
@@ -139,7 +143,7 @@ class LoadProfileService(BaseService):
             self._validate_15_minute_intervals(df)
 
         with self.repository.database_instance.atomic():
-            details, load_profile = self.process_dataframe(user_id, df, profile_name)
+            details, load_profile = self.process_dataframe(user_id, df, profile_name, house_id)
             self._load_details_repository.create_details_in_bulk(details)
             new_file = self._load_profile_files_repository.save_file(details[0]['profile_id'], file.filename, content)
 
@@ -147,7 +151,8 @@ class LoadProfileService(BaseService):
                 "profile_id": load_profile.id,
                 "file_id": new_file.id,
                 "file_name": file.filename,
-                "user": load_profile.user_id.name
+                "user": load_profile.user_id.name,
+                "house_id": load_profile.house_id.id
             }
             return response
 
@@ -167,7 +172,7 @@ class LoadProfileService(BaseService):
         df = pd.read_csv(BytesIO(content))
         return df
 
-    def process_dataframe(self, user_id, df: pd.DataFrame, profile_name: str):
+    def process_dataframe(self, user_id, df: pd.DataFrame, profile_name: str, house_id: UUID):
         profile_data = {
             "active": True,
             "created_by": user_id,
@@ -175,7 +180,8 @@ class LoadProfileService(BaseService):
             "user_id": user_id,
             "public": False,
             "profile_name": profile_name,
-            "source": LoadSource.File
+            "source": LoadSource.File,
+            "house_id": house_id   
         }
 
         load_profile = self._load_profile_repository.create(**profile_data)
@@ -196,8 +202,8 @@ class LoadProfileService(BaseService):
 
         return processed_details, load_profile
 
-    def _get_load_profiles_by_user_id(self, user_id):
-        return self._load_profile_repository.get_load_profiles_by_user_id(user_id)
+    def _get_load_profiles_by_user_id(self, user_id, house_id):
+        return self._load_profile_repository.get_load_profiles_by_user_id_and_house_id(user_id, house_id)
 
     def _get_public_profiles(self):
         return self._load_profile_repository.get_public_profiles()

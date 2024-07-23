@@ -1,6 +1,7 @@
 from peewee import ForeignKeyField, CharField, BooleanField, IntegerField, DateTimeField, DoubleField, BlobField
 from app.data.schemas.auth.auditable_base import AuditableBase
 from app.data.schemas.schema_base import BaseModel
+from app.data.schemas.transactional.topology_schema import Node
 from app.data.schemas.transactional.user_schema import User
 
 
@@ -21,6 +22,7 @@ class LoadProfileBase(BaseModel):
 class LoadProfiles(LoadProfileAuditableBase):
     id = IntegerField(primary_key=True)
     user_id = ForeignKeyField(User, backref='load_profiles')
+    house_id = ForeignKeyField(Node, backref='load_profiles', on_delete='CASCADE')
     profile_name = CharField(max_length=50)
     source = CharField(max_length=50)
     public = BooleanField()

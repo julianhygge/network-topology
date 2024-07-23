@@ -1,5 +1,7 @@
 from datetime import datetime
 from typing import Dict, List
+from uuid import UUID
+
 from pydantic import BaseModel, Field, UUID4
 
 
@@ -7,6 +9,11 @@ class LoadProfileResponse(BaseModel):
     links: Dict[str, str] = Field(
         default={"self": "/v1/load_profiles/"},
         example={"self": "/v1/load_profiles/", "next": "/v1/load_profiles/?page=2"}
+    )
+    house_id: UUID = Field(
+        ...,
+        example="123e4567-e89b-12d3-a456-426614174000",
+        description="The house id requested"
     )
     profile_id: int = Field(
         ...,

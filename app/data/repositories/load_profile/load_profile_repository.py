@@ -22,7 +22,15 @@ class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
         try:
             return list(self.model.select().where(self.model.public).order_by(self.model.id.asc()))
         except DoesNotExist:
-            return []  #
+            return []
+
+    def get_load_profiles_by_user_id_and_house_id(self, user_id, house_id) -> List[LoadProfiles]:
+        try:
+            return list(self.model.select().where((self.model.user_id == user_id) & (~self.model.public) &
+                                                  (self.model.house_id == house_id))
+                        .order_by(self.model.id.asc()))
+        except DoesNotExist:
+            return []
 
 
 class LoadProfileDetailsRepository(BaseRepository, ILoadProfileDetailsRepository):
