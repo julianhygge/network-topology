@@ -1,7 +1,8 @@
 from decimal import Decimal
 from enum import Enum
 from pydantic import BaseModel, UUID4
-from typing import Optional, List
+from typing import Optional
+from app.data.schemas.enums.enums import NodeStatusEnum
 
 
 class BatteryEnum(str, Enum):
@@ -54,7 +55,7 @@ class TransformerUpdateRequestModel(BaseModel):
 
 class TransformerResponseModel(BaseModel):
     id: UUID4
-    is_complete: bool
+    status: NodeStatusEnum
     max_capacity_kw: Optional[Decimal] = None
     active: bool
     allow_export: Optional[bool] = None

@@ -2,6 +2,7 @@ from typing import Dict, Any, List
 from uuid import UUID
 from app.data.interfaces.irepository import IRepository
 from app.data.interfaces.topology.inode_repository import INodeRepository
+from app.data.schemas.enums.enums import NodeStatusEnum
 from app.domain.interfaces.enums.node_type import NodeType
 from app.domain.interfaces.net_topology.inet_topology_service import INetTopologyService
 from app.domain.services.topology.topology_service_base import TopologyServiceBase
@@ -10,21 +11,20 @@ from app.utils.datetime_util import datetime_now
 
 
 class NetTopologyService(TopologyServiceBase, INetTopologyService):
-    def __init__(self,
-                 substation_repo: IRepository,
-                 node_repo: INodeRepository,
-                 transformer_repo: IRepository,
-                 house_repo: IRepository):
+    def __init__(
+        self,
+        substation_repo: IRepository,
+        node_repo: INodeRepository,
+        transformer_repo: IRepository,
+        house_repo: IRepository,
+    ):
         super().__init__(substation_repo)
         self.substation_repo = substation_repo
         self.node_repo = node_repo
         self.transformer_repo = transformer_repo
         self.house_repo = house_repo
 
-    INITIALS = {
-        NodeType.TRANSFORMER.value: "T",
-        NodeType.HOUSE.value: "H"
-    }
+    INITIALS = {NodeType.TRANSFORMER.value: "T", NodeType.HOUSE.value: "H"}
 
     def get_topology_by_substation_id(self, substation_id: UUID) -> Dict[str, Any]:
         """
@@ -45,7 +45,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             "substation_name": substation.name,
             "locality_id": str(substation.locality.id),
             "locality_name": substation.locality.name,
-            "nodes": self._get_node_details(root_node)
+            "nodes": self._get_node_details(root_node),
         }
 
     def _get_node_details(self, node):
@@ -63,7 +63,9 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             node_details.update(self._get_house_details(node.id))
 
         if node.node_type != NodeType.HOUSE.value:
-            node_details["children"] = [self._get_node_details(child) for child in children]
+            node_details["children"] = [
+                self._get_node_details(child) for child in children
+            ]
 
         return node_details
 
@@ -74,15 +76,15 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             "id": str(node.id),
             "type": node.node_type,
             "name": node.name,
-            "nomenclature": node.nomenclature
+            "nomenclature": node.nomenclature,
         }
 
         return details
 
-    def _get_transformer_details(self, node_id: UUID) -> Dict[str, bool]:
+    def _get_transformer_details(self, node_id: UUID) -> Dict[str, NodeStatusEnum]:
         """Get transformer-specific details."""
         transformer = self.transformer_repo.read(node_id)
-        return {"is_complete": self._is_transformer_complete(transformer)}
+        return {"status": self._get_transformer_status(transformer)}
 
     def _get_house_details(self, node_id: UUID) -> Dict[str, bool]:
         """Get house-specific details."""
@@ -103,38 +105,56 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         if not substation:
             raise NotFoundException(f"Substation with id {substation_id} not found")
 
-        if 'nodes' not in data or not isinstance(data['nodes'], list):
+        if "nodes" not in data or not isinstance(data["nodes"], list):
             raise InvalidDataException("Invalid topology update data")
 
         root_node = self.node_repo.read(substation_id)
-        self._update_node_topology(user_id, substation_id, root_node, data['nodes'])
+        self._update_node_topology(user_id, substation_id, root_node, data["nodes"])
 
-    def _update_node_topology(self, user_id: UUID, substation_id: UUID, parent_node, nodes_data: List[Dict[str, Any]]):
+    def _update_node_topology(
+        self,
+        user_id: UUID,
+        substation_id: UUID,
+        parent_node,
+        nodes_data: List[Dict[str, Any]],
+    ):
         """Recursively update the node topology."""
         for node_data in nodes_data:
-            action = node_data.pop('action')
-            node_type = node_data.pop('type')
-            node_id = node_data.pop('id')
-            name = node_data.get('name')
+            action = node_data.pop("action")
+            node_type = node_data.pop("type")
+            node_id = node_data.pop("id")
+            name = node_data.get("name")
 
-            if action == 'add':
-                node_id = self._add_new_node(user_id, substation_id, parent_node, node_type)
-            elif action == 'delete':
+            if action == "add":
+                node_id = self._add_new_node(
+                    user_id, substation_id, parent_node, node_type
+                )
+            elif action == "delete":
                 self._delete_node(node_id)
                 continue
-            elif action == 'update' and name is not None:
+            elif action == "update" and name is not None:
                 self.node_repo.update(node_id, name=name)
 
-            if node_id and 'children' in node_data and node_data['children'] is not None:
+            if (
+                node_id
+                and "children" in node_data
+                and node_data["children"] is not None
+            ):
                 child_node = self.node_repo.read(node_id)
-                self._update_node_topology(user_id, substation_id, child_node, node_data['children'])
+                self._update_node_topology(
+                    user_id, substation_id, child_node, node_data["children"]
+                )
 
-    def _add_new_node(self, user_id: UUID, substation_id: UUID, parent_node, node_type: str):
+    def _add_new_node(
+        self, user_id: UUID, substation_id: UUID, parent_node, node_type: str
+    ):
         """Add a new node to the topology."""
         try:
             nomenclature = self._generate_node_name(parent_node, node_type)
 
-            new_node_data = self._prepare_new_node_data(user_id, substation_id, parent_node, node_type, nomenclature)
+            new_node_data = self._prepare_new_node_data(
+                user_id, substation_id, parent_node, node_type, nomenclature
+            )
 
             new_node = self.node_repo.create(**new_node_data)
 
@@ -156,17 +176,22 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         if names:
             names.sort()
             last_node = names[-1]
-            nodes = last_node.split('.')
+            nodes = last_node.split(".")
             node_number = int(nodes[-1])
 
         name_parent = parent.nomenclature.replace(" ", "")
         initial = self.INITIALS.get(node_type, "N")
-        words = name_parent.split('-')
+        words = name_parent.split("-")
         return f"{initial}-{words[1]}.{node_number + 1}"
 
     @staticmethod
-    def _prepare_new_node_data(user_id: UUID, substation_id: UUID, parent_node, node_type: str,
-                               nomenclature: str) -> dict:
+    def _prepare_new_node_data(
+        user_id: UUID,
+        substation_id: UUID,
+        parent_node,
+        node_type: str,
+        nomenclature: str,
+    ) -> dict:
         return {
             "parent": parent_node.id,
             "node_type": node_type,
@@ -174,7 +199,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             "modified_by": user_id,
             "substation_id": substation_id,
             "name": nomenclature,
-            "nomenclature": nomenclature
+            "nomenclature": nomenclature,
         }
 
     def _save_new_node(self, substation_id: UUID, new_node_id: UUID, node_type: str):
@@ -182,7 +207,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         new_data = {
             "substation_id": substation_id,
             "node": new_node_id,
-            "id": new_node_id
+            "id": new_node_id,
         }
 
         if node_type == NodeType.TRANSFORMER.value:
@@ -194,7 +219,9 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         """Delete a node from the topology."""
         self.node_repo.delete(node_id)
 
-    def update_transformer(self, user_id, transformer_id: UUID, data: Dict[str, Any]) -> Dict[str, Any]:
+    def update_transformer(
+        self, user_id, transformer_id: UUID, data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Update a transformer's details.
 
@@ -212,14 +239,16 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         data["modified_by"] = user_id
         self.transformer_repo.update(transformer_id, **data)
 
-        self.node_repo.update(transformer_id, name = data["name"])
+        self.node_repo.update(transformer_id, name=data["name"])
         updated_transformer = self.transformer_repo.read(transformer_id)
-        is_complete = self._is_transformer_complete(updated_transformer)
+        status = self._get_transformer_status(updated_transformer)
         updated_dict = self.transformer_repo.to_dicts(updated_transformer)
-        updated_dict["is_complete"] = is_complete
+        updated_dict["status"] = status
         return updated_dict
 
-    def update_house(self, user_id, house_id: UUID, data: Dict[str, Any]) -> Dict[str, Any]:
+    def update_house(
+        self, user_id, house_id: UUID, data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Update a house's details.
 
