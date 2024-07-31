@@ -164,7 +164,7 @@ class LoadProfileService(BaseService):
 
     def save_load_profile_items(self, user_id: UUID, house_id: UUID, items: List[dict]):
 
-        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id, house_id)
+        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id, house_id, LoadSource.Builder)
         profile_id = load_profile.id
 
         existing_items = self._load_profile_builder_repository.get_items_by_profile_id(profile_id)
@@ -176,6 +176,7 @@ class LoadProfileService(BaseService):
 
         for item in items:
             item['profile_id'] = profile_id
+
             if 'id' in item and item['id'] in existing_ids:
                 to_update.append(item)
                 to_delete.remove(item['id'])
@@ -195,7 +196,9 @@ class LoadProfileService(BaseService):
         return self._load_profile_builder_repository.get_items_by_profile_id(profile_id)
 
     def get_load_profile_builder_items(self, user_id: UUID, house_id: UUID):
-        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id, house_id)
+        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id,
+                                                                               house_id,
+                                                                               LoadSource.Builder.value)
         return self._load_profile_builder_repository.get_items_by_profile_id(load_profile)
 
     def get_load_profile_file(self, profile_id):
@@ -261,7 +264,9 @@ class LoadProfileService(BaseService):
                 raise ValueError("Data is not in 15-minute intervals")
 
     def save_load_generation_engine(self, user_id: UUID, house_id: UUID, data: dict):
-        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id, house_id)
+        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id,
+                                                                               house_id,
+                                                                               LoadSource.Engine.value)
         profile_id = load_profile.id
 
         engine_data = {
@@ -278,5 +283,5 @@ class LoadProfileService(BaseService):
         return self._load_generation_engine_repository.model.get_or_create(profile_id=profile_id, defaults=engine_data)[0]
 
     def get_load_generation_engine(self, user_id: UUID, house_id: UUID):
-        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id, house_id)
+        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id, house_id, LoadSource.Engine)
         return self._load_generation_engine_repository.model.get_or_none(profile_id=load_profile)

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, UUID4
@@ -40,8 +40,8 @@ class LoadProfileResponse(BaseModel):
         example="User 12",
         description="User name"
     )
-    file_name: str = Field(
-        ...,
+    file_name: Optional[str] = Field(
+        None,
         example="load_profile_user.csv",
         description="Profile user load file name"
     )

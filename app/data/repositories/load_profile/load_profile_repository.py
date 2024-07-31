@@ -1,3 +1,4 @@
+
 from typing import List
 from uuid import UUID
 
@@ -11,7 +12,6 @@ from app.data.interfaces.load.iload_profile_files_repository import ILoadProfile
 from app.data.repositories.base_repository import BaseRepository
 from app.data.schemas.load_profile.load_profile_schema import LoadProfiles, LoadProfileDetails, LoadProfileFiles, \
     LoadProfileBuilderItems, LoadGenerationEngine
-from app.domain.interfaces.enums.load_source_enum import LoadSource
 
 
 class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
@@ -39,7 +39,7 @@ class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
         except DoesNotExist:
             return []
 
-    def get_or_create_by_house_id(self, user_id: UUID, house_id: UUID):
+    def get_or_create_by_house_id(self, user_id: UUID, house_id: UUID, load_source):
         try:
             profile = self.model.get(self.model.house_id == house_id)
         except DoesNotExist:
@@ -48,8 +48,8 @@ class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
                 house_id=house_id,
                 created_by=user_id,
                 modified_by=user_id,
-                profile_name="Profile builder",
-                source=LoadSource.Builder.value,
+                profile_name=load_source,
+                source=load_source,
                 public=False,
                 active=True
             )
