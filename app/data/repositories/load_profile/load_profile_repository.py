@@ -1,11 +1,15 @@
 from typing import List
+from uuid import UUID
+
 from peewee import DoesNotExist
 from app.data.interfaces.load.iload_load_profile_repository import ILoadProfileRepository
+from app.data.interfaces.load.iload_profile_builder_repository import ILoadProfileBuilderRepository
 from app.data.interfaces.load.iload_profile_details_repository import ILoadProfileDetailsRepository
 from app.data.interfaces.load.iload_profile_files_repository import ILoadProfileFilesRepository
 from app.data.repositories.base_repository import BaseRepository
 from app.data.schemas.load_profile.load_profile_schema import LoadProfiles, LoadProfileDetails, LoadProfileFiles, \
     LoadProfileBuilderItems
+from app.domain.interfaces.enums.load_source_enum import LoadSource
 
 
 class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
@@ -33,8 +37,25 @@ class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
         except DoesNotExist:
             return []
 
-    def get_or_create_by_house_id(self, house_id: int):
-        profile, created = self.model.get_or_create(house_id=house_id)
+    def get_or_create_by_house_id(self, user_id: UUID, house_id: UUID):
+        try:
+            profile = self.model.get(self.model.house_id == house_id)
+        except DoesNotExist:
+            profile = self.model.create(
+                user_id=user_id,
+                house_id=house_id,
+                created_by=user_id,
+                modified_by=user_id,
+                profile_name="Profile builder",
+                source=LoadSource.Builder.value,
+                public=False,
+                active=True
+            )
+
+        return profile
+
+    def get_by_house_id(self, house_id: int):
+        profile = self.model.get(house_id=house_id)
         return profile
 
 
@@ -69,7 +90,7 @@ class LoadProfileFilesRepository(BaseRepository, ILoadProfileFilesRepository):
         return self.model.get(self.model.profile_id == profile_id)
 
 
-class LoadProfileBuilderItemsRepository(BaseRepository):
+class LoadProfileBuilderItemsRepository(BaseRepository, ILoadProfileBuilderRepository):
     model = LoadProfileBuilderItems
     id_field = LoadProfileBuilderItems.id
 

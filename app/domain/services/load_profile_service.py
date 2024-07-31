@@ -159,9 +159,9 @@ class LoadProfileService(BaseService):
             }
             return response
 
-    def save_load_profile_items(self, house_id: int, items: List[dict]):
-        # Get or create the load profile for the house
-        load_profile = self._load_profile_repository.get_or_create_by_house_id(house_id)
+    def save_load_profile_items(self, user_id: UUID, house_id: UUID, items: List[dict]):
+
+        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id, house_id)
         profile_id = load_profile.id
 
         existing_items = self._load_profile_builder_repository.get_items_by_profile_id(profile_id)
@@ -172,11 +172,14 @@ class LoadProfileService(BaseService):
         to_delete = existing_ids
 
         for item in items:
-            item['profile_id'] = profile_id  # Ensure profile_id is set for new items
+            item['profile_id'] = profile_id
             if 'id' in item and item['id'] in existing_ids:
                 to_update.append(item)
                 to_delete.remove(item['id'])
             else:
+                item["modified_by"] = user_id,
+                item["created_by"] = user_id
+                item.pop("id")
                 to_create.append(item)
 
         if to_delete:

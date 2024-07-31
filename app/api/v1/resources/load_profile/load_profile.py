@@ -1,15 +1,17 @@
 from io import BytesIO
-from typing import List
 from uuid import UUID
 
 from fastapi import File, Form, APIRouter, HTTPException, status, Request, UploadFile, Depends
 from fastapi.responses import JSONResponse
 from peewee import DoesNotExist
 from starlette.responses import StreamingResponse
+
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import get_load_profile_service
-from app.api.v1.models.responses.load_profile.load_profile_response import LoadProfileResponse, LoadProfilesListResponse
+from app.api.v1.models.requests.load_profile.load_profile_update import LoadProfileBuilderItemsRequest
+from app.api.v1.models.responses.load_profile.load_profile_response import LoadProfileResponse, \
+    LoadProfilesListResponse, LoadProfileBuilderItemsResponse, LoadProfileBuilderItemResponse
 
 load_router = APIRouter(tags=["Load Profile"])
 
@@ -114,14 +116,42 @@ async def download_load_profile_file(
         raise HTTPException(status_code=404, detail="File not found")
 
 
-@load_router.post("/houses/{house_id}/load-profile-items")
+@load_router.post(
+    "/houses/{house_id}/load-profile-items",
+    response_model=LoadProfileBuilderItemsResponse,
+    description="Save load profile builder items for a specific house",
+    response_description="The saved load profile builder items"
+)
 async def save_load_profile_builder_items(
         house_id: UUID,
-        items: List[dict],
+        items: LoadProfileBuilderItemsRequest,
         service=Depends(get_load_profile_service),
-        _: str = Depends(permission(Resources.LoadProfiles, Permission.Retrieve))):
+        user_id: str = Depends(permission(Resources.LoadProfiles, Permission.Retrieve)),
+):
     try:
-        updated_items = service.save_load_profile_items(house_id, items)
-        return {"message": "Items saved successfully", "items": updated_items}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        items_dicts = [item.model_dump() for item in items.items]
+        updated_items = service.save_load_profile_items(user_id, house_id, items_dicts)
+
+        updated_items_response = [
+            LoadProfileBuilderItemResponse(
+                id=item.id,
+                created_on=item.created_on,
+                modified_on=item.modified_on,
+                created_by=item.created_by.id,
+                profile_id=item.profile_id.id,
+                electrical_device_id=item.electrical_device_id.id,
+                rating_watts=item.rating_watts,
+                quantity=item.quantity,
+                hours=item.hours
+            )
+            for item in updated_items
+        ]
+
+        return LoadProfileBuilderItemsResponse(
+            message="Items saved successfully",
+            items=updated_items_response
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception:
+        raise HTTPException(status_code=500, detail="An unexpected error occurred")
