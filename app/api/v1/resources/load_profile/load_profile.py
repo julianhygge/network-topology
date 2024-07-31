@@ -1,4 +1,5 @@
 from io import BytesIO
+from typing import List
 from uuid import UUID
 
 from fastapi import File, Form, APIRouter, HTTPException, status, Request, UploadFile, Depends
@@ -11,33 +12,6 @@ from app.api.v1.dependencies.container_instance import get_load_profile_service
 from app.api.v1.models.responses.load_profile.load_profile_response import LoadProfileResponse, LoadProfilesListResponse
 
 load_router = APIRouter(tags=["Load Profile"])
-
-
-# @load_router.post("/", response_model=LoadProfileResponse, status_code=status.HTTP_201_CREATED)
-# async def create_load_profile(request: Request, load_profile_data: LoadProfileCreateRequest,
-#                               user_id: str = Depends(permission(Resources.LoadProfiles,
-#                                                                 Permission.Create)),
-#                               load_profile_service=Depends(get_load_profile_service)):
-#     try:
-#         response = load_profile_service.add_profile(user_id, **load_profile_data.model_dump())
-#         load_profile_id = response["load_profile_id"]
-#         self_url = f"{request.url.path}{load_profile_id}"
-#         response['links'] = {"self": self_url}
-#         response['status_message'] = "Created"
-#         return LoadProfileResponse(**response)
-#     except Exception as e:
-#         raise HTTPException(status_code=400, detail=str(e))
-#
-#
-# @load_router.get("/{load_profile_id}/", response_model=LoadProfileResponse)
-# async def get_load_profile(request: Request, load_profile_id: int,
-#                            _=Depends(permission(Resources.LoadProfiles, Permission.Retrieve)),
-#                            service=Depends(get_load_profile_service)):
-#     data = service.read(load_profile_id)
-#     if data is None:
-#         raise NotFoundException(message="Profile not found")
-#     data['links'] = {"self": f"{request.url.path}"}
-#     return LoadProfileResponse(**data)
 
 
 @load_router.delete("/{load_profile_id}/", status_code=status.HTTP_204_NO_CONTENT)
@@ -86,13 +60,13 @@ async def _get_load_profiles(load_profile_service, user_id, house_id, request):
 
 @load_router.post("/upload/", status_code=status.HTTP_202_ACCEPTED)
 async def upload_load_profile(
-    request: Request,
-    file: UploadFile = File(...),
-    interval_15_minutes: bool = Form(...),
-    house_id: UUID = Form(...),
-    profile_name: str = Form(None),
-    user_id: str = Depends(permission(Resources.LoadProfiles, Permission.Create)),
-    load_profile_service=Depends(get_load_profile_service)
+        request: Request,
+        file: UploadFile = File(...),
+        interval_15_minutes: bool = Form(...),
+        house_id: UUID = Form(...),
+        profile_name: str = Form(None),
+        user_id: str = Depends(permission(Resources.LoadProfiles, Permission.Create)),
+        load_profile_service=Depends(get_load_profile_service)
 ):
     if not profile_name:
         profile_name = file.filename
@@ -138,3 +112,16 @@ async def download_load_profile_file(
                                  headers={"Content-Disposition": f"attachment;filename={file_record.filename}"})
     except DoesNotExist:
         raise HTTPException(status_code=404, detail="File not found")
+
+
+@load_router.post("/houses/{house_id}/load-profile-items")
+async def save_load_profile_builder_items(
+        house_id: UUID,
+        items: List[dict],
+        service=Depends(get_load_profile_service),
+        _: str = Depends(permission(Resources.LoadProfiles, Permission.Retrieve))):
+    try:
+        updated_items = service.save_load_profile_items(house_id, items)
+        return {"message": "Items saved successfully", "items": updated_items}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

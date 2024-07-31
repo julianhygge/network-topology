@@ -7,7 +7,7 @@ from app.data.repositories.authorization.group_repository import GroupRepository
 from app.data.repositories.authorization.user_group_rel_repository import UserGroupRelRepository
 from app.data.repositories.authorization.user_repository import UserRepository, AccountRepository
 from app.data.repositories.load_profile.load_profile_repository import LoadProfilesRepository, \
-    LoadProfileDetailsRepository, LoadProfileFilesRepository
+    LoadProfileDetailsRepository, LoadProfileFilesRepository, LoadProfileBuilderItemsRepository
 from app.data.repositories.topology.topology_repository import SubstationRepository, TransformerRepository, \
     HouseRepository, NodeRepository
 from app.data.repositories.topology.electrical_appliances_repository import ElectricalAppliancesRepository
@@ -44,6 +44,7 @@ class Container(containers.DeclarativeContainer):
     _load_profiles_repository = providers.Singleton(LoadProfilesRepository)
     _load_profile_details_repository = providers.Singleton(LoadProfileDetailsRepository)
     _load_profile_files_repository = providers.Singleton(LoadProfileFilesRepository)
+    _load_profile_builder_repository = providers.Singleton(LoadProfileBuilderItemsRepository)
 
     token_service = providers.Factory(
         TokenService,
@@ -130,5 +131,6 @@ class Container(containers.DeclarativeContainer):
         repository=_load_profiles_repository(),
         load_details_repository=_load_profile_details_repository,
         load_profile_files_repository=_load_profile_files_repository,
-        user_repository=_user_repository
+        user_repository=_user_repository,
+        load_profile_builder_repository=_load_profile_builder_repository
     )

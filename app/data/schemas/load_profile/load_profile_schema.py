@@ -1,5 +1,6 @@
 from peewee import ForeignKeyField, CharField, BooleanField, IntegerField, DateTimeField, DoubleField, BlobField
 from app.data.schemas.auth.auditable_base import AuditableBase
+from app.data.schemas.master.master_schema import ElectricalAppliances
 from app.data.schemas.schema_base import BaseModel
 from app.data.schemas.transactional.topology_schema import Node
 from app.data.schemas.transactional.user_schema import User
@@ -49,3 +50,16 @@ class LoadProfileFiles(LoadProfileBase):
 
     class Meta:
         table_name = 'load_profile_files'
+
+
+class LoadProfileBuilderItems(LoadProfileAuditableBase):
+    id = IntegerField(primary_key=True)
+    profile_id = ForeignKeyField(LoadProfiles, backref='builder_items', on_delete='CASCADE')
+    electrical_device_id = ForeignKeyField(ElectricalAppliances, backref='builder_items', on_delete='CASCADE')
+    rating_watts = IntegerField()
+    quantity = IntegerField()
+    hours = IntegerField()
+
+    class Meta:
+        table_name = 'load_profile_builder_items'
+

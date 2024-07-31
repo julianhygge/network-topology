@@ -1,12 +1,12 @@
 import datetime
+from typing import List
 from uuid import UUID
-
-from app.data.interfaces.iload_load_profile_repository import ILoadProfileRepository
-from app.data.interfaces.iload_profile_details_repository import ILoadProfileDetailsRepository
+from app.data.interfaces.load.iload_load_profile_repository import ILoadProfileRepository
+from app.data.interfaces.load.iload_profile_builder_repository import ILoadProfileBuilderRepository
+from app.data.interfaces.load.iload_profile_details_repository import ILoadProfileDetailsRepository
 from io import BytesIO
 import pandas as pd
 from pandas import Timestamp
-
 from app.data.interfaces.iuser_repository import IUserRepository
 from app.data.interfaces.load.iload_profile_files_repository import ILoadProfileFilesRepository
 from app.domain.interfaces.enums.load_source_enum import LoadSource
@@ -18,12 +18,15 @@ class LoadProfileService(BaseService):
                  repository: ILoadProfileRepository,
                  load_profile_files_repository: ILoadProfileFilesRepository,
                  user_repository: IUserRepository,
-                 load_details_repository: ILoadProfileDetailsRepository):
+                 load_details_repository: ILoadProfileDetailsRepository,
+                 load_profile_builder_repository : ILoadProfileBuilderRepository
+                 ):
         super().__init__(repository)
         self._load_profile_repository = repository
         self._load_details_repository = load_details_repository
         self._load_profile_files_repository = load_profile_files_repository
         self._user_repository = user_repository
+        self._load_profile_builder_repository = load_profile_builder_repository
 
     def _map_profile_to_dict(self, profile):
         data = {
@@ -156,6 +159,35 @@ class LoadProfileService(BaseService):
             }
             return response
 
+    def save_load_profile_items(self, house_id: int, items: List[dict]):
+        # Get or create the load profile for the house
+        load_profile = self._load_profile_repository.get_or_create_by_house_id(house_id)
+        profile_id = load_profile.id
+
+        existing_items = self._load_profile_builder_repository.get_items_by_profile_id(profile_id)
+        existing_ids = set(item.id for item in existing_items)
+
+        to_create = []
+        to_update = []
+        to_delete = existing_ids
+
+        for item in items:
+            item['profile_id'] = profile_id  # Ensure profile_id is set for new items
+            if 'id' in item and item['id'] in existing_ids:
+                to_update.append(item)
+                to_delete.remove(item['id'])
+            else:
+                to_create.append(item)
+
+        if to_delete:
+            self._load_profile_builder_repository.delete_by_profile_id(profile_id)
+        if to_create:
+            self._load_profile_builder_repository.create_items_in_bulk(to_create)
+        if to_update:
+            self._load_profile_builder_repository.update_items_in_bulk(to_update)
+
+        return self._load_profile_builder_repository.get_items_by_profile_id(profile_id)
+
     def get_load_profile_file(self, profile_id):
         file = self._load_profile_files_repository.get_file(profile_id)
         return file
@@ -181,7 +213,7 @@ class LoadProfileService(BaseService):
             "public": False,
             "profile_name": profile_name,
             "source": LoadSource.File,
-            "house_id": house_id   
+            "house_id": house_id
         }
 
         load_profile = self._load_profile_repository.create(**profile_data)

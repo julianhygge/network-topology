@@ -1,10 +1,11 @@
 from typing import List
 from peewee import DoesNotExist
-from app.data.interfaces.iload_load_profile_repository import ILoadProfileRepository
-from app.data.interfaces.iload_profile_details_repository import ILoadProfileDetailsRepository
+from app.data.interfaces.load.iload_load_profile_repository import ILoadProfileRepository
+from app.data.interfaces.load.iload_profile_details_repository import ILoadProfileDetailsRepository
 from app.data.interfaces.load.iload_profile_files_repository import ILoadProfileFilesRepository
 from app.data.repositories.base_repository import BaseRepository
-from app.data.schemas.load_profile.load_profile_schema import LoadProfiles, LoadProfileDetails, LoadProfileFiles
+from app.data.schemas.load_profile.load_profile_schema import LoadProfiles, LoadProfileDetails, LoadProfileFiles, \
+    LoadProfileBuilderItems
 
 
 class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
@@ -31,6 +32,10 @@ class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
                         .order_by(self.model.id.asc()))
         except DoesNotExist:
             return []
+
+    def get_or_create_by_house_id(self, house_id: int):
+        profile, created = self.model.get_or_create(house_id=house_id)
+        return profile
 
 
 class LoadProfileDetailsRepository(BaseRepository, ILoadProfileDetailsRepository):
@@ -62,3 +67,22 @@ class LoadProfileFilesRepository(BaseRepository, ILoadProfileFilesRepository):
 
     def get_file(self, profile_id):
         return self.model.get(self.model.profile_id == profile_id)
+
+
+class LoadProfileBuilderItemsRepository(BaseRepository):
+    model = LoadProfileBuilderItems
+    id_field = LoadProfileBuilderItems.id
+
+    def get_items_by_profile_id(self, profile_id) -> List[LoadProfileBuilderItems]:
+        return list(self.model.select().where(self.model.profile_id == profile_id))
+
+    def create_items_in_bulk(self, items):
+        self.model.insert_many(items).execute()
+
+    def delete_by_profile_id(self, profile_id) -> int:
+        return self.model.delete().where(self.model.profile_id == profile_id).execute()
+
+    def update_items_in_bulk(self, items):
+        with self.database_instance.atomic():
+            for item in items:
+                self.model.update(**item).where(self.model.id == item['id']).execute()
