@@ -9,6 +9,7 @@ import pandas as pd
 from pandas import Timestamp
 from app.data.interfaces.iuser_repository import IUserRepository
 from app.data.interfaces.load.iload_profile_files_repository import ILoadProfileFilesRepository
+from app.data.repositories.load_profile.load_profile_repository import LoadGenerationEngineRepository
 from app.domain.interfaces.enums.load_source_enum import LoadSource
 from app.domain.services.base_service import BaseService
 
@@ -19,7 +20,8 @@ class LoadProfileService(BaseService):
                  load_profile_files_repository: ILoadProfileFilesRepository,
                  user_repository: IUserRepository,
                  load_details_repository: ILoadProfileDetailsRepository,
-                 load_profile_builder_repository: ILoadProfileBuilderRepository
+                 load_profile_builder_repository: ILoadProfileBuilderRepository,
+                 load_generation_engine_repository: LoadGenerationEngineRepository
                  ):
         super().__init__(repository)
         self._load_profile_repository = repository
@@ -27,6 +29,7 @@ class LoadProfileService(BaseService):
         self._load_profile_files_repository = load_profile_files_repository
         self._user_repository = user_repository
         self._load_profile_builder_repository = load_profile_builder_repository
+        self._load_generation_engine_repository = load_generation_engine_repository
 
     def _map_profile_to_dict(self, profile):
         data = {
@@ -256,3 +259,24 @@ class LoadProfileService(BaseService):
         for i in range(1, len(timestamps)):
             if (timestamps[i] - timestamps[i - 1]).total_seconds() != interval_in_seconds:
                 raise ValueError("Data is not in 15-minute intervals")
+
+    def save_load_generation_engine(self, user_id: UUID, house_id: UUID, data: dict):
+        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id, house_id)
+        profile_id = load_profile.id
+
+        engine_data = {
+            "user_id": user_id,
+            "profile_id": load_profile,
+            "type": data['type'],
+            "average_kwh": data.get('average_kwh'),
+            "average_monthly_bill": data.get('average_monthly_bill'),
+            "max_demand_kw": data.get('max_demand_kw'),
+            "created_by": user_id,
+            "modified_by": user_id
+        }
+        self._load_generation_engine_repository.delete_by_profile_id(profile_id)
+        return self._load_generation_engine_repository.model.get_or_create(profile_id=profile_id, defaults=engine_data)[0]
+
+    def get_load_generation_engine(self, user_id: UUID, house_id: UUID):
+        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id, house_id)
+        return self._load_generation_engine_repository.model.get_or_none(profile_id=load_profile)

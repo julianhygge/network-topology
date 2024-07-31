@@ -1,4 +1,7 @@
+from datetime import datetime
+from enum import Enum
 from typing import List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -38,3 +41,26 @@ class LoadProfileBuilderItemsRequest(BaseModel):
             "hours": 8
         }
     ])
+
+
+class LoadGenerationType(str, Enum):
+    MONTHLY = "Monthly"
+    DAILY = "Daily"
+
+
+class LoadGenerationEngineRequest(BaseModel):
+    type: LoadGenerationType = Field(..., description="Type of load generation, either Monthly or Daily")
+    average_kwh: Optional[float] = Field(None, ge=0, le=999.999)
+    average_monthly_bill: Optional[float] = Field(None, ge=0, le=999.999)
+    max_demand_kw: Optional[float] = Field(None, ge=0, le=999.999)
+
+
+class LoadGenerationEngineResponse(BaseModel):
+    user_id: UUID
+    profile_id: int
+    type: LoadGenerationType
+    average_kwh: Optional[float]
+    average_monthly_bill: Optional[float]
+    max_demand_kw: Optional[float]
+    created_on: datetime
+    modified_on: datetime

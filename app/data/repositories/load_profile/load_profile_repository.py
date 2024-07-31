@@ -2,13 +2,15 @@ from typing import List
 from uuid import UUID
 
 from peewee import DoesNotExist
+
+from app.data.interfaces.load.iload_generation_enginer_repository import ILoadGenerationEngineRepository
 from app.data.interfaces.load.iload_load_profile_repository import ILoadProfileRepository
 from app.data.interfaces.load.iload_profile_builder_repository import ILoadProfileBuilderRepository
 from app.data.interfaces.load.iload_profile_details_repository import ILoadProfileDetailsRepository
 from app.data.interfaces.load.iload_profile_files_repository import ILoadProfileFilesRepository
 from app.data.repositories.base_repository import BaseRepository
 from app.data.schemas.load_profile.load_profile_schema import LoadProfiles, LoadProfileDetails, LoadProfileFiles, \
-    LoadProfileBuilderItems
+    LoadProfileBuilderItems, LoadGenerationEngine
 from app.domain.interfaces.enums.load_source_enum import LoadSource
 
 
@@ -107,3 +109,11 @@ class LoadProfileBuilderItemsRepository(BaseRepository, ILoadProfileBuilderRepos
         with self.database_instance.atomic():
             for item in items:
                 self.model.update(**item).where(self.model.id == item['id']).execute()
+
+
+class LoadGenerationEngineRepository(BaseRepository, ILoadGenerationEngineRepository):
+    model = LoadGenerationEngine
+    id_field = LoadGenerationEngine.id
+
+    def delete_by_profile_id(self, profile_id) -> int:
+        return self.model.delete().where(self.model.profile_id == profile_id).execute()

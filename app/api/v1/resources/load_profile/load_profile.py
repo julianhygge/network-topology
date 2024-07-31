@@ -9,7 +9,8 @@ from starlette.responses import StreamingResponse
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import get_load_profile_service
-from app.api.v1.models.requests.load_profile.load_profile_update import LoadProfileBuilderItemsRequest
+from app.api.v1.models.requests.load_profile.load_profile_update import LoadProfileBuilderItemsRequest, \
+    LoadGenerationEngineResponse, LoadGenerationEngineRequest
 from app.api.v1.models.responses.load_profile.load_profile_response import LoadProfileResponse, \
     LoadProfilesListResponse, LoadProfileBuilderItemsResponse, LoadProfileBuilderItemResponse
 
@@ -194,3 +195,70 @@ async def get_profile_builder_items(
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception:
         raise HTTPException(status_code=500, detail="An unexpected error occurred")
+
+
+@load_router.post(
+    "/houses/{house_id}/generation-engine",
+    response_model=LoadGenerationEngineResponse,
+    description="Save load generation engine data for a specific house",
+    response_description="The saved load generation engine data"
+)
+async def save_load_generation_engine(
+        house_id: UUID,
+        data: LoadGenerationEngineRequest,
+        service=Depends(get_load_profile_service),
+        user_id: UUID = Depends(permission(Resources.LoadProfiles, Permission.Create)),
+):
+    try:
+
+        engine = service.save_load_generation_engine(user_id, house_id, data.model_dump())
+
+        return LoadGenerationEngineResponse(
+            id=engine.id,
+            user_id=engine.user_id.id,
+            profile_id=engine.profile_id.id,
+            house_id=house_id,
+            type=engine.type,
+            average_kwh=engine.average_kwh,
+            average_monthly_bill=engine.average_monthly_bill,
+            max_demand_kw=engine.max_demand_kw,
+            created_on=engine.created_on,
+            modified_on=engine.modified_on
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@load_router.get(
+    "/houses/{house_id}/generation-engine",
+    response_model=LoadGenerationEngineResponse,
+    description="Get load generation engine data for a specific house",
+    response_description="The load generation engine data"
+)
+async def get_load_generation_engine(
+        house_id: UUID,
+        service=Depends(get_load_profile_service),
+        user_id: UUID = Depends(permission(Resources.LoadProfiles, Permission.Retrieve)),
+):
+    try:
+
+        engine = service.get_load_generation_engine(user_id, house_id)
+        if engine is None:
+            raise HTTPException(status_code=404, detail="Load generation engine data not found")
+
+        return LoadGenerationEngineResponse(
+            id=engine.id,
+            user_id=engine.user_id.id,
+            profile_id=engine.profile_id.id,
+            house_id=house_id,
+            type=engine.type,
+            average_kwh=engine.average_kwh,
+            average_monthly_bill=engine.average_monthly_bill,
+            max_demand_kw=engine.max_demand_kw,
+            created_on=engine.created_on,
+            modified_on=engine.modified_on
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

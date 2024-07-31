@@ -1,4 +1,5 @@
-from peewee import ForeignKeyField, CharField, BooleanField, IntegerField, DateTimeField, DoubleField, BlobField
+from peewee import ForeignKeyField, CharField, BooleanField, IntegerField, DateTimeField, DoubleField, BlobField, \
+    DecimalField
 from app.data.schemas.auth.auditable_base import AuditableBase
 from app.data.schemas.master.master_schema import ElectricalAppliances
 from app.data.schemas.schema_base import BaseModel
@@ -63,3 +64,16 @@ class LoadProfileBuilderItems(LoadProfileAuditableBase):
     class Meta:
         table_name = 'load_profile_builder_items'
 
+
+class LoadGenerationEngine(AuditableBase):
+    id = IntegerField(primary_key=True)
+    user_id = ForeignKeyField(User, backref='load_generation_engines')
+    profile_id = ForeignKeyField(LoadProfiles, backref='load_generation_engines')
+    type = CharField(max_length=7)
+    average_kwh = DecimalField()
+    average_monthly_bill = DecimalField()
+    max_demand_kw = DecimalField()
+
+    class Meta:
+        table_name = 'load_generation_engine'
+        schema = 'load'
