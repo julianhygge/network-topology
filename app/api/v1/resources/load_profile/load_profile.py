@@ -155,3 +155,42 @@ async def save_load_profile_builder_items(
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception:
         raise HTTPException(status_code=500, detail="An unexpected error occurred")
+
+
+@load_router.get(
+    "/houses/{house_id}/load-profile-items",
+    response_model=LoadProfileBuilderItemsResponse,
+    description="Get builder items for a specific house",
+    response_description="The current load profile builder items"
+)
+async def get_profile_builder_items(
+        house_id: UUID,
+        service=Depends(get_load_profile_service),
+        user_id: str = Depends(permission(Resources.LoadProfiles, Permission.Retrieve)),
+):
+    try:
+        updated_items = service.get_load_profile_builder_items(user_id, house_id)
+
+        updated_items_response = [
+            LoadProfileBuilderItemResponse(
+                id=item.id,
+                created_on=item.created_on,
+                modified_on=item.modified_on,
+                created_by=item.created_by.id,
+                profile_id=item.profile_id.id,
+                electrical_device_id=item.electrical_device_id.id,
+                rating_watts=item.rating_watts,
+                quantity=item.quantity,
+                hours=item.hours
+            )
+            for item in updated_items
+        ]
+
+        return LoadProfileBuilderItemsResponse(
+            message="Items saved successfully",
+            items=updated_items_response
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception:
+        raise HTTPException(status_code=500, detail="An unexpected error occurred")

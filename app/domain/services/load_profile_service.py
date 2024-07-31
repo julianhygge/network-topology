@@ -191,6 +191,10 @@ class LoadProfileService(BaseService):
 
         return self._load_profile_builder_repository.get_items_by_profile_id(profile_id)
 
+    def get_load_profile_builder_items(self, user_id: UUID, house_id: UUID):
+        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id, house_id)
+        return self._load_profile_builder_repository.get_items_by_profile_id(load_profile)
+
     def get_load_profile_file(self, profile_id):
         file = self._load_profile_files_repository.get_file(profile_id)
         return file
