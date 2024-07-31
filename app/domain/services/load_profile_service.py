@@ -19,7 +19,7 @@ class LoadProfileService(BaseService):
                  load_profile_files_repository: ILoadProfileFilesRepository,
                  user_repository: IUserRepository,
                  load_details_repository: ILoadProfileDetailsRepository,
-                 load_profile_builder_repository : ILoadProfileBuilderRepository
+                 load_profile_builder_repository: ILoadProfileBuilderRepository
                  ):
         super().__init__(repository)
         self._load_profile_repository = repository
