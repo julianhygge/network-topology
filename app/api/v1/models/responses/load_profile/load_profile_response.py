@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Dict, List, Optional
 from uuid import UUID
 
@@ -96,6 +97,10 @@ class LoadProfileBuilderItemResponse(BaseModel):
 
 class LoadProfileBuilderItemsResponse(BaseModel):
     message: str = Field(..., example="Items saved successfully")
+    links: Dict[str, str] = Field(
+        default={"self": "/v1/load_profiles/"},
+        example={"self": "/v1/load_profiles/", "next": "/v1/load_profiles/?page=2"}
+    )
     items: List[LoadProfileBuilderItemResponse] = Field(..., example=[
         {
             "id": 2,
@@ -120,3 +125,16 @@ class LoadProfileBuilderItemsResponse(BaseModel):
             "hours": 8
         }
     ])
+
+
+class LoadPredefinedTemplateResponse(BaseModel):
+    id: int
+    profile_id: int
+    template_id: int
+    name: str
+    power_kw: Decimal
+    profile_source: str
+    links: Dict[str, str] = Field(
+        default={"self": "/v1/load_profiles/"},
+        example={"self": "/v1/load_profiles/", "next": "/v1/load_profiles/?page=2"}
+    )

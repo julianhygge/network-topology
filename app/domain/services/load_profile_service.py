@@ -1,6 +1,8 @@
 import datetime
 from typing import List
 from uuid import UUID
+
+from app.data.interfaces.load.iload_generation_enginer_repository import ILoadGenerationEngineRepository
 from app.data.interfaces.load.iload_load_profile_repository import ILoadProfileRepository
 from app.data.interfaces.load.iload_profile_builder_repository import ILoadProfileBuilderRepository
 from app.data.interfaces.load.iload_profile_details_repository import ILoadProfileDetailsRepository
@@ -9,7 +11,7 @@ import pandas as pd
 from pandas import Timestamp
 from app.data.interfaces.iuser_repository import IUserRepository
 from app.data.interfaces.load.iload_profile_files_repository import ILoadProfileFilesRepository
-from app.data.repositories.load_profile.load_profile_repository import LoadGenerationEngineRepository
+from app.data.interfaces.load.ipredefined_templates_repository import IPredefinedTemplatesRepository
 from app.domain.interfaces.enums.load_source_enum import LoadSource
 from app.domain.services.base_service import BaseService
 
@@ -21,7 +23,8 @@ class LoadProfileService(BaseService):
                  user_repository: IUserRepository,
                  load_details_repository: ILoadProfileDetailsRepository,
                  load_profile_builder_repository: ILoadProfileBuilderRepository,
-                 load_generation_engine_repository: LoadGenerationEngineRepository
+                 load_generation_engine_repository: ILoadGenerationEngineRepository,
+                 predefined_templates_repository: IPredefinedTemplatesRepository
                  ):
         super().__init__(repository)
         self._load_profile_repository = repository
@@ -30,6 +33,7 @@ class LoadProfileService(BaseService):
         self._user_repository = user_repository
         self._load_profile_builder_repository = load_profile_builder_repository
         self._load_generation_engine_repository = load_generation_engine_repository
+        self._load_predefined_templates_repository = predefined_templates_repository
 
     def _map_profile_to_dict(self, profile):
         data = {
@@ -193,13 +197,13 @@ class LoadProfileService(BaseService):
         if to_update:
             self._load_profile_builder_repository.update_items_in_bulk(to_update)
 
-        return self._load_profile_builder_repository.get_items_by_profile_id(profile_id)
+        return self._load_profile_builder_repository.get_items_by_profile_id(profile_id), profile_id
 
     def get_load_profile_builder_items(self, user_id: UUID, house_id: UUID):
         load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id,
                                                                                house_id,
                                                                                LoadSource.Builder.value)
-        return self._load_profile_builder_repository.get_items_by_profile_id(load_profile)
+        return self._load_profile_builder_repository.get_items_by_profile_id(load_profile), load_profile.id
 
     def get_load_profile_file(self, profile_id):
         file = self._load_profile_files_repository.get_file(profile_id)
@@ -280,8 +284,21 @@ class LoadProfileService(BaseService):
             "modified_by": user_id
         }
         self._load_generation_engine_repository.delete_by_profile_id(profile_id)
-        return self._load_generation_engine_repository.model.get_or_create(profile_id=profile_id, defaults=engine_data)[0]
+        return self._load_generation_engine_repository.model.get_or_create(profile_id=profile_id, defaults=engine_data)[
+            0]
 
     def get_load_generation_engine(self, user_id: UUID, house_id: UUID):
         load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id, house_id, LoadSource.Engine)
         return self._load_generation_engine_repository.model.get_or_none(profile_id=load_profile)
+
+    def create_or_update_load_predefined_template(self, user_id: UUID, house_id: UUID, template_id: int):
+        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id,
+                                                                               house_id,
+                                                                               LoadSource.Template.value)
+        return self._load_predefined_templates_repository.create_or_update(load_profile.id, template_id)
+
+    def get_load_predefined_template(self, user_id: UUID, house_id: UUID):
+        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id,
+                                                                               house_id,
+                                                                               LoadSource.Template.value)
+        return self._load_predefined_templates_repository.get_by_profile_id(load_profile.id)

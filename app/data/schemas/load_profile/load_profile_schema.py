@@ -1,7 +1,7 @@
 from peewee import ForeignKeyField, CharField, BooleanField, IntegerField, DateTimeField, DoubleField, BlobField, \
     DecimalField
 from app.data.schemas.auth.auditable_base import AuditableBase
-from app.data.schemas.master.master_schema import ElectricalAppliances
+from app.data.schemas.master.master_schema import ElectricalAppliances, PredefinedTemplates
 from app.data.schemas.schema_base import BaseModel
 from app.data.schemas.transactional.topology_schema import Node
 from app.data.schemas.transactional.user_schema import User
@@ -76,4 +76,14 @@ class LoadGenerationEngine(AuditableBase):
 
     class Meta:
         table_name = 'load_generation_engine'
+        schema = 'load'
+
+
+class LoadPredefinedTemplates(LoadProfileBase):
+    id = IntegerField(primary_key=True)
+    profile_id = ForeignKeyField(LoadProfiles, backref='predefined_templates')
+    template_id = ForeignKeyField(PredefinedTemplates, backref='load_templates')
+
+    class Meta:
+        table_name = 'load_predefined_templates'
         schema = 'load'

@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Dict
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -64,3 +64,11 @@ class LoadGenerationEngineResponse(BaseModel):
     max_demand_kw: Optional[float]
     created_on: datetime
     modified_on: datetime
+    links: Dict[str, str] = Field(
+        default={"self": "/v1/load_profiles/"},
+        example={"self": "/v1/load_profiles/", "next": "/v1/load_profiles/?page=2"}
+    )
+
+
+class LoadPredefinedTemplateRequest(BaseModel):
+    template_id: int

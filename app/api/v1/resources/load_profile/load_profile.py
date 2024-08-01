@@ -10,9 +10,10 @@ from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import get_load_profile_service
 from app.api.v1.models.requests.load_profile.load_profile_update import LoadProfileBuilderItemsRequest, \
-    LoadGenerationEngineResponse, LoadGenerationEngineRequest
+    LoadGenerationEngineResponse, LoadGenerationEngineRequest, LoadPredefinedTemplateRequest
 from app.api.v1.models.responses.load_profile.load_profile_response import LoadProfileResponse, \
-    LoadProfilesListResponse, LoadProfileBuilderItemsResponse, LoadProfileBuilderItemResponse
+    LoadProfilesListResponse, LoadProfileBuilderItemsResponse, LoadProfileBuilderItemResponse, \
+    LoadPredefinedTemplateResponse
 
 load_router = APIRouter(tags=["Load Profile"])
 
@@ -124,6 +125,7 @@ async def download_load_profile_file(
     response_description="The saved load profile builder items"
 )
 async def save_load_profile_builder_items(
+        request: Request,
         house_id: UUID,
         items: LoadProfileBuilderItemsRequest,
         service=Depends(get_load_profile_service),
@@ -131,8 +133,7 @@ async def save_load_profile_builder_items(
 ):
     try:
         items_dicts = [item.model_dump() for item in items.items]
-        updated_items = service.save_load_profile_items(user_id, house_id, items_dicts)
-
+        updated_items, load_profile_id = service.save_load_profile_items(user_id, house_id, items_dicts)
         updated_items_response = [
             LoadProfileBuilderItemResponse(
                 id=item.id,
@@ -147,9 +148,17 @@ async def save_load_profile_builder_items(
             )
             for item in updated_items
         ]
-
+        index = request.url.path.find('/load/')
+        if index != -1:
+            new_url_path = request.url.path[:index + len('/load/')]
+        else:
+            new_url_path = request.url.path
+        delete = f"{new_url_path}{load_profile_id}/"
         return LoadProfileBuilderItemsResponse(
-            message="Items saved successfully",
+            message="Items retrieved successfully",
+            links={
+                "delete": delete
+            },
             items=updated_items_response
         )
     except ValueError as ve:
@@ -165,13 +174,13 @@ async def save_load_profile_builder_items(
     response_description="The current load profile builder items"
 )
 async def get_profile_builder_items(
+        request: Request,
         house_id: UUID,
         service=Depends(get_load_profile_service),
         user_id: str = Depends(permission(Resources.LoadProfiles, Permission.Retrieve)),
 ):
     try:
-        updated_items = service.get_load_profile_builder_items(user_id, house_id)
-
+        updated_items, load_profile_id = service.get_load_profile_builder_items(user_id, house_id)
         updated_items_response = [
             LoadProfileBuilderItemResponse(
                 id=item.id,
@@ -186,9 +195,17 @@ async def get_profile_builder_items(
             )
             for item in updated_items
         ]
-
+        index = request.url.path.find('/load/')
+        if index != -1:
+            new_url_path = request.url.path[:index + len('/load/')]
+        else:
+            new_url_path = request.url.path
+        delete = f"{new_url_path}{load_profile_id}/"
         return LoadProfileBuilderItemsResponse(
-            message="Items saved successfully",
+            message="Items retrieved successfully",
+            links={
+                "delete": delete
+            },
             items=updated_items_response
         )
     except ValueError as ve:
@@ -204,6 +221,7 @@ async def get_profile_builder_items(
     response_description="The saved load generation engine data"
 )
 async def save_load_generation_engine(
+        request: Request,
         house_id: UUID,
         data: LoadGenerationEngineRequest,
         service=Depends(get_load_profile_service),
@@ -212,6 +230,13 @@ async def save_load_generation_engine(
     try:
 
         engine = service.save_load_generation_engine(user_id, house_id, data.model_dump())
+
+        index = request.url.path.find('/load/')
+        if index != -1:
+            new_url_path = request.url.path[:index + len('/load/')]
+        else:
+            new_url_path = request.url.path
+        delete = f"{new_url_path}{engine.profile_id.id}/"
 
         return LoadGenerationEngineResponse(
             id=engine.id,
@@ -223,7 +248,10 @@ async def save_load_generation_engine(
             average_monthly_bill=engine.average_monthly_bill,
             max_demand_kw=engine.max_demand_kw,
             created_on=engine.created_on,
-            modified_on=engine.modified_on
+            modified_on=engine.modified_on,
+            links={
+                "delete": delete
+            }
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -236,6 +264,7 @@ async def save_load_generation_engine(
     response_description="The load generation engine data"
 )
 async def get_load_generation_engine(
+        request: Request,
         house_id: UUID,
         service=Depends(get_load_profile_service),
         user_id: UUID = Depends(permission(Resources.LoadProfiles, Permission.Retrieve)),
@@ -245,6 +274,13 @@ async def get_load_generation_engine(
         engine = service.get_load_generation_engine(user_id, house_id)
         if engine is None:
             raise HTTPException(status_code=404, detail="Load generation engine data not found")
+
+        index = request.url.path.find('/load/')
+        if index != -1:
+            new_url_path = request.url.path[:index + len('/load/')]
+        else:
+            new_url_path = request.url.path
+        delete = f"{new_url_path}{engine.profile_id.id}/"
 
         return LoadGenerationEngineResponse(
             id=engine.id,
@@ -256,7 +292,91 @@ async def get_load_generation_engine(
             average_monthly_bill=engine.average_monthly_bill,
             max_demand_kw=engine.max_demand_kw,
             created_on=engine.created_on,
-            modified_on=engine.modified_on
+            modified_on=engine.modified_on,
+            links={
+                "delete": delete
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@load_router.post(
+    "/houses/{house_id}/load-predefined-template",
+    response_model=LoadPredefinedTemplateResponse,
+    description="Create or update a load predefined template for a specific house",
+    response_description="The created or updated load predefined template"
+)
+async def create_or_update_load_predefined_template(
+        request: Request,
+        house_id: UUID,
+        template_data: LoadPredefinedTemplateRequest,
+        service=Depends(get_load_profile_service),
+        user_id: UUID = Depends(permission(Resources.LoadProfiles, Permission.Create)),
+):
+    try:
+        template = service.create_or_update_load_predefined_template(
+            user_id,
+            house_id,
+            template_data.template_id
+        )
+        index = request.url.path.find('/load/')
+        if index != -1:
+            new_url_path = request.url.path[:index + len('/load/')]
+        else:
+            new_url_path = request.url.path
+        delete = f"{new_url_path}{template.profile_id.id}/"
+
+        return LoadPredefinedTemplateResponse(
+            id=template.id,
+            profile_id=template.profile_id.id,
+            template_id=template.template_id.id,
+            name=template.template_id.name,
+            power_kw=template.template_id.power_kw,
+            profile_source=template.profile_id.source,
+            links={
+                "delete": delete
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@load_router.get(
+    "/houses/{house_id}/load-predefined-template",
+    response_model=LoadPredefinedTemplateResponse,
+    description="Get the load predefined template for a specific house",
+    response_description="The load predefined template"
+)
+async def get_load_predefined_template(
+        request: Request,
+        house_id: UUID,
+        service=Depends(get_load_profile_service),
+        user_id: UUID = Depends(permission(Resources.LoadProfiles, Permission.Retrieve)),
+):
+    try:
+        template = service.get_load_predefined_template(user_id, house_id)
+        if template is None:
+            raise HTTPException(status_code=404, detail="Load predefined template not found")
+        index = request.url.path.find('/load/')
+        if index != -1:
+            new_url_path = request.url.path[:index + len('/load/')]
+        else:
+            new_url_path = request.url.path
+
+        delete = f"{new_url_path}{template.profile_id.id}/"
+        return LoadPredefinedTemplateResponse(
+            id=template.id,
+            profile_id=template.profile_id.id,
+            template_id=template.template_id.id,
+            name=template.template_id.name,
+            power_kw=template.template_id.power_kw,
+            profile_source=template.profile_id.source,
+            links={
+                "delete": delete
+            }
         )
     except HTTPException:
         raise

@@ -1,4 +1,3 @@
-
 from typing import List
 from uuid import UUID
 
@@ -9,9 +8,10 @@ from app.data.interfaces.load.iload_load_profile_repository import ILoadProfileR
 from app.data.interfaces.load.iload_profile_builder_repository import ILoadProfileBuilderRepository
 from app.data.interfaces.load.iload_profile_details_repository import ILoadProfileDetailsRepository
 from app.data.interfaces.load.iload_profile_files_repository import ILoadProfileFilesRepository
+from app.data.interfaces.load.ipredefined_templates_repository import IPredefinedTemplatesRepository
 from app.data.repositories.base_repository import BaseRepository
 from app.data.schemas.load_profile.load_profile_schema import LoadProfiles, LoadProfileDetails, LoadProfileFiles, \
-    LoadProfileBuilderItems, LoadGenerationEngine
+    LoadProfileBuilderItems, LoadGenerationEngine, LoadPredefinedTemplates
 
 
 class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
@@ -117,3 +117,23 @@ class LoadGenerationEngineRepository(BaseRepository, ILoadGenerationEngineReposi
 
     def delete_by_profile_id(self, profile_id) -> int:
         return self.model.delete().where(self.model.profile_id == profile_id).execute()
+
+
+class PredefinedTemplatesRepository(BaseRepository, IPredefinedTemplatesRepository):
+    model = LoadPredefinedTemplates
+    id_field = LoadPredefinedTemplates.id
+
+    def get_by_profile_id(self, profile_id):
+        return self.model.get_or_none(self.model.profile_id == profile_id)
+
+    def create_or_update(self, profile_id, template_id):
+        template, created = self.model.get_or_create(
+            profile_id=profile_id,
+            defaults={
+                'template_id': template_id
+            }
+        )
+        if not created:
+            template.template_id = template_id
+            template.save()
+        return template
