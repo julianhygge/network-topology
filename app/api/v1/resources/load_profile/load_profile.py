@@ -47,8 +47,8 @@ async def _get_load_profiles(load_profile_service, user_id, house_id, request):
     items = []
     for profile in profiles:
         self = str(request.url.path)
-        download = self.replace("/upload/", "/download/")
-        download = f"{download}file?profile_id={profile['profile_id']}"
+        download = self.replace("/upload/", "")
+        download = f"{download}download/file?profile_id={profile['profile_id']}"
         delete = self.replace("/upload/", "/")
         delete = f"{delete}{profile['profile_id']}/"
         profile_data = {**profile, "links": {
@@ -159,6 +159,7 @@ async def save_load_profile_builder_items(
             links={
                 "delete": delete
             },
+            profile_id=load_profile_id,
             items=updated_items_response
         )
     except ValueError as ve:
@@ -206,6 +207,7 @@ async def get_profile_builder_items(
             links={
                 "delete": delete
             },
+            profile_id=load_profile_id,
             items=updated_items_response
         )
     except ValueError as ve:

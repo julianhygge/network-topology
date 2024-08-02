@@ -101,6 +101,7 @@ class LoadProfileBuilderItemsResponse(BaseModel):
         default={"self": "/v1/load_profiles/"},
         example={"self": "/v1/load_profiles/", "next": "/v1/load_profiles/?page=2"}
     )
+    profile_id: int
     items: List[LoadProfileBuilderItemResponse] = Field(..., example=[
         {
             "id": 2,
