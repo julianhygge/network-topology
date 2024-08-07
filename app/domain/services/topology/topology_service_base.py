@@ -36,27 +36,6 @@ class TopologyServiceBase(BaseService):
         return True
 
     @staticmethod
-    def _is_transformer_complete(transformer: Transformer) -> bool:
-        required_fields = [
-            ("max_capacity_kw", 0),
-            ("name", ""),
-            ("primary_ampacity", 0),
-            ("secondary_ampacity", 0),
-            ("years_of_service", 0),
-            ("digital_twin_model", None),
-        ]
-        for field, empty_value in required_fields:
-            value = getattr(transformer, field)
-            if value is None or value == empty_value:
-                return False
-        if transformer.allow_export and (
-            transformer.forward_efficiency is None
-            or transformer.forward_efficiency <= 0
-        ):
-            return False
-        return True
-
-    @staticmethod
     def _to_status_enum(at_least_one_filled: bool, all_filled: bool) -> NodeStatusEnum:
         if not at_least_one_filled:
             return NodeStatusEnum.Empty
