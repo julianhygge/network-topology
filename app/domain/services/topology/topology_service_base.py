@@ -4,7 +4,6 @@ from app.data.interfaces.irepository import IRepository
 from app.data.schemas.enums.enums import NodeStatusEnum
 from app.data.schemas.transactional.topology_schema import House, Transformer
 from app.domain.services.base_service import BaseService
-from app.utils.logger import logger
 
 
 class TopologyServiceBase(BaseService):
@@ -75,21 +74,12 @@ class TopologyServiceBase(BaseService):
         If all fields are filled, the status is Complete.
         If no field is filled, the status is Empty.
         """
-        logger.info(f"required_fields: {required_fields}")
-        logger.info(f"node: {node}")
         check_properties = [
             getattr(node, field) != empty_value
             for field, empty_value in required_fields
         ]
-        logger.info(f"check_properties: {(check_properties)}")
         at_least_one_filled = any(check_properties)
-        logger.info(
-            f"{node.__class__.__name__} {node.id} required fields check: {at_least_one_filled}"
-        )
         all_filled = all(check_properties)
-        logger.info(
-            f"{node.__class__.__name__} {node.id} required fields check: {all_filled}"
-        )
         return TopologyServiceBase._to_status_enum(at_least_one_filled, all_filled)
 
     @staticmethod
@@ -103,9 +93,6 @@ class TopologyServiceBase(BaseService):
         ]
         required_fields_check = TopologyServiceBase._check_required_fields(
             transformer, required_fields
-        )
-        logger.info(
-            f"Transformer {transformer.id} required fields check: {required_fields_check}"
         )
         if required_fields_check != NodeStatusEnum.Complete:
             return required_fields_check
