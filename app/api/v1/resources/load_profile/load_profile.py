@@ -8,12 +8,13 @@ from starlette.responses import StreamingResponse
 
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
-from app.api.v1.dependencies.container_instance import get_load_profile_service
+from app.api.v1.dependencies.container_instance import get_load_profile_service, get_predefined_template_service
 from app.api.v1.models.requests.load_profile.load_profile_update import LoadProfileBuilderItemsRequest, \
     LoadGenerationEngineResponse, LoadGenerationEngineRequest, LoadPredefinedTemplateRequest
 from app.api.v1.models.responses.load_profile.load_profile_response import LoadProfileResponse, \
     LoadProfilesListResponse, LoadProfileBuilderItemsResponse, LoadProfileBuilderItemResponse, \
-    LoadPredefinedTemplateResponse
+    LoadPredefinedTemplateResponse, LoadPredefinedTemplateListResponse, LoadPredefinedMasterTemplateResponse
+from app.domain.interfaces.iservice import IService
 
 load_router = APIRouter(tags=["Load Profile"])
 
@@ -384,3 +385,14 @@ async def get_load_predefined_template(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@load_router.get('/load_templates', response_model=LoadPredefinedTemplateListResponse)
+async def get_load_templates(service: IService = Depends(get_predefined_template_service),
+                         _: str = Depends(permission(Resources.Electrical, Permission.Retrieve))):
+    try:
+        body = service.list_all()
+        response = LoadPredefinedTemplateListResponse(items=[LoadPredefinedMasterTemplateResponse(**item) for item in body])
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

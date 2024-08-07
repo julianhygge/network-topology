@@ -212,7 +212,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         data["modified_by"] = user_id
         self.transformer_repo.update(transformer_id, **data)
 
-        self.node_repo.update(transformer_id, name = data["name"])
+        self.node_repo.update(transformer_id, name=data["name"])
         updated_transformer = self.transformer_repo.read(transformer_id)
         is_complete = self._is_transformer_complete(updated_transformer)
         updated_dict = self.transformer_repo.to_dicts(updated_transformer)
