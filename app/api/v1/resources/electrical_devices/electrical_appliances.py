@@ -12,7 +12,7 @@ appliances_router = APIRouter(tags=['Appliances'])
 
 @appliances_router.get('/', response_model=AppliancesListResponse)
 async def get_appliances(service: IService = Depends(get_electrical_appliances_service),
-                         _: str = Depends(permission(Resources.Electrical, Permission.Retrieve))):
+                         _: str = Depends(permission(Resources.Electricals, Permission.Retrieve))):
     try:
         body = service.list_all()
         response = AppliancesListResponse(items=[AppliancesResponse(**item) for item in body])
@@ -25,7 +25,7 @@ async def get_appliances(service: IService = Depends(get_electrical_appliances_s
 async def create_appliances(data: AppliancesRequest,
                             service: IService = Depends(
                                 get_electrical_appliances_service),
-                            user_id: str = Depends(permission(Resources.Electrical, Permission.Create))):
+                            user_id: str = Depends(permission(Resources.Electricals, Permission.Create))):
     try:
         data = data.model_dump()
         body = service.create(user_id, **data)
@@ -38,7 +38,7 @@ async def create_appliances(data: AppliancesRequest,
 async def update_appliances(data: AppliancesRequest,
                             appliance_id: int,
                             service: IService = Depends(get_electrical_appliances_service),
-                            user_id: str = Depends(permission(Resources.Electrical, Permission.Update))):
+                            user_id: str = Depends(permission(Resources.Electricals, Permission.Update))):
     try:
         data = data.model_dump(exclude_unset=True)
         body = service.update(user_id, appliance_id, **data)
@@ -50,7 +50,7 @@ async def update_appliances(data: AppliancesRequest,
 @appliances_router.delete('/{appliance_id}/delete')
 async def delete_appliance(appliance_id: int,
                            service: IService = Depends(get_electrical_appliances_service),
-                           _: str = Depends(permission(Resources.Electrical, Permission.Delete))):
+                           _: str = Depends(permission(Resources.Electricals, Permission.Delete))):
     try:
         service.delete(appliance_id)
     except Exception as e:

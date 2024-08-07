@@ -21,10 +21,9 @@ class EnumField(CharField):
 
 class UserRoles(enum.Enum):
     Admin = 'Admin'
-    Consumer = 'Consumer'
-    Prosumer = 'Prosumer'
+    User = 'User'
     Guest = 'Guest'
-    Pending = 'Pending'
+
 
 
 

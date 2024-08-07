@@ -24,14 +24,14 @@ async def create_user(user_data: UserRequestModel,
 @user_router.get(path="/", response_model=UserListResponse)
 async def get_users(request: Request,
                     service: IService = Depends(get_user_service),
-                    _: str = Depends(permission(Resources.Users, Permission.Create)),
+                    _: str = Depends(permission(Resources.Users, Permission.Retrieve)),
                     ):
     try:
         data_list = service.list_all()
         response = UserListResponse(items=[
             UserLinkResponseModel(
                 **item,
-                links={"self": f"{request.url.path}{str(item['user_id'])}"}
+                links={"self": f"{request.url.path}{str(item['id'])}"}
             ) for item in data_list
         ])
         return response

@@ -64,7 +64,6 @@ class AuthService(IAuthService):
         return self._user_repository.fetch_user_by_phone_number(phone_number)
 
     def request_otp(self, user, country_code):
-        print(f"user is {user}")
         attempts = self._auth_attempt_repository.fetch_all_previous_records_for_user(
             phone_number=user.phone_number,
             records_after_time=before_now(minutes=self._max_resend_otp_attempt_window_in_min))
@@ -199,7 +198,6 @@ class AuthService(IAuthService):
 
         # session_user = self._user_repository.fetch_user_by_phone_number(phone_number=auth_attempt.phone_number)
         session_user = self._user_repository.fetch_account_by_phone_number(phone_number=auth_attempt.phone_number)
-        print(f"Session {session_user}")
         if not session_user:
             raise UserDoesNotExist()
 

@@ -24,7 +24,7 @@ class UserService(BaseService, IUserService):
         self._group_repository = group_repository
         self._account_repository = account_repository
 
-    def create(self, **user_data):
+    def create(self, user_id, **user_data):
         account = self._user_repository.fetch_account_by_phone_number(user_data['phone_number'])
 
         txn_id = str(uuid.uuid4())
@@ -35,18 +35,18 @@ class UserService(BaseService, IUserService):
         user_data["record_id"] = account.id
         user_data["user_name"] = user_data["name"]
         user_data["alias_name"] = user_data["name"]
-        user_data["active"] = False
+        user_data["active"] = True
 
         data = {
             "created_by": account.id,
             "modified_by": account.id,
             "user_record_id": account.id,
-            "group_id": Groups.Pending.value,
-            "active": False
+            "group_id": Groups.User.value,
+            "active": True
 
         }
         account_data = {
-            "type": str(Groups.Pending),
+            "type": str(Groups.User),
             "alias_name": user_data["name"]
         }
 
@@ -66,6 +66,7 @@ class UserService(BaseService, IUserService):
     def list_all(self) -> List[Dict[str, Any]]:
         list_items = self._user_repository.list_actives()
         list_dicts = self.repository.to_dicts(list_items)
+        print(list_dicts)
 
         all_groups = self._group_repository.list()
         all_groups_dicts = self.repository.to_dicts(all_groups)

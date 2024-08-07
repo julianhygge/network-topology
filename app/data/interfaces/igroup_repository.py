@@ -6,10 +6,9 @@ from app.data.interfaces.irepository import IRepository, T
 
 class UserRoles(Enum):
     Admin = 'Admin'
-    Consumer = 'Consumer'
-    Prosumer = 'Prosumer'
+    User = 'User'
     Guest = 'Guest'
-    Pending = 'Pending'
+
 
 
 class Permission(NamedTuple):
