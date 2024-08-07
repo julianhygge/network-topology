@@ -20,12 +20,14 @@ class EnumField(CharField):
 
 
 class UserRoles(enum.Enum):
-    Admin = 'Admin'
-    Consumer = 'Consumer'
-    Prosumer = 'Prosumer'
-    Guest = 'Guest'
-    Pending = 'Pending'
+    Admin = "Admin"
+    Consumer = "Consumer"
+    Prosumer = "Prosumer"
+    Guest = "Guest"
+    Pending = "Pending"
 
 
-
-
+class NodeStatusEnum(enum.Enum):
+    Complete = "complete"
+    Empty = "empty"
+    InProgress = "in_progress"

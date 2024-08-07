@@ -36,11 +36,11 @@ RUN apk add --no-cache tzdata && \
     cp /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && \
     echo "Asia/Kolkata" > /etc/timezone
 
-COPY . .
-
 RUN mkdir -p /var/log/application/
 ENV PYTHONPATH /app
 
 EXPOSE 7093
+
+COPY . .
 
 CMD ["sh", "-c", "chronyd -f /etc/chrony/chrony.conf -d -x & uvicorn app.main:app --host 0.0.0.0 --port 7093"]

@@ -2,14 +2,16 @@ from datetime import datetime
 from pydantic import BaseModel, UUID4
 from typing import List, Optional
 
+from app.data.schemas.enums.enums import NodeStatusEnum
+
 
 class Node(BaseModel):
     id: UUID4
     type: str
-    is_complete: bool
+    status: NodeStatusEnum
     name: str
     nomenclature: str
-    children: Optional[List['Node']] = None
+    children: Optional[List["Node"]] = None
 
     class Config:
         from_attributes = True
