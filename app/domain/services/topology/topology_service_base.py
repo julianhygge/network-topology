@@ -12,11 +12,11 @@ class TopologyServiceBase(BaseService):
         self.repository = repository
 
     @staticmethod
-    def _is_house_complete(house: House) -> bool:
+    def _get_house_status(house: House) -> NodeStatusEnum:
         if not house.load_profile or house.load_profile.strip() == "":
-            return False
+            return NodeStatusEnum.Empty
         if house.has_solar and (house.solar_kw is None or house.solar_kw <= 0):
-            return False
+            return NodeStatusEnum.Empty
         if house.has_battery:
             battery_fields = [
                 ("battery_type", ""),
@@ -28,12 +28,12 @@ class TopologyServiceBase(BaseService):
             for field, empty_value in battery_fields:
                 value = getattr(house, field)
                 if value is None or value == empty_value:
-                    return False
+                    return NodeStatusEnum.Empty
         if house.connection_kw is None or house.connection_kw <= 0:
-            return False
+            return NodeStatusEnum.Empty
         if not house.house_type or house.house_type.strip() == "":
-            return False
-        return True
+            return NodeStatusEnum.Empty
+        return NodeStatusEnum.Complete
 
     @staticmethod
     def _to_status_enum(at_least_one_filled: bool, all_filled: bool) -> NodeStatusEnum:

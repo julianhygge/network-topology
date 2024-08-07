@@ -86,10 +86,10 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         transformer = self.transformer_repo.read(node_id)
         return {"status": self._get_transformer_status(transformer)}
 
-    def _get_house_details(self, node_id: UUID) -> Dict[str, bool]:
+    def _get_house_details(self, node_id: UUID) -> Dict[str, NodeStatusEnum]:
         """Get house-specific details."""
         house = self.house_repo.read(node_id)
-        return {"is_complete": self._is_house_complete(house)}
+        return {"status": self._get_house_status(house)}
 
     def update_topology(self, user_id: UUID, substation_id: UUID, data: Dict[str, Any]):
         """
@@ -267,8 +267,8 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         self.house_repo.update(house_id, **data)
         updated_house = self.house_repo.read(house_id)
         self.node_repo.update(house_id, name=data["name"])
-        is_complete = self._is_house_complete(updated_house)
+        status = self._get_house_status(updated_house)
         updated_dict = self.house_repo.to_dicts(updated_house)
-        updated_dict["is_complete"] = is_complete
+        updated_dict["status"] = status
 
         return updated_dict

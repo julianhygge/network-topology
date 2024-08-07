@@ -27,7 +27,7 @@ class HouseUpdateRequestModel(BaseModel):
 
 class HouseResponseModel(BaseModel):
     id: UUID4
-    is_complete: bool
+    status: NodeStatusEnum
     load_profile: Optional[str] = None
     has_solar: Optional[bool] = None
     solar_kw: Optional[Decimal] = None
