@@ -75,7 +75,7 @@ class TopologyServiceBase(BaseService):
         If no field is filled, the status is Empty.
         """
         check_properties = [
-            getattr(node, field) != empty_value
+            (got_field := getattr(node, field)) is not None and got_field != empty_value
             for field, empty_value in required_fields
         ]
         at_least_one_filled = any(check_properties)
@@ -85,11 +85,12 @@ class TopologyServiceBase(BaseService):
     @staticmethod
     def _get_transformer_status(transformer: Transformer) -> NodeStatusEnum:
         required_fields = [
-            ("max_capacity_kw", None),
-            ("name", None),
-            ("primary_ampacity", None),
-            ("secondary_ampacity", None),
-            ("years_of_service", None),
+            ("max_capacity_kw", 0),
+            ("name", ""),
+            ("primary_ampacity", 0),
+            ("secondary_ampacity", 0),
+            ("years_of_service", 0),
+            ("forward_efficiency", 0),
         ]
         required_fields_check = TopologyServiceBase._check_required_fields(
             transformer, required_fields
@@ -98,8 +99,8 @@ class TopologyServiceBase(BaseService):
             return required_fields_check
 
         if transformer.allow_export and (
-            transformer.forward_efficiency is None
-            or transformer.forward_efficiency <= 0
+            transformer.backward_efficiency is None
+            or transformer.backward_efficiency <= 0
         ):
             return NodeStatusEnum.InProgress
         return NodeStatusEnum.Complete
