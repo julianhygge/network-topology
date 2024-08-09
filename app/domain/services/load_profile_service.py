@@ -290,8 +290,14 @@ class LoadProfileService(BaseService):
             0]
 
     def get_load_generation_engine(self, user_id: UUID, house_id: UUID):
-        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id, house_id, LoadSource.Engine)
-        return self._load_generation_engine_repository.model.get_or_none(profile_id=load_profile)
+        load_profiles = self._load_profile_repository.get_load_profiles_by_user_id_and_house_id(user_id, house_id)
+
+        engine_profile = next((profile for profile in load_profiles if profile.source == LoadSource.Engine.value), None)
+
+        if engine_profile:
+            return self._load_generation_engine_repository.model.get_or_none(profile_id=engine_profile.id)
+        else:
+            return None
 
     def create_or_update_load_predefined_template(self, user_id: UUID, house_id: UUID, template_id: int):
         load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id,
@@ -300,7 +306,10 @@ class LoadProfileService(BaseService):
         return self._load_predefined_templates_repository.create_or_update(load_profile.id, template_id)
 
     def get_load_predefined_template(self, user_id: UUID, house_id: UUID):
-        load_profile = self._load_profile_repository.get_or_create_by_house_id(user_id,
-                                                                               house_id,
-                                                                               LoadSource.Template.value)
-        return self._load_predefined_templates_repository.get_by_profile_id(load_profile.id)
+        load_profiles = self._load_profile_repository.get_load_profiles_by_user_id_and_house_id(user_id, house_id)
+
+        template = next((profile for profile in load_profiles if profile.source == LoadSource.Template.value), None)
+        if template:
+            return self._load_predefined_templates_repository.get_by_profile_id(template.id)
+        else:
+            return None
