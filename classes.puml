@@ -231,6 +231,10 @@ package "Data Layer" {
         + remove_user_from_group(user_id, group_id) : bool
     }
 
+    interface IElectricalAppliancesRepository {
+        + read(id_value) : T
+    }
+
     class ElectricalAppliancesRepository {
         + model : Any
         + id_field : Any
@@ -355,6 +359,16 @@ package "Service Layer" {
         + get_registered_user(phone_number) : Any
         + request_otp(user, country_code) : Dict
         + verify_otp(req_body, txn_id) : Dict
+    }
+
+    interface IElectricalAppliancesService {
+        + get_electrical_appliances() : List[T]
+        + create(user_id, data) : T
+    }
+
+    class ElectricalAppliancesService {
+        + repository : IElectricalAppliancesRepository
+        + get_electrical_appliances() : List[T]
     }
 
     class LoadProfileService {
@@ -685,7 +699,7 @@ BaseRepository <|-- AccountRepository
 BaseRepository <|-- ElectricalAppliancesRepository
 BaseRepository <|-- LocalityRepository
 BaseRepository <|-- SubstationRepository
-BaseRepository <|.. GroupRepository
+BaseRepository <|-- GroupRepository
 ITransformerRepository <|.. TransformerRepository
 INodeService <|.. NodeService
 BaseRepository <|-- TransformerRepository
@@ -695,7 +709,9 @@ BaseRepository <|-- NodeRepository
 BaseRepository <|-- UserRepository
 INodeRepository <|.. NodeRepository
 IAuthService <|.. AuthService
+BaseService <|-- ElectricalAppliancesService
 ILoadProfileRepository <|.. LoadProfilesRepository
+IElectricalAppliancesRepository <|-- ElectricalAppliancesRepository
 ILoadProfileDetailsRepository <|.. LoadProfileDetailsRepository
 ILoadProfileFilesRepository <|.. LoadProfileFilesRepository
 ILoadProfileBuilderRepository <|.. LoadProfileBuilderItemsRepository
