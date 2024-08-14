@@ -68,7 +68,6 @@ class TopologyServiceBase(BaseService):
             ("name", ""),
             ("primary_ampacity", 0),
             ("secondary_ampacity", 0),
-            ("years_of_service", 0),
             ("forward_efficiency", 0),
         ]
         required_fields_check = TopologyServiceBase._check_required_fields(
