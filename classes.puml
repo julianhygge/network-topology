@@ -1,0 +1,725 @@
+```plantuml
+@startuml
+
+package "Data Layer" {
+    interface IRepository {
+        + model : Any
+        + id_field : Union[int, UUID]
+        + create(**query) : T
+        + read(id_value) : T
+        + update(id_value, **query) : int
+        + delete(id_value) : int
+        + list() : List[T]
+        + list_actives() : List[T]
+        + list_public() : List[T]
+        + upsert(conflict_target, defaults, **query) : T
+        + upsert_and_retrieve(conflict_target, defaults, **query) : T
+        + list_no_public_by_user_id(user_id) : List[T]
+        + database_instance : Any
+        + to_dicts(obj) : Union[Dict, List[Dict], Any]
+        + list_by_user_id(user_id) : List[T]
+    }
+
+    class BaseRepository {
+        + model : Any
+        + id_field : Any
+        + database_instance : Any
+        + create(**query) : T
+        + read(id_value) : T
+        + update(id_value, **query) : int
+        + delete(id_value) : int
+        + list() : List[T]
+        + list_actives() : List[T]
+        + upsert(conflict_target, defaults, **query) : T
+        + upsert_and_retrieve(conflict_target, defaults, **query) : T
+        + list_public() : List[T]
+        + list_no_public_by_user_id(user_id) : List[T]
+        + to_dicts(obj) : Union[Dict, List[Dict], Any]
+        + list_by_user_id(user_id) : List[T]
+    }
+
+    interface IUserRepository {
+        + fetch_user_by_phone_number(phone_number) : T
+        + fetch_account_by_phone_number(phone_number) : T
+        + insert_into_user_and_group(user_data, data) : T
+        + insert_into_account(**data) : T
+        + update_user_group(user_id, **data) : T
+    }
+
+    class UserRepository {
+        + model : Any
+        + model_user_group : Any
+        + model_account : Any
+        + id_field : Any
+        + fetch_user_by_phone_number(phone_number) : T
+        + fetch_account_by_phone_number(phone_number) : T
+        + insert_into_user_and_group(user_data, data) : T
+        + create(**query) : T
+        + insert_into_account(**data) : T
+        + update_user_group(user_id, **query) : T
+    }
+
+    interface IGroupRepository {
+        + fetch_roles_and_permissions_by_groups(session_user, now) : List[RolePermission]
+    }
+
+    class GroupRepository {
+        + model : Any
+        + id_field : Any
+        + fetch_roles_and_permissions_by_groups(session_user, now) : List[RolePermission]
+    }
+
+    interface IAuthAttemptRepository {
+        + fetch_all_previous_records_for_user(phone_number, records_after_time) : List[AuthAttempts]
+    }
+
+    class AuthAttemptRepository {
+        + model : Any
+        + id_field : Any
+        + fetch_all_previous_records_for_user(phone_number, records_after_time) : List[AuthAttempts]
+    }
+
+    interface ITransformerRepository {
+        + get_transformers_by_substation_id(substation_id) : List[Transformer]
+    }
+
+    interface IHouseRepository {
+        + get_houses_by_substation_id(substation_id) : List[House]
+    }
+
+    interface INodeRepository {
+        + get_children(parent_id) : List[Node]
+        + read(id_value) : Optional[Node]
+        + get_parent(node_id) : Optional[Node]
+        + get_substation(node_id) : Optional[Substation]
+        + get_locality(node_id) : Optional[Locality]
+    }
+
+    class TransformerRepository {
+        + model : Any
+        + id_field : Any
+        + get_transformers_by_substation_id(substation_id) : List[Transformer]
+    }
+
+    class HouseRepository {
+        + model : Any
+        + id_field : Any
+        + get_houses_by_substation_id(substation_id) : List[House]
+    }
+
+    class NodeRepository {
+        + model : Any
+        + id_field : Any
+        + read(id_value) : Optional[Node]
+        + get_children(parent_id) : List[Node]
+        + get_parent(node_id) : Optional[Node]
+        + get_substation(node_id) : Optional[Node]
+        + get_locality(node_id) : Optional[Locality]
+    }
+
+    class AccountRepository {
+        + model : Any
+        + id_field : Any
+    }
+
+    class LocalityRepository {
+        + model : Any
+        + id_field : Any
+    }
+
+    class SubstationRepository {
+        + model : Any
+        + id_field : Any
+        + create(**query) : Substation
+    }
+
+    interface ILoadProfileRepository {
+        + get_public_profiles() : List[T]
+        + get_load_profiles_by_user_id(user_id) : List[T]
+        + get_load_profiles_by_user_id_and_house_id(user_id, house_id) : List[T]
+        + get_or_create_by_house_id(user_id, house_id, load_source) : T
+        + get_by_house_id(house_id) : T
+    }
+
+    interface ILoadProfileDetailsRepository {
+        + create_details_in_bulk(details) : None
+        + delete_by_profile_id(profile_id) : int
+        + get_load_details_by_load_id(load_id) : List[T]
+        + save_file(profile_id, filename, content) : T
+        + get_file(file_id) : T
+    }
+
+    interface ILoadProfileFilesRepository {
+        + save_file(profile_id, filename, content) : T
+        + get_file(file_id) : T
+    }
+
+    interface ILoadProfileBuilderRepository {
+        + get_items_by_profile_id(profile_id) : List[LoadProfileBuilderItems]
+        + create_items_in_bulk(items) : None
+        + delete_by_profile_id(profile_id) : int
+        + update_items_in_bulk(items) : None
+    }
+
+    interface ILoadGenerationEngineRepository {
+        + delete_by_profile_id(profile_id) : int
+    }
+
+    interface IPredefinedTemplatesRepository {
+        + get_by_profile_id(profile_id) : T
+        + create_or_update(profile_id, template_id) : T
+    }
+
+    class LoadProfilesRepository {
+        + model : Any
+        + id_field : Any
+        + get_load_profiles_by_user_id(user_id) : List[LoadProfiles]
+        + get_public_profiles() : List[LoadProfiles]
+        + get_load_profiles_by_user_id_and_house_id(user_id, house_id) : List[LoadProfiles]
+        + get_or_create_by_house_id(user_id, house_id, load_source) : T
+        + get_by_house_id(house_id) : T
+    }
+
+    class LoadProfileDetailsRepository {
+        + model : Any
+        + id_field : Any
+        + delete_by_profile_id(profile_id) : int
+        + create_details_in_bulk(details) : None
+        + get_load_details_by_load_id(load_id) : Any
+    }
+
+    class LoadProfileFilesRepository {
+        + model : Any
+        + id_field : Any
+        + save_file(profile_id, filename, content) : T
+        + get_file(profile_id) : T
+    }
+
+    class LoadProfileBuilderItemsRepository {
+        + model : Any
+        + id_field : Any
+        + get_items_by_profile_id(profile_id) : List[LoadProfileBuilderItems]
+        + create_items_in_bulk(items) : None
+        + delete_by_profile_id(profile_id) : int
+        + update_items_in_bulk(items) : None
+    }
+
+    class LoadGenerationEngineRepository {
+        + model : Any
+        + id_field : Any
+        + delete_by_profile_id(profile_id) : int
+    }
+
+    class PredefinedTemplatesRepository {
+        + model : Any
+        + id_field : Any
+        + get_by_profile_id(profile_id) : T
+        + create_or_update(profile_id, template_id) : T
+    }
+
+    class PredefinedMasterTemplatesRepository {
+        + model : Any
+        + id_field : Any
+    }
+
+    class UserGroupRelRepository {
+        + model : Any
+        + id_field : Any
+        + delete_by_user_id(user_id) : int
+        + get_groups_by_user_id(user_id) : List[Groups]
+        + add_user_to_group(logged_user_id, user_id, group_id) : bool
+        + remove_user_from_group(user_id, group_id) : bool
+    }
+
+    interface IElectricalAppliancesRepository {
+        + read(id_value) : T
+    }
+
+    class ElectricalAppliancesRepository {
+        + model : Any
+        + id_field : Any
+        + read(id_value) : T
+    }
+}
+
+package "Service Layer" {
+    interface IService {
+        + create(user_id, **kwargs) : Dict
+        + read(item_id) : Optional[Dict]
+        + update(user_id, item_id, **kwargs) : Optional[Dict]
+        + delete(item_id) : bool
+        + list(user_id) : List[Dict]
+        + list_all() : List[Dict]
+    }
+
+    class BaseService {
+        + repository : IRepository
+        + create(user_id, **kwargs) : Dict
+        + read(item_id) : Optional[Dict]
+        + update(user_id, item_id, **kwargs) : Optional[Dict]
+        + delete(item_id) : bool
+        + list(user_id) : List[Dict]
+        + list_all() : List[Dict]
+    }
+
+    class UserService {
+        + _token_service : ITokenService
+        + _user_repository : IUserRepository
+        + _group_repository : IRepository
+        + _account_repository : IRepository
+        + _user_group_repository : UserGroupRelRepository
+        + create(**user_data) : Dict
+        + list_all() : List[Dict]
+        + delete(user_id) : bool
+        + add_user_to_group(logged_user_id, user_id, group_id) : bool
+        + remove_user_from_group(user_id, group_id) : bool
+        + update_user_logo(session_user, user_id, file_logo) : Any
+        + get_user_logo(user_id) : Any
+    }
+
+    class TopologyServiceBase {
+        + repository : IRepository
+        + _get_house_status(house) : NodeStatusEnum
+        + _to_status_enum(at_least_one_filled, all_filled) : NodeStatusEnum
+        + _check_required_fields(node, required_fields) : NodeStatusEnum
+        + _get_transformer_status(transformer) : NodeStatusEnum
+    }
+
+    interface ITopologySimulator {
+        + calculate_total_load(houses) : Decimal
+        + calculate_total_solar(houses) : Decimal
+        + calculate_excess_solar(total_solar, total_load) : Decimal
+        + calculate_battery_capacity(houses) : Decimal
+        + calculate_peak_capacity_rate(houses) : Decimal
+        + run(substation_id) : None
+        + allocation_algorithm(houses, transformers, total_load, total_solar, excess_solar, battery_capacity, peak_capacity_rate) : None
+    }
+
+
+    interface INetTopologyService {
+        + get_topology_by_substation_id(substation_id) : Dict
+        + update_topology(user_id, substation_id, data) : None
+        + update_transformer(user_id, transformer_id, data) : Dict
+        + update_house(user_id, house_id, data) : Dict
+    }
+
+    class NetTopologyService {
+        + substation_repo : IRepository
+        + node_repo : INodeRepository
+        + transformer_repo : IRepository
+        + house_repo : IRepository
+        + get_topology_by_substation_id(substation_id) : Dict
+        + update_topology(user_id, substation_id, data) : None
+        + update_transformer(user_id, transformer_id, data) : Dict
+        + update_house(user_id, house_id, data) : Dict
+    }
+
+    class HouseService {
+        + repository : IRepository
+        + read(item_id) : Optional[Dict]
+    }
+
+    class TransformerService {
+        + repository : IRepository
+        + read(item_id) : Optional[Dict]
+    }
+
+    interface INodeService {
+        + read(item_id) : Optional[Dict]
+        + get_breadcrumb_navigation_path(node_id) : Dict
+    }
+
+    class NodeService {
+        + node_repo : INodeRepository
+        + read(item_id) : Optional[Dict]
+        + get_breadcrumb_navigation_path(node_id) : BreadcrumbResponseModel
+    }
+
+    interface ISubstationService {
+        + create_bulk(user_id, **data) : list[dict[str, Any]]
+    }
+
+    class SubstationService {
+        + repository : IRepository
+        + create_bulk(user_id, **data) : list[dict[str, Any]]
+    }
+
+    interface IAuthService {
+        + get_registered_user(phone_number) : Any
+        + request_otp(user, country_code) : Dict
+        + verify_otp(req_body, txn_id) : Dict
+    }
+
+    class AuthService {
+        + _user_repository : IUserRepository
+        + _user_group_rel_repository : UserGroupRelRepository
+        + _auth_attempt_repository : IAuthAttemptRepository
+        + _token_service : ITokenService
+        + _sms_service : ISmsService
+        + get_registered_user(phone_number) : Any
+        + request_otp(user, country_code) : Dict
+        + verify_otp(req_body, txn_id) : Dict
+    }
+
+    interface IElectricalAppliancesService {
+        + get_electrical_appliances() : List[T]
+        + create(user_id, data) : T
+    }
+
+    class ElectricalAppliancesService {
+        + repository : IElectricalAppliancesRepository
+        + get_electrical_appliances() : List[T]
+    }
+
+    class LoadProfileService {
+        + _load_profile_repository : ILoadProfileRepository
+        + _load_details_repository : ILoadProfileDetailsRepository
+        + _load_profile_files_repository : ILoadProfileFilesRepository
+        + _user_repository : IUserRepository
+        + _load_profile_builder_repository : ILoadProfileBuilderRepository
+        + _load_generation_engine_repository : ILoadGenerationEngineRepository
+        + _load_predefined_templates_repository : IPredefinedTemplatesRepository
+        + delete_profile(self, profile_id) : bool
+        + list_profiles(self, user_id, house_id) : List[Dict]
+        + upload_profile_service_file(self, user_id, profile_name, file, interval_15_minutes, house_id) : Dict
+        + save_load_profile_items(self, user_id, house_id, items) : Tuple[List[Any], int]
+        + get_load_profile_builder_items(self, user_id, house_id) : Tuple[List[Any], int]
+        + get_load_profile_file(self, profile_id) : Any
+        + read_excel(file) : pd.DataFrame
+        + read_csv(file) : pd.DataFrame
+        + process_dataframe(self, user_id, df, profile_name, house_id) : Tuple[List[Dict], Any]
+        + save_load_generation_engine(self, user_id, house_id, data) : Any
+        + get_load_generation_engine(self, user_id, house_id) : Any
+        + create_or_update_load_predefined_template(self, user_id, house_id, template_id) : Any
+        + get_load_predefined_template(self, user_id, house_id) : Any
+    }
+}
+
+package "schemas" {
+    package "auth" {
+        abstract AuditableBase {
+            + created_on : DateTimeField
+            + modified_on : DateTimeField
+            + created_by : ForeignKeyField(User)
+            + modified_by : ForeignKeyField(User)
+        }
+
+        class AuthAttempts {
+            + txn_id : UUIDField (primary_key)
+            + phone_number : CharField
+            + country_code : CharField
+            + otp : CharField
+            + state : EnumField(AuthenticationState)
+            + state_desc : CharField
+            + verification_attempt_count : IntegerField
+            + gateway_send_otp_res_status : CharField
+            + gateway_send_otp_res_body : BinaryJSONField
+            + claims_issued : CharField
+            + backing_txn_id : UUIDField
+            + created_on : DateTimeField
+            + modified_on : DateTimeField
+            + created_by : ForeignKeyField(User)
+            + modified_by : ForeignKeyField(User)
+        }
+
+        class AuthenticatedSessions {
+            + id : UUIDField (primary_key)
+            + record_id : ForeignKeyField('self')
+            + user : ForeignKeyField(User)
+            + group_id : ForeignKeyField(Groups)
+            + relative_auth_attempt : ForeignKeyField(AuthAttempts)
+            + validity_start : DateTimeField
+            + validity_end : InfDateTimeField
+        }
+
+        class Groups {
+            + id : BigAutoField (primary_key)
+            + name : CharField
+            + description : CharField
+            + roles : ManyToManyField(Roles)
+        }
+
+        class GroupRoleRel {
+            + group : ForeignKeyField(Groups)
+            + role : ForeignKeyField(Roles)
+        }
+
+        class Permissions {
+            + id : BigAutoField (primary_key)
+            + name : CharField (unique)
+            + description : CharField
+            + resource_name : CharField
+            + can_retrieve : BooleanField
+            + can_search : BooleanField
+            + can_create : BooleanField
+            + can_update : BooleanField
+            + can_delete : BooleanField
+        }
+
+        class Roles {
+            + id : BigAutoField (primary_key)
+            + name : EnumField(UserRoles) (unique)
+            + description : CharField
+            + permissions : ManyToManyField(Permissions)
+        }
+
+        class RolePermissionRel {
+            + role : ForeignKeyField(Roles)
+            + permission : ForeignKeyField(Permissions)
+        }
+
+        class UserGroupRel {
+            + id : BigAutoField (primary_key)
+            + record_id : UUIDField
+            + active : BooleanField
+            + user_record_id : UUIDField
+            + group_id : IntegerField
+            + validity_start : DateTimeField
+            + validity_end : InfDateTimeField
+            + created_on : DateTimeField
+            + modified_on : DateTimeField
+            + created_by : UUIDField
+            + modified_by : UUIDField
+        }
+    }
+
+    package "enums" {
+        enum NodeStatusEnum {
+            Complete
+            Empty
+            InProgress
+        }
+
+        enum UserRoles {
+            Admin
+            Consumer
+            Prosumer
+            Guest
+            Pending
+        }
+    }
+
+    package "load_profile" {
+        class LoadGenerationEngine {
+            + id : IntegerField (primary_key)
+            + user_id : ForeignKeyField(User)
+            + profile_id : ForeignKeyField(LoadProfiles)
+            + type : CharField
+            + average_kwh : DecimalField
+            + average_monthly_bill : DecimalField
+            + max_demand_kw : DecimalField
+        }
+
+        class LoadPredefinedTemplates {
+            + id : IntegerField (primary_key)
+            + profile_id : ForeignKeyField(LoadProfiles)
+            + template_id : ForeignKeyField(PredefinedTemplates)
+        }
+
+        class LoadProfileBuilderItems {
+            + id : IntegerField (primary_key)
+            + profile_id : ForeignKeyField(LoadProfiles)
+            + electrical_device_id : ForeignKeyField(ElectricalAppliances)
+            + rating_watts : IntegerField
+            + quantity : IntegerField
+            + hours : IntegerField
+        }
+
+        class LoadProfileDetails {
+            + id : IntegerField (primary_key)
+            + profile_id : ForeignKeyField(LoadProfiles)
+            + timestamp : DateTimeField
+            + consumption_kwh : DoubleField
+        }
+
+        class LoadProfileFiles {
+            + id : IntegerField (primary_key)
+            + profile_id : ForeignKeyField(LoadProfiles)
+            + filename : CharField
+            + content : BlobField
+        }
+
+        class LoadProfiles {
+            + id : IntegerField (primary_key)
+            + user_id : ForeignKeyField(User)
+            + house_id : ForeignKeyField(Node)
+            + profile_name : CharField
+            + source : CharField
+            + public : BooleanField
+        }
+
+
+        LoadProfiles "1" --* "1" LoadProfileFiles
+        LoadProfiles "1" --* "1" LoadPredefinedTemplates
+        LoadProfiles "1" --* "1" LoadProfileBuilderItems
+        LoadProfiles "1" --* "1" LoadGenerationEngine
+        LoadProfileFiles "1" --* "many" LoadProfileDetails
+    }
+
+    package "master" {
+        class ElectricalAppliances {
+            + id : PrimaryKeyField
+            + name : CharField
+            + active : BooleanField
+            + created_on : DateTimeField
+            + modified_on : DateTimeField
+            + created_by : ForeignKeyField(User)
+            + modified_by : ForeignKeyField(User)
+        }
+
+        class PredefinedTemplates {
+            + id : PrimaryKeyField
+            + name : CharField
+            + active : BooleanField
+            + created_by : ForeignKeyField(User)
+            + modified_by : ForeignKeyField(User)
+            + created_on : DateTimeField
+            + modified_on : DateTimeField
+            + power_kw : DoubleField
+        }
+    }
+
+    package "transactional" {
+        abstract Transactional {
+            + id : UUIDField (primary_key)
+            + active : BooleanField
+        }
+
+        class House {
+            + node : ForeignKeyField(Node)
+            + load_profile : TextField
+            + has_solar : BooleanField
+            + solar_kw : DecimalField
+            + house_type : CharField
+            + connection_kw : DecimalField
+            + has_battery : BooleanField
+            + battery_type : CharField
+            + voluntary_storage : BooleanField
+            + battery_peak_charging_rate : DecimalField
+            + battery_peak_discharging_rate : DecimalField
+            + battery_total_kwh : DecimalField
+        }
+
+        class Locality {
+            + name : CharField
+        }
+
+        class Node {
+            + parent : ForeignKeyField('self')
+            + node_type : CharField
+            + name : CharField
+            + nomenclature : CharField
+            + substation : ForeignKeyField(Substation)
+        }
+
+        class Substation {
+            + locality : ForeignKeyField(Locality)
+            + name : CharField
+        }
+
+        class Transformer {
+            + node : ForeignKeyField(Node)
+            + max_capacity_kw : DecimalField
+            + allow_export : BooleanField
+            + name : CharField
+            + backward_efficiency : DecimalField
+            + primary_ampacity : DecimalField
+            + secondary_ampacity : DecimalField
+            + years_of_service : IntegerField
+            + forward_efficiency : DecimalField
+            + digital_twin_model : BooleanField
+        }
+
+
+        Locality --|> Transactional
+        Node --|> Transactional
+        House --|> Node
+        Substation --|> Node
+        Transformer --|> Node
+    }
+
+    package "user_schema" {
+        class Account {
+            + id : UUIDField (primary_key)
+            + active : BooleanField
+            + alias_name : CharField
+            + phone_number : CharField
+            + type : CharField
+            + validity_start : DateTimeField
+            + validity_end : InfDateTimeField
+            + record_id : ForeignKeyField('self')
+            + created_on : DateTimeField
+            + modified_on : DateTimeField
+            + created_by : ForeignKeyField('self')
+            + modified_by : ForeignKeyField('self')
+        }
+
+        class User {
+            + id : UUIDField (primary_key)
+            + active : BooleanField
+            + phone_number : CharField
+            + user_name : CharField
+            + name : CharField
+            + last_name : CharField
+            + validity_start : DateTimeField
+            + validity_end : InfDateTimeField
+            + locality : CharField
+            + country_code : CharField
+            + state : CharField
+            + email : CharField
+            + address : CharField
+            + record_id : ForeignKeyField('self')
+            + created_on : DateTimeField
+            + modified_on : DateTimeField
+            + created_by : ForeignKeyField('self')
+            + modified_by : ForeignKeyField('self')
+            + meter_number : CharField
+            + connection_number : CharField
+            + utility_id : UUIDField
+            + pin_code : CharField
+        }
+    }
+}
+
+
+
+IRepository <|.. BaseRepository
+IUserRepository <|.. UserRepository
+IGroupRepository <|.. GroupRepository
+IAuthAttemptRepository <|.. AuthAttemptRepository
+IService <|.. BaseService
+BaseService <|-- UserService
+INetTopologyService <|.. NetTopologyService
+BaseService <|-- TopologyServiceBase
+BaseService <|-- LoadProfileService
+BaseService <|-- SubstationService
+BaseService <|-- HouseService
+BaseService <|-- TransformerService
+BaseRepository <|-- AccountRepository
+BaseRepository <|-- ElectricalAppliancesRepository
+BaseRepository <|-- LocalityRepository
+BaseRepository <|-- SubstationRepository
+BaseRepository <|-- GroupRepository
+ITransformerRepository <|.. TransformerRepository
+INodeService <|.. NodeService
+BaseRepository <|-- TransformerRepository
+BaseRepository <|-- HouseRepository
+IHouseRepository <|.. HouseRepository
+BaseRepository <|-- NodeRepository
+BaseRepository <|-- UserRepository
+INodeRepository <|.. NodeRepository
+IAuthService <|.. AuthService
+BaseService <|-- ElectricalAppliancesService
+ILoadProfileRepository <|.. LoadProfilesRepository
+IElectricalAppliancesRepository <|-- ElectricalAppliancesRepository
+ILoadProfileDetailsRepository <|.. LoadProfileDetailsRepository
+ILoadProfileFilesRepository <|.. LoadProfileFilesRepository
+ILoadProfileBuilderRepository <|.. LoadProfileBuilderItemsRepository
+ILoadGenerationEngineRepository <|.. LoadGenerationEngineRepository
+IPredefinedTemplatesRepository <|.. PredefinedTemplatesRepository
+ISubstationService <|.. SubstationService
+
+
+
+@enduml
+```

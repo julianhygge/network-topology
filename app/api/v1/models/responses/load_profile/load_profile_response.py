@@ -139,3 +139,13 @@ class LoadPredefinedTemplateResponse(BaseModel):
         default={"self": "/v1/load_profiles/"},
         example={"self": "/v1/load_profiles/", "next": "/v1/load_profiles/?page=2"}
     )
+
+
+class LoadPredefinedMasterTemplateResponse(BaseModel):
+    id: int
+    name: str
+    power_kw: int
+
+
+class LoadPredefinedTemplateListResponse(BaseModel):
+    items: List[LoadPredefinedMasterTemplateResponse]

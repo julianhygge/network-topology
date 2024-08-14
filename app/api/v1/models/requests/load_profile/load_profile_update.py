@@ -50,9 +50,9 @@ class LoadGenerationType(str, Enum):
 
 class LoadGenerationEngineRequest(BaseModel):
     type: LoadGenerationType = Field(..., description="Type of load generation, either Monthly or Daily")
-    average_kwh: Optional[float] = Field(None, ge=0, le=999.999)
-    average_monthly_bill: Optional[float] = Field(None, ge=0, le=999.999)
-    max_demand_kw: Optional[float] = Field(None, ge=0, le=999.999)
+    average_kwh: Optional[float] = Field(None, ge=0)
+    average_monthly_bill: Optional[float] = Field(None, ge=0)
+    max_demand_kw: Optional[float] = Field(None, ge=0)
 
 
 class LoadGenerationEngineResponse(BaseModel):

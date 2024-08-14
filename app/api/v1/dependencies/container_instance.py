@@ -57,3 +57,7 @@ def get_electrical_appliances_service() -> IService:
 
 def get_load_profile_service():
     return c.load_profile_service()
+
+
+def get_predefined_template_service():
+    return c.predefined_template_service()

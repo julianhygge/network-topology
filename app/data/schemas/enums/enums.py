@@ -25,6 +25,7 @@ class UserRoles(enum.Enum):
     Guest = 'Guest'
 
 
-
-
-
+class NodeStatusEnum(enum.Enum):
+    Complete = "complete"
+    Empty = "empty"
+    InProgress = "in_progress"
