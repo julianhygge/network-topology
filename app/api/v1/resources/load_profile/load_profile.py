@@ -389,7 +389,7 @@ async def get_load_predefined_template(
 
 @load_router.get('/load_templates', response_model=LoadPredefinedTemplateListResponse)
 async def get_load_templates(service: IService = Depends(get_predefined_template_service),
-                         _: str = Depends(permission(Resources.Electrical, Permission.Retrieve))):
+                         _: str = Depends(permission(Resources.Electricals, Permission.Retrieve))):
     try:
         body = service.list_all()
         response = LoadPredefinedTemplateListResponse(items=[LoadPredefinedMasterTemplateResponse(**item) for item in body])
