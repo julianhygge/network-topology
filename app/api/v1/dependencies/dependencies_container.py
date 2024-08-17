@@ -12,7 +12,7 @@ from app.data.repositories.load_profile.load_profile_repository import LoadProfi
 from app.data.repositories.master.predefined_template_repository import PredefinedMasterTemplatesRepository
 from app.data.repositories.topology.topology_repository import SubstationRepository, TransformerRepository, \
     HouseRepository, NodeRepository
-from app.data.repositories.topology.electrical_appliances_repository import ElectricalAppliancesRepository
+from app.data.repositories.master.electrical_appliances_repository import ElectricalAppliancesRepository
 from app.data.schemas.hygge_database import HyggeDatabase
 from app.domain.services.auth_service import AuthService
 from app.domain.services.base_service import BaseService
@@ -26,7 +26,6 @@ from app.domain.services.topology.net_topology_service import NetTopologyService
 from app.domain.services.topology.substation_service import SubstationService
 from app.domain.services.topology.topology_simulator import TopologySimulator
 from app.domain.services.topology.transformer_service import TransformerService
-from app.domain.services.topology.electrical_appliances_service import ElectricalAppliancesService
 from app.domain.services.user_service import UserService
 from app.domain.services.websocket_service import WebSocketConnectionManager
 
@@ -108,7 +107,7 @@ class Container(containers.DeclarativeContainer):
     )
 
     electrical_appliances_service = providers.Factory(
-        ElectricalAppliancesService,
+        BaseService,
         repository=_electrical_appliances_repo
     )
 
@@ -147,4 +146,3 @@ class Container(containers.DeclarativeContainer):
         BaseService,
         repository=_predefined_master_templates_repository
     )
-

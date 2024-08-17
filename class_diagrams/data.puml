@@ -1,0 +1,292 @@
+@startuml
+hide empty members
+
+interface IRepository<T> {
+    + model : Any
+    + id_field : Union[int, UUID]
+    + create(**query) -> T
+    + read(id_value) -> T
+    + update(id_value, **query) -> int
+    + delete(id_value) -> int
+    + list() -> List[T]
+    + list_actives() -> List[T]
+    + list_public() -> List[T]
+    + upsert(conflict_target, defaults, **query) -> T
+    + upsert_and_retrieve(conflict_target, defaults, **query) -> T
+    + list_no_public_by_user_id(user_id) -> List[T]
+    + database_instance : HyggeDatabase
+    + to_dicts(obj) -> Union[Dict[str, Any], List[Dict[str, Any]], Any]
+    + list_by_user_id(user_id) -> List[T]
+}
+
+class BaseRepository {
+    + model : Any
+    + id_field : Any
+    + database_instance : HyggeDatabase
+    + create(**query) -> T
+    + read(id_value) -> T
+    + update(id_value, **query) -> int
+    + delete(id_value) -> int
+    + list() -> List[T]
+    + list_actives() -> List[T]
+    + list_public() -> List[T]
+    + upsert(conflict_target, defaults, **query) -> T
+    + upsert_and_retrieve(conflict_target, defaults, **query) -> T
+    + list_no_public_by_user_id(user_id) -> List[T]
+    + to_dicts(obj) -> Union[Dict[str, Any], List[Dict[str, Any]], Any]
+    + list_by_user_id(user_id) -> List[T]
+}
+
+IRepository <|.. BaseRepository
+
+class AccountRepository {
+    + model : Account
+    + id_field : Account.id
+}
+
+class LocalityRepository {
+    + model : Locality
+    + id_field : Locality.id
+}
+
+class SubstationRepository {
+    + model : Substation
+    + id_field : Substation.id
+    + create(**query) -> Substation
+}
+
+class TransformerRepository {
+    + model : Transformer
+    + id_field : Transformer.id
+    + get_transformers_by_substation_id(substation_id)
+}
+
+class HouseRepository {
+    + model : House
+    + id_field : House.id
+    + get_houses_by_substation_id(substation_id)
+}
+
+class NodeRepository {
+    + model : Node
+    + id_field : Node.id
+    + get_children(parent_id) -> List[Node]
+    + read(id_value) -> Optional[Node]
+    + get_parent(node_id) -> Optional[Node]
+    + get_substation(node_id) -> Optional[Node]
+    + get_locality(node_id) -> Optional[Locality]
+}
+
+BaseRepository <|-- AccountRepository
+BaseRepository <|-- LocalityRepository
+BaseRepository <|-- SubstationRepository
+BaseRepository <|-- TransformerRepository
+BaseRepository <|-- HouseRepository
+BaseRepository <|-- NodeRepository
+
+interface ITransformerRepository {
+    + get_transformers_by_substation_id(substation_id)
+}
+
+interface IHouseRepository {
+    + get_houses_by_substation_id(substation_id)
+}
+
+interface INodeRepository {
+    + get_children(parent_id) -> List[Node]
+    + read(id_value) -> Optional[Node]
+    + get_parent(node_id) -> Optional[Node]
+    + get_substation(node_id) -> Optional[Substation]
+    + get_locality(node_id) -> Optional[Locality]
+}
+
+ITransformerRepository <|.. TransformerRepository
+IHouseRepository <|.. HouseRepository
+INodeRepository <|.. NodeRepository
+
+class LoadProfilesRepository {
+    + model : LoadProfiles
+    + id_field : LoadProfiles.id
+    + get_public_profiles() -> List[LoadProfiles]
+    + get_load_profiles_by_user_id(user_id) -> List[LoadProfiles]
+    + get_load_profiles_by_user_id_and_house_id(user_id, house_id) -> List[LoadProfiles]
+    + get_or_create_by_house_id(user_id, house_id, load_source)
+    + get_by_house_id(house_id)
+}
+
+class LoadProfileDetailsRepository {
+    + model : LoadProfileDetails
+    + id_field : LoadProfileDetails.id
+    + delete_by_profile_id(profile_id) -> int
+    + create_details_in_bulk(details)
+    + get_load_details_by_load_id(load_id)
+}
+
+class LoadProfileFilesRepository {
+    + model : LoadProfileFiles
+    + id_field : LoadProfileFiles.id
+    + save_file(profile_id, filename, content)
+    + get_file(profile_id)
+}
+
+class LoadProfileBuilderItemsRepository {
+    + model : LoadProfileBuilderItems
+    + id_field : LoadProfileBuilderItems.id
+    + get_items_by_profile_id(profile_id) -> List[LoadProfileBuilderItems]
+    + create_items_in_bulk(items)
+    + delete_by_profile_id(profile_id) -> int
+    + update_items_in_bulk(items)
+}
+
+class LoadGenerationEngineRepository {
+    + model : LoadGenerationEngine
+    + id_field : LoadGenerationEngine.id
+    + delete_by_profile_id(profile_id) -> int
+}
+
+class PredefinedTemplatesRepository {
+    + model : LoadPredefinedTemplates
+    + id_field : LoadPredefinedTemplates.id
+    + get_by_profile_id(profile_id)
+    + create_or_update(profile_id, template_id)
+}
+
+BaseRepository <|-- LoadProfilesRepository
+BaseRepository <|-- LoadProfileDetailsRepository
+BaseRepository <|-- LoadProfileFilesRepository
+BaseRepository <|-- LoadProfileBuilderItemsRepository
+BaseRepository <|-- LoadGenerationEngineRepository
+BaseRepository <|-- PredefinedTemplatesRepository
+
+interface ILoadProfileRepository<T> {
+    + get_public_profiles() -> List[T]
+    + get_load_profiles_by_user_id(user_id) -> List[T]
+    + get_load_profiles_by_user_id_and_house_id(user_id, house_id) -> List[T]
+    + get_or_create_by_house_id(user_id, house_id, load_source)
+    + get_by_house_id(house_id)
+}
+
+interface ILoadProfileDetailsRepository<T> {
+    + create_details_in_bulk(details : List[T]) -> None
+    + delete_by_profile_id(profile_id) -> int
+    + get_load_details_by_load_id(load_id)
+}
+
+interface ILoadProfileFilesRepository<T> {
+    + save_file(profile_id, filename, content)
+    + get_file(file_id)
+}
+
+interface ILoadProfileBuilderRepository<T> {
+    + get_items_by_profile_id(profile_id) -> List[LoadProfileBuilderItems]
+    + create_items_in_bulk(items)
+    + delete_by_profile_id(profile_id) -> int
+    + update_items_in_bulk(items)
+}
+
+interface ILoadGenerationEngineRepository<T> {
+    + delete_by_profile_id(profile_id) -> int
+}
+
+interface IPredefinedTemplatesRepository<T> {
+    + get_by_profile_id(profile_id)
+    + create_or_update(profile_id, template_id)
+}
+
+ILoadProfileRepository <|.. LoadProfilesRepository
+ILoadProfileDetailsRepository <|.. LoadProfileDetailsRepository
+ILoadProfileFilesRepository <|.. LoadProfileFilesRepository
+ILoadProfileBuilderRepository <|.. LoadProfileBuilderItemsRepository
+ILoadGenerationEngineRepository <|.. LoadGenerationEngineRepository
+IPredefinedTemplatesRepository <|.. PredefinedTemplatesRepository
+
+
+class AuthAttemptRepository {
+    + model : AuthAttempts
+    + id_field : AuthAttempts.txn_id
+    + fetch_all_previous_records_for_user(phone_number, records_after_time) -> List[AuthAttempts]
+}
+
+class GroupRepository {
+    + model : Groups
+    + id_field : Groups.id
+    + fetch_roles_and_permissions_by_groups(session_user, now) -> List[RolePermission]
+}
+
+class UserGroupRelRepository {
+    + model : UserGroupRel
+    + id_field : UserGroupRel.id
+    + delete_by_user_id(user_id)
+    + get_groups_by_user_id(user_id)
+    + add_user_to_group(logged_user_id, user_id, group_id)
+    + remove_user_from_group(user_id, group_id)
+}
+
+class UserRepository {
+    + model : User
+    + model_user_group : UserGroupRel
+    + model_account : Account
+    + id_field : User.id
+    + fetch_user_by_phone_number(phone_number) -> T
+    + fetch_account_by_phone_number(phone_number) -> T
+    + insert_into_user_and_group(user_data, data) -> T
+    + insert_into_account(**data)
+    + update_user_group(user_id, **query)
+}
+
+BaseRepository <|-- AuthAttemptRepository
+BaseRepository <|-- GroupRepository
+BaseRepository <|-- UserGroupRelRepository
+BaseRepository <|-- UserRepository
+
+interface IAuthAttemptRepository<T> {
+    + fetch_all_previous_records_for_user(phone_number, records_after_time) -> List[T]
+}
+
+interface IGroupRepository<T> {
+    + fetch_roles_and_permissions_by_groups(session_user, now) -> List[RolePermission]
+}
+
+interface IUserRepository<T> {
+    + fetch_user_by_phone_number(phone_number) -> T
+    + fetch_account_by_phone_number(phone_number) -> T
+    + insert_into_user_and_group(user_data, data) -> T
+    + insert_into_account(**data)
+    + update_user_group(user_id, data)
+}
+
+IAuthAttemptRepository <|.. AuthAttemptRepository
+IGroupRepository <|.. GroupRepository
+IUserRepository <|.. UserRepository
+
+class ElectricalAppliancesRepository {
+    + model : ElectricalAppliances
+    + id_field : ElectricalAppliances.id
+}
+
+BaseRepository <|-- ElectricalAppliancesRepository
+
+interface IElectricalAppliancesRepository<T> {
+    + read(id_value) -> T
+}
+
+IElectricalAppliancesRepository <|.. ElectricalAppliancesRepository
+
+class PredefinedMasterTemplatesRepository {
+    + model : PredefinedTemplates
+    + id_field : PredefinedTemplates.id
+}
+
+BaseRepository <|-- PredefinedMasterTemplatesRepository
+
+class HyggeDatabase {
+    - _config : Any
+    - _instance : Any
+    + {static} set_config(config)
+    + {static} get_instance() -> HyggeDatabase
+    - {static} _test_connection() -> bool
+    - {static} _create_db_instance() -> HyggeDatabase
+    - {static} _set_utc_timezone(db_instance)
+}
+
+@enduml
