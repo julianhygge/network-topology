@@ -1,5 +1,4 @@
 from dependency_injector import containers, providers
-
 from app.config.configuration import ApiConfiguration
 from app.data.interfaces.irepository import IRepository
 from app.data.repositories.authorization.auth_attempt_repository import AuthAttemptRepository
@@ -27,7 +26,6 @@ from app.domain.services.topology.substation_service import SubstationService
 from app.domain.services.topology.topology_simulator import TopologySimulator
 from app.domain.services.topology.transformer_service import TransformerService
 from app.domain.services.user_service import UserService
-from app.domain.services.websocket_service import WebSocketConnectionManager
 
 
 class Container(containers.DeclarativeContainer):
@@ -56,10 +54,6 @@ class Container(containers.DeclarativeContainer):
         configuration,
         _account_repository,
         _group_repository
-    )
-
-    web_socket_service = providers.Singleton(
-        WebSocketConnectionManager
     )
 
     mqtt_service = providers.Factory(

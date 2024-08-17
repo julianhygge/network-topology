@@ -266,11 +266,6 @@ class ElectricalAppliancesRepository {
 
 BaseRepository <|-- ElectricalAppliancesRepository
 
-interface IElectricalAppliancesRepository<T> {
-    + read(id_value) -> T
-}
-
-IElectricalAppliancesRepository <|.. ElectricalAppliancesRepository
 
 class PredefinedMasterTemplatesRepository {
     + model : PredefinedTemplates
