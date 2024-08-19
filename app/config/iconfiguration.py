@@ -55,3 +55,9 @@ class IConfiguration(ABC):
     def get(self, setting, default=None):
         """Method to get a setting value with an optional default"""
         pass
+
+    @property
+    @abstractmethod
+    def load_profile(self):
+        """Load profile configuration"""
+        pass
