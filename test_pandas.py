@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv("../load_consumption_2024.csv")
+df = pd.read_csv("../consumption.csv")
 
 
 def info(df):
@@ -32,7 +32,7 @@ df.rename(
 )
 
 df["timestamp"] = pd.to_datetime(
-    df["timestamp"], dayfirst=True, format="mixed"
+    df["timestamp"], dayfirst=True, format="%m/%d/%Y %H:%M"
 )  # TODO: Support many date formats
 print("New data: \n")
 info(df)
@@ -48,6 +48,4 @@ for i in records:
 """
 info(df)
 print(isinstance(df.iat[0, 0], pd.Timestamp))
-df.to_csv(
-    "../load_consumption_2024_bad.csv", index=False, date_format="%Y-%d-%m %H:%M:%S"
-)
+df.to_csv("../load_consumption_15mins.csv", index=False, date_format="%d/%m/%Y %H:%M")

@@ -167,6 +167,30 @@ class LoadProfileService(BaseService):
         combined_profiles = get_public_profiles + get_private_profile_by_user
         return [self._map_profile_to_dict(profile) for profile in combined_profiles]
 
+    def _find_time_format(self, df: pd.DataFrame) -> str:
+        """
+        Finds the time format used in the data frame, returns it and converts the timestamps to datetime objects.
+        """
+        formats = [
+            "%d/%m/%Y %H:%M",
+            "%d-%m-%Y %H:%M",
+            "%m/%d/%Y %H:%M",
+            "%Y-%m-%d %H:%M",
+            "%Y/%m/%d %H:%M",
+            "%d/%m/%Y",
+            "%d-%m-%Y",
+            "%m/%d/%Y",
+            "%Y-%m-%d",
+            "%Y/%m/%d",
+        ]
+        for format in formats:
+            try:
+                df["timestamp"] = pd.to_datetime(df["timestamp"], format=format)
+                return format
+            except ValueError:
+                pass
+        raise ValueError("Could not determine time format")
+
     def _validate_and_prepare_profile_data(self, df: pd.DataFrame) -> None:
         """Validates and prepares the data frame for processing."""
         if df.empty:
@@ -182,9 +206,7 @@ class LoadProfileService(BaseService):
             inplace=True,
         )
 
-        df["timestamp"] = pd.to_datetime(
-            df["timestamp"], dayfirst=True, format="mixed"
-        )  # TODO: Support many date formats
+        self._find_time_format(df)
 
         min_date = df.iat[0, 0]
         max_date = df.iat[-1, 0]
@@ -321,26 +343,9 @@ class LoadProfileService(BaseService):
         }
 
         load_profile = self._load_profile_repository.create(**profile_data)
+        df.insert(2, "profile_id", load_profile.id)
         details = df.to_dict("records")
-
-        processed_details = []
-        for detail in details:
-            columns = list(detail.keys())
-            datetime_column = columns[0]
-            production_column = columns[1]
-            timestamp = detail[datetime_column]
-            processed_detail = {
-                "profile_id": load_profile.id,
-                "timestamp": (
-                    timestamp
-                    if isinstance(timestamp, Timestamp)
-                    else datetime.datetime.strptime(timestamp, "%d/%m/%Y %H:%M")
-                ),
-                "consumption_kwh": detail[production_column],
-            }
-            processed_details.append(processed_detail)
-
-        return processed_details, load_profile
+        return details, load_profile
 
     def _get_load_profiles_by_user_id(self, user_id, house_id):
         return self._load_profile_repository.get_load_profiles_by_user_id_and_house_id(
