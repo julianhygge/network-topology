@@ -28,6 +28,7 @@ from app.domain.interfaces.enums.load_source_enum import LoadSource
 from app.domain.services.base_service import BaseService
 from app.domain.services.topology.load_profile_file_completer import (
     LoadProfileFileCompleterLinearInterpolate,
+    LoadProfileFileCompleterSpline,
 )
 from app.utils.logger import logger
 
@@ -351,7 +352,8 @@ class LoadProfileService(BaseService):
             details = df.to_dict("records")
             return details, load_profile
         # TODO: Add more strategies
-        lpfcli = LoadProfileFileCompleterLinearInterpolate()
+        # lpfcli = LoadProfileFileCompleterLinearInterpolate()
+        lpfcli = LoadProfileFileCompleterSpline()
         df = lpfcli.complete_data(df)
         logger.info(df.head())
         details = df.to_dict("records")
