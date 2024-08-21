@@ -1,25 +1,11 @@
-from pandas import DataFrame, DatetimeIndex, Timestamp, date_range, Timedelta
+from pandas import DataFrame
 from numpy import interp
 from app.domain.interfaces.net_topology.iload_profile_file_completer import (
-    ILoadProfileFileCompleter,
+    BaseLoadProfileFileCompleter,
 )
-from app.utils.logger import logger
 
 
-class LoadProfileFileCompleterBase(ILoadProfileFileCompleter):
-    def create_interpolation_array(
-        self, min_date: Timestamp, max_date: Timestamp
-    ) -> DatetimeIndex:
-        min_value = min_date.floor("15min")
-        if max_date.minute == 0:
-            max_date = max_date + Timedelta("1h")
-        max_value = max_date.ceil("1h")
-        return date_range(
-            start=min_value, end=max_value, freq="15min", inclusive="left"
-        )
-
-
-class LoadProfileFileCompleterLinearInterpolate(LoadProfileFileCompleterBase):
+class LoadProfileFileCompleterLinearInterpolate(BaseLoadProfileFileCompleter):
     def complete_data(self, profile_data):
         interpolation_array = self.create_interpolation_array(
             profile_data["timestamp"].min(), profile_data["timestamp"].max()
@@ -36,10 +22,6 @@ class LoadProfileFileCompleterLinearInterpolate(LoadProfileFileCompleterBase):
             }
         )
         profile_id = profile_data.at[0, "profile_id"]
-        logger.info(f"Profile ID: {profile_id}")
         output.insert(2, "profile_id", profile_id)
-        logger.info(f"{output.head()}")
-        logger.info(f"{output.tail()}")
-        logger.info(output.info())
 
         return output

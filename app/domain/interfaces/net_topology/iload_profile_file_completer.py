@@ -1,8 +1,20 @@
 from abc import ABC, abstractmethod
-from pandas import DataFrame
+from pandas import DataFrame, DatetimeIndex, Timedelta, Timestamp, date_range
 
 
-class ILoadProfileFileCompleter(ABC):
+class BaseLoadProfileFileCompleter(ABC):
+    def create_interpolation_array(
+        self, min_date: Timestamp, max_date: Timestamp
+    ) -> DatetimeIndex:
+        """Create the interpolation timestamp array based on the min and max date."""
+        min_value = min_date.floor("15min")
+        if max_date.minute == 0:
+            max_date = max_date + Timedelta("1h")
+        max_value = max_date.ceil("1h")
+        return date_range(
+            start=min_value, end=max_value, freq="15min", inclusive="left"
+        )
+
     @abstractmethod
     def complete_data(self, profile_data: DataFrame) -> DataFrame:
         """
