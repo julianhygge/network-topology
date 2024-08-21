@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv("../consumption.csv")
+df = pd.read_csv("../load_consumption.csv")
 
 
 def info(df):
@@ -17,7 +17,7 @@ def info(df):
 info(df)
 
 profile_id = 5
-df.insert(2, "profile_id", profile_id)
+# df.insert(2, "profile_id", profile_id)
 info(df)
 assert len(df.columns) >= 2
 print(df.columns, len(df.columns))
@@ -31,9 +31,8 @@ df.rename(
     columns={df.columns[0]: "timestamp", df.columns[1]: "consumption_kwh"}, inplace=True
 )
 
-df["timestamp"] = pd.to_datetime(
-    df["timestamp"], dayfirst=True, format="%m/%d/%Y %H:%M"
-)  # TODO: Support many date formats
+df["timestamp"] = pd.to_datetime(df["timestamp"], dayfirst=True, format="%Y/%m/%d")
+df.drop_duplicates(inplace=True, subset=["timestamp"], keep="first")
 print("New data: \n")
 info(df)
 min_date = df.iat[0, 0]
@@ -48,4 +47,4 @@ for i in records:
 """
 info(df)
 print(isinstance(df.iat[0, 0], pd.Timestamp))
-df.to_csv("../load_consumption_15mins.csv", index=False, date_format="%d/%m/%Y %H:%M")
+df.to_csv("../load_consumption_other.csv", index=False, date_format="%Y-%m-%d")

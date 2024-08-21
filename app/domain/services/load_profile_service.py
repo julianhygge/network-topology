@@ -26,6 +26,9 @@ from app.data.interfaces.load.ipredefined_templates_repository import (
 )
 from app.domain.interfaces.enums.load_source_enum import LoadSource
 from app.domain.services.base_service import BaseService
+from app.domain.services.topology.load_profile_file_completer import (
+    LoadProfileFileCompleterLinearInterpolate,
+)
 from app.utils.logger import logger
 
 
@@ -344,6 +347,13 @@ class LoadProfileService(BaseService):
 
         load_profile = self._load_profile_repository.create(**profile_data)
         df.insert(2, "profile_id", load_profile.id)
+        if is_15_mins_interval:
+            details = df.to_dict("records")
+            return details, load_profile
+        # TODO: Add more strategies
+        lpfcli = LoadProfileFileCompleterLinearInterpolate()
+        df = lpfcli.complete_data(df)
+        logger.info(df.head())
         details = df.to_dict("records")
         return details, load_profile
 
@@ -363,9 +373,6 @@ class LoadProfileService(BaseService):
         for i in range(1, len(timestamps)):
             diff = timestamps[i] - timestamps[i - 1]
             if diff.total_seconds() != interval_in_seconds:
-                logger.info(f"{diff.total_seconds() = }")
-                logger.info(f"{timestamps[i] = }")
-                logger.info(f"{timestamps[i - 1] = }")
                 raise ValueError("Data is not in 15-minute intervals")
 
     def save_load_generation_engine(self, user_id: UUID, house_id: UUID, data: dict):
