@@ -16,7 +16,7 @@ from app.data.interfaces.load.iload_profile_details_repository import (
 )
 from io import BytesIO
 import pandas as pd
-from pandas import Timestamp
+from pandas import DatetimeIndex, Timedelta, Timestamp, date_range
 from app.data.interfaces.iuser_repository import IUserRepository
 from app.data.interfaces.load.iload_profile_files_repository import (
     ILoadProfileFilesRepository,
@@ -327,6 +327,18 @@ class LoadProfileService(BaseService):
         df = pd.read_csv(BytesIO(content))
         return df
 
+    def create_interpolation_array(
+        self, min_date: Timestamp, max_date: Timestamp
+    ) -> DatetimeIndex:
+        """Create the interpolation timestamp array based on the min and max date."""
+        min_value = min_date.floor("15min")
+        if max_date.minute == 0:
+            max_date = max_date + Timedelta("1h")
+        max_value = max_date.ceil("1h")
+        return date_range(
+            start=min_value, end=max_value, freq="15min", inclusive="left"
+        )
+
     def process_dataframe(
         self,
         user_id,
@@ -351,10 +363,18 @@ class LoadProfileService(BaseService):
         if is_15_mins_interval:
             details = df.to_dict("records")
             return details, load_profile
-        # TODO: Add more strategies
-        # lpfcli = LoadProfileFileCompleterLinearInterpolate()
-        lpfcli = LoadProfileFileCompleterSpline()
-        df = lpfcli.complete_data(df)
+        interpolation_array = self.create_interpolation_array(
+            df["timestamp"].min(), df["timestamp"].max()
+        )
+        timestamps = df["timestamp"]
+        consumption_kwh = df["consumption_kwh"]
+        load_profile_completer = LoadProfileFileCompleterLinearInterpolate()
+        # load_profile_completer = LoadProfileFileCompleterSpline()
+        result = load_profile_completer.complete_data(
+            timestamps, consumption_kwh, interpolation_array
+        )
+        df = pd.DataFrame({"timestamp": interpolation_array, "consumption_kwh": result})
+        df.insert(2, "profile_id", load_profile.id)
         logger.info(df.head())
         details = df.to_dict("records")
         return details, load_profile
