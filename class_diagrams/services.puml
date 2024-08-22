@@ -1,0 +1,197 @@
+@startuml
+hide empty members
+
+interface IService {
+    + create(user_id: str, **kwargs) -> Dict[str, Any]
+    + read(item_id: Union[int, uuid.UUID]) -> Optional[Dict[str, Any]]
+    + update(user_id: str, item_id: Union[int, UUID], **kwargs) -> Optional[Dict[str, Any]]
+    + list(user_id: str) -> List[Dict[str, Any]]
+    + list_all() -> List[Dict[str, Any]]
+    + delete(item_id: Union[int, UUID]) -> bool
+}
+
+class BaseService {
+    + repository : IRepository
+    + create(user_id: str, **kwargs) -> Dict[str, Any]
+    + read(item_id: Union[int, uuid.UUID]) -> Optional[Dict[str, Any]]
+    + update(user_id: str, item_id: int, **kwargs) -> Optional[Dict[str, Any]]
+    + delete(item_id: int) -> bool
+    + list(user_id: str) -> List[Dict[str, Any]]
+    + list_all() -> List[Dict[str, Any]]
+}
+
+IService <|.. BaseService
+
+class AuthService {
+    - _user_repository : IUserRepository
+    - _user_group_rel_repository : UserGroupRelRepository
+    - _auth_attempt_repository : IAuthAttemptRepository
+    - _token_service : ITokenService
+    - _sms_service : ISmsService
+    - _max_resend_otp_attempt_window_in_min : int
+    - _max_resend_otp_attempts : int
+    - _max_otp_verification_attempts : int
+    - _master_otp_admin : int
+    - _master_otp_user : int
+    - _admin_number : str
+    - _user_number : str
+    + get_registered_user(phone_number)
+    + request_otp(user, country_code)
+    + verify_otp(req_body, txn_id)
+    - _new_attempt(user, country_code, otp, txn_id)
+}
+
+class LoadProfileService {
+    - _load_profile_repository : ILoadProfileRepository
+    - _load_details_repository : ILoadProfileDetailsRepository
+    - _load_profile_files_repository : ILoadProfileFilesRepository
+    - _user_repository : IUserRepository
+    - _load_profile_builder_repository : ILoadProfileBuilderRepository
+    - _load_generation_engine_repository : ILoadGenerationEngineRepository
+    - _predefined_templates_repository : IPredefinedTemplatesRepository
+    + delete_profile(profile_id)
+    + list_profiles(user_id, house_id)
+    + upload_profile_service_file(user_id, profile_name, file, interval_15_minutes, house_id)
+    + save_load_profile_items(user_id, house_id, items)
+    + get_load_profile_builder_items(user_id, house_id)
+    + get_load_profile_file(profile_id)
+    - _map_profile_to_dict(profile)
+    - _apply_general_adjustments(consumption_pattern, interval_minutes)
+    - _normalize_adjusted_consumptions(adjusted_consumptions, original_total_consumption)
+    - _divide_consumption_in_intervals(total_consumption, interval_minutes)
+    - _initialize_consumption_pattern(interval_minutes)
+    - _apply_profile_adjustments(people_profiles, consumption_pattern, interval_minutes)
+    - _adjust_for_home_workers(consumption_pattern, interval_minutes)
+    - _adjust_for_night_workers(consumption_pattern, interval_minutes)
+    - _adjust_for_day_workers(consumption_pattern, interval_minutes)
+    - _get_load_profiles_by_user_id(user_id, house_id)
+    - _get_public_profiles()
+    - _validate_15_minute_intervals(df)
+    + process_dataframe(user_id, df, profile_name, house_id)
+    + read_excel(file)
+    + read_csv(file)
+    + save_load_generation_engine(user_id, house_id, data)
+    + get_load_generation_engine(user_id, house_id)
+    + create_or_update_load_predefined_template(user_id, house_id, template_id)
+    + get_load_predefined_template(user_id, house_id)
+}
+
+class MQTTService {
+    - _username : str
+    - _password : str
+    - _broken_url : str
+    - _port : int
+    + send_message_to_topic(topic_name, message, broken_url, port)
+    + sms_content_dict(application_name, mobile_no, otp, txn_id)
+    + send_sms(topic_name, application_name, mobile_no, otp, txn_id)
+    + to_json(json_dict)
+}
+
+class TokenService {
+    - _session_token_secret : str
+    - _session_validity_in_hours : int
+    - _session_validity_in_hours_refresh_token : int
+    - _account_repo : IRepository
+    - _group_repo : IGroupRepository
+    + issue_new_token(session_user, txn_id)
+    + decode_token(jwt_token, verify_expiry)
+    + issue_refresh_token(user_id)
+    + {static} validate_token_claims(claims)
+    - {static} _resolve_permission(permission)
+}
+
+class UserService {
+    - _token_service : ITokenService
+    - _user_repository : IUserRepository
+    - _user_group_repository : UserGroupRelRepository
+    - _group_repository : IRepository
+    - _account_repository : IRepository
+    + create(**user_data)
+    + list_all() -> List[Dict[str, Any]]
+    + delete(user_id)
+    + add_user_to_group(logged_user_id, user_id, group_id)
+    + remove_user_from_group(user_id, group_id)
+    + update_user_logo(session_user, user_id, file_logo)
+    + get_user_logo(user_id)
+}
+
+class NetTopologyService {
+    + substation_repo : IRepository
+    + node_repo : INodeRepository
+    + transformer_repo : IRepository
+    + house_repo : IRepository
+    - INITIALS : Dict[str, str]
+    + get_topology_by_substation_id(substation_id) -> Dict[str, Any]
+    - _get_node_details(node)
+    - _get_basic_node_details(node) -> Dict[str, Any]
+    - _get_transformer_details(node_id) -> Dict[str, Any]
+    - _get_house_details(node_id) -> Dict[str, Any]
+    + update_topology(user_id, substation_id, data)
+    - _update_node_topology(user_id, substation_id, parent_node, nodes_data)
+    - _add_new_node(user_id, substation_id, parent_node, node_type)
+    - _get_children_count(parent_node)
+    - _generate_node_name(parent, node_type) -> str
+    - _prepare_new_node_data(user_id, substation_id, parent_node, node_type, nomenclature) -> dict
+    - _save_new_node(substation_id, new_node_id, node_type)
+    - _delete_node(node_id)
+    + update_transformer(user_id, transformer_id, data) -> Dict[str, Any]
+    + update_house(user_id, house_id, data) -> Dict[str, Any]
+}
+
+class TransformerService {
+    + repository : IRepository
+    + read(item_id: Union[int, uuid.UUID]) -> Optional[Dict[str, Any]]
+}
+
+class HouseService {
+    + repository : IRepository
+    + read(item_id: Union[int, uuid.UUID]) -> Optional[Dict[str, Any]]
+}
+
+class TopologyServiceBase {
+    + repository : IRepository
+    + {static} _get_house_status(house) -> NodeStatusEnum
+    + {static} _to_status_enum(at_least_one_filled, all_filled) -> NodeStatusEnum
+    + {static} _check_required_fields(node, required_fields) -> NodeStatusEnum
+    + {static} _get_transformer_status(transformer) -> NodeStatusEnum
+}
+
+class ElectricalAppliancesService {
+    + repository : IElectricalAppliancesRepository
+    + get_electrical_appliances()
+}
+
+class SubstationService {
+    + create_bulk(user_id: UUID, **data) -> list[dict[str, Any]]
+}
+
+class TopologySimulator {
+    - _house_repo : IHouseRepository
+    - _transformer_repo : ITransformerRepository
+    + calculate_total_load(houses)
+    + calculate_total_solar(houses)
+    + calculate_excess_solar(total_solar, total_load) -> Decimal
+    + calculate_battery_capacity(houses)
+    + calculate_peak_capacity_rate(houses)
+    + run(substation_id)
+    + allocation_algorithm(houses, transformers, total_load, total_solar, excess_solar, battery_capacity, peak_capacity_rate) -> None
+}
+
+class NodeService {
+    + node_repo : INodeRepository
+    + read(item_id: UUID) -> Optional[Dict[str, Any]]
+    + get_breadcrumb_navigation_path(node_id: UUID) -> BreadcrumbResponseModel
+}
+
+BaseService <|-- AuthService
+BaseService <|-- LoadProfileService
+BaseService <|-- UserService
+BaseService <|-- NetTopologyService
+BaseService <|-- TransformerService
+BaseService <|-- HouseService
+BaseService <|-- ElectricalAppliancesService
+BaseService <|-- SubstationService
+BaseService <|-- TopologySimulator
+BaseService <|-- NodeService
+BaseService <|-- TopologyServiceBase
+@enduml
