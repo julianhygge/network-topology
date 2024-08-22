@@ -25,13 +25,11 @@ from app.data.interfaces.load.ipredefined_templates_repository import (
     IPredefinedTemplatesRepository,
 )
 from app.domain.interfaces.enums.load_source_enum import LoadSource
-from app.domain.services.base_service import BaseService
-from app.domain.services.topology.load_profile_file_completer import (
-    LoadProfileFileCompleterAkima1D,
-    LoadProfileFileCompleterLinearInterpolate,
-    LoadProfileFileCompleterPChip,
-    LoadProfileFileCompleterSpline,
+from app.domain.interfaces.net_topology.iload_profile_file_completer import (
+    BaseLoadProfileFileCompleter,
 )
+from app.domain.services.base_service import BaseService
+
 from app.utils.logger import logger
 
 
@@ -45,6 +43,7 @@ class LoadProfileService(BaseService):
         load_profile_builder_repository: ILoadProfileBuilderRepository,
         load_generation_engine_repository: ILoadGenerationEngineRepository,
         predefined_templates_repository: IPredefinedTemplatesRepository,
+        load_profile_completer: BaseLoadProfileFileCompleter,
     ):
         super().__init__(repository)
         self._load_profile_repository = repository
@@ -55,6 +54,7 @@ class LoadProfileService(BaseService):
         self._load_generation_engine_repository = load_generation_engine_repository
         self._load_predefined_templates_repository = predefined_templates_repository
         self._LOAD_PROFILE_MIN_DAYS = 100  # TODO: Take from config file
+        self._load_profile_completer = load_profile_completer
 
     def _map_profile_to_dict(self, profile):
         data = {
@@ -370,9 +370,7 @@ class LoadProfileService(BaseService):
         )
         timestamps = df["timestamp"]
         consumption_kwh = df["consumption_kwh"]
-        load_profile_completer = LoadProfileFileCompleterAkima1D()
-        # load_profile_completer = LoadProfileFileCompleterSpline()
-        result = load_profile_completer.complete_data(
+        result = self._load_profile_completer.complete_data(
             timestamps, consumption_kwh, interpolation_array
         )
         df = pd.DataFrame({"timestamp": interpolation_array, "consumption_kwh": result})
