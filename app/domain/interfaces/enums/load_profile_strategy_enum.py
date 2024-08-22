@@ -5,3 +5,4 @@ class LoadProfileStrategy(Enum):
     Linear = "Linear"
     Spline = "Spline"
     PChip = "PChip"
+    Akima1D = "Akima1D"
