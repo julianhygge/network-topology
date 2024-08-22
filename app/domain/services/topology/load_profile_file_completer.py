@@ -3,7 +3,7 @@ from numpy import interp
 from app.domain.interfaces.net_topology.iload_profile_file_completer import (
     BaseLoadProfileFileCompleter,
 )
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, PchipInterpolator
 
 
 class LoadProfileFileCompleterLinearInterpolate(BaseLoadProfileFileCompleter):
@@ -33,4 +33,11 @@ class LoadProfileFileCompleterSpline(BaseLoadProfileFileCompleter):
             consumption_kwh,
         )
         result = cubic_spline(interpolation_timestamps)
+        return result
+
+
+class LoadProfileFileCompleterPChip(BaseLoadProfileFileCompleter):
+    def complete_data(self, timestamps, consumption_kwh, interpolation_timestamps):
+        pchip = PchipInterpolator(timestamps, consumption_kwh)
+        result = pchip(interpolation_timestamps)
         return result

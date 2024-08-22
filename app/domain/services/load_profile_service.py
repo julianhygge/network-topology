@@ -28,6 +28,7 @@ from app.domain.interfaces.enums.load_source_enum import LoadSource
 from app.domain.services.base_service import BaseService
 from app.domain.services.topology.load_profile_file_completer import (
     LoadProfileFileCompleterLinearInterpolate,
+    LoadProfileFileCompleterPChip,
     LoadProfileFileCompleterSpline,
 )
 from app.utils.logger import logger
@@ -368,7 +369,7 @@ class LoadProfileService(BaseService):
         )
         timestamps = df["timestamp"]
         consumption_kwh = df["consumption_kwh"]
-        load_profile_completer = LoadProfileFileCompleterLinearInterpolate()
+        load_profile_completer = LoadProfileFileCompleterPChip()
         # load_profile_completer = LoadProfileFileCompleterSpline()
         result = load_profile_completer.complete_data(
             timestamps, consumption_kwh, interpolation_array
