@@ -35,7 +35,7 @@ from app.data.repositories.master.electrical_appliances_repository import (
 from app.data.schemas.hygge_database import HyggeDatabase
 from app.domain.interfaces.enums.load_profile_strategy_enum import LoadProfileStrategy
 from app.domain.interfaces.net_topology.iload_profile_file_completer import (
-    BaseLoadProfileFileCompleter,
+    ILoadProfileFileCompleter,
 )
 from app.domain.services.auth_service import AuthService
 from app.domain.services.base_service import BaseService
@@ -60,7 +60,7 @@ from app.domain.services.user_service import UserService
 
 def _load_profile_completer_factory(
     configuration: ApiConfiguration,
-) -> type[BaseLoadProfileFileCompleter]:
+) -> type[ILoadProfileFileCompleter]:
     strategy = configuration.load_profile["interpolation_strategy"]
     if strategy == LoadProfileStrategy.Spline:
         return LoadProfileFileCompleterSpline

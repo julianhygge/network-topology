@@ -3,7 +3,7 @@ from typing import Iterable
 from pandas import DataFrame, DatetimeIndex
 
 
-class BaseLoadProfileFileCompleter(ABC):
+class ILoadProfileFileCompleter(ABC):
 
     @abstractmethod
     def complete_data(
