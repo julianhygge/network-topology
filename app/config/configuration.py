@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import dynaconf
 from app.domain.interfaces.enums.load_profile_strategy_enum import LoadProfileStrategy
+from logging import getLogger
 
 
 class Singleton(type):
