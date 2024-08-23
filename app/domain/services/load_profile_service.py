@@ -251,7 +251,11 @@ class LoadProfileService(BaseService):
 
         self._validate_and_prepare_profile_data(df)
         if interval_15_minutes:
-            self._validate_15_minute_intervals(df)
+            self._validate_intervals(df)
+        else:
+            day = 60 * 24
+            # TODO: Pull from config
+            self._validate_intervals(df, day, False)
 
         with self.repository.database_instance.atomic():
             details, load_profile = self.process_dataframe(
@@ -385,6 +389,7 @@ class LoadProfileService(BaseService):
         df = DataFrame({"timestamp": interpolation_array, "consumption_kwh": result})
         df.insert(2, "profile_id", load_profile.id)
         logger.info(df.head())
+        logger.info(df.tail())
         details = df.to_dict("records")
         return details, load_profile
 
@@ -397,14 +402,21 @@ class LoadProfileService(BaseService):
         return self._load_profile_repository.get_public_profiles()
 
     @staticmethod
-    def _validate_15_minute_intervals(df: DataFrame) -> None:
+    def _validate_intervals(
+        df: DataFrame, minutes: int = 15, exact: bool = True
+    ) -> None:
+        """
+        Validates that the data is in the specified interval if exact is True. Otherwise, validates
+        that the data has all intervals smaller than or equal to the specified minutes.
+        """
         timestamps = df.iloc[:, 0]
-        interval_to_validate = 15  # minutes
-        interval_in_seconds = 60 * interval_to_validate
+        interval_in_seconds = 60 * minutes
         for i in range(1, len(timestamps)):
             diff = timestamps[i] - timestamps[i - 1]
-            if diff.total_seconds() != interval_in_seconds:
-                raise ValueError("Data is not in 15-minute intervals")
+            if exact and diff.total_seconds() != interval_in_seconds:
+                raise ValueError(f"Data is not in {minutes}-minute intervals")
+            if not exact and diff.total_seconds() > interval_in_seconds:
+                raise ValueError(f"Data has intervals greater than {minutes} minutes")
 
     def save_load_generation_engine(self, user_id: UUID, house_id: UUID, data: dict):
         load_profile = self._load_profile_repository.get_or_create_by_house_id(
