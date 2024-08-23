@@ -16,6 +16,7 @@ from app.data.interfaces.load.iload_profile_details_repository import (
 from io import BytesIO
 from pandas import (
     DatetimeIndex,
+    NaT,
     Timedelta,
     Timestamp,
     date_range,
@@ -342,14 +343,22 @@ class LoadProfileService(BaseService):
         df = read_csv(BytesIO(content))
         return df
 
+    @staticmethod
+    def days_in_year(timestamp: Timestamp) -> int:
+        return 366 if timestamp.is_leap_year else 365
+
     def create_interpolation_array(
         self, min_date: Timestamp, max_date: Timestamp
     ) -> DatetimeIndex:
         """Create the interpolation timestamp array based on the min and max date."""
         min_value = min_date.floor("15min")
-        if max_date.minute == 0:
-            max_date = max_date + Timedelta("1h")
+        days = self.days_in_year(min_date)
+        min_value_plus_year = min_value + Timedelta(days=days)
         max_value = max_date.ceil("1h")
+
+        if min_value_plus_year != NaT:
+            min_value_plus_year = min_value_plus_year.ceil("1h")
+            max_value = max(max_value, min_value_plus_year)
         return date_range(
             start=min_value, end=max_value, freq="15min", inclusive="left"
         )
@@ -374,8 +383,8 @@ class LoadProfileService(BaseService):
         }
 
         load_profile = self._load_profile_repository.create(**profile_data)
-        df.insert(2, "profile_id", load_profile.id)
         if is_15_mins_interval:
+            df.insert(2, "profile_id", load_profile.id)
             details = df.to_dict("records")
             return details, load_profile
         interpolation_array = self.create_interpolation_array(
