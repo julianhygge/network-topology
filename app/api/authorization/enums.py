@@ -10,10 +10,9 @@ class Resources(enum.Enum):
     Localities = 'localities'
     Substations = 'substations'
     Transformers = 'transformers'
-    Electrical = 'electrical'
+    Electricals = 'electricals'
     LoadProfileDetails = 'load_profile_details'
     LoadProfiles = 'load_profiles'
-
 
 
 class Permission(enum.Enum):

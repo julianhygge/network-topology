@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import Optional, List, Dict
-from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, UUID4, EmailStr
 
 
 class OtpVerificationModelResponse(BaseModel):
@@ -27,17 +26,16 @@ class GroupModel(BaseModel):
 
 
 class UserResponseModel(BaseModel):
-    id: UUID = Field(..., example=UUID("74f5596d-1df2-45ff-834c-a0511674c57f"))
-    meter_number: str = Field(..., example="DL123456789")
-    connection_number: str = Field(..., example="DL123456789")
-    name: str = Field(..., example="Username")
-    session_token: str = Field(..., example="")
-    refresh_token: str = Field(..., example="")
-    role: str = Field(..., example="Guest")
-    user_name: str = Field(..., example="User 1")
-    # active: bool = Field(..., example=True)
-    # groups: List[GroupModel] = Field(default=[], example=[
-    #     {"id": UUID("74f5596d-1df2-45ff-834c-a0511674c57f"), "name": "Admin", "is_member": True}])
+    id: UUID4
+    active: bool
+    phone_number: str
+    user_name: str
+    name: str
+    country_code: Optional[str] = Field(default=None)
+    state: str
+    email: EmailStr
+    created_on: datetime
+    groups: Optional[List[GroupModel]] = Field(default=None)
 
 
 class UserLinkResponseModel(UserResponseModel):

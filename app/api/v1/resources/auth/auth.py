@@ -14,12 +14,12 @@ auth_router = APIRouter(tags=["Authorization"])
 async def request_otp(req_body: OtpRequest,
                       auth_service=Depends(get_auth_service)):
     try:
-        user = auth_service.get_registered_user(req_body.phone_number)
-        body = auth_service.request_otp(user, req_body.country_code)
+        # user = auth_service.get_registered_user(req_body.phone_number)
+        body = auth_service.request_otp(req_body, req_body.country_code)
         return OtpRequestModelResponse(**body)
     except Exception as e:
         logger.exception(e)
-        raise HTTPException(status_code=403, detail='User Does Not Exists')
+        raise HTTPException(status_code=403, detail=str(e))
 
 
 @auth_router.post('/{state_token}', response_model=OtpVerificationSuccessModelResponse)

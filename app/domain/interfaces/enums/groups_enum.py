@@ -3,9 +3,9 @@ from enum import Enum
 
 class Groups(Enum):
     Admin = 1
-    Consumer = 2
-    Guest = 4
-    Pending = 5
+    User = 2
+    Guest = 3
+
 
     def __str__(self):
         return self.name
