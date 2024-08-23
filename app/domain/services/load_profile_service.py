@@ -1,5 +1,4 @@
-import datetime
-from typing import List
+from typing import Any, Dict, List, Union
 from uuid import UUID
 
 from app.data.interfaces.load.iload_generation_enginer_repository import (
@@ -15,8 +14,16 @@ from app.data.interfaces.load.iload_profile_details_repository import (
     ILoadProfileDetailsRepository,
 )
 from io import BytesIO
-import pandas as pd
-from pandas import DatetimeIndex, Timedelta, Timestamp, date_range
+from pandas import (
+    DatetimeIndex,
+    Timedelta,
+    Timestamp,
+    date_range,
+    DataFrame,
+    read_csv,
+    read_excel,
+    to_datetime,
+)
 from app.data.interfaces.iuser_repository import IUserRepository
 from app.data.interfaces.load.iload_profile_files_repository import (
     ILoadProfileFilesRepository,
@@ -173,10 +180,12 @@ class LoadProfileService(BaseService):
         combined_profiles = get_public_profiles + get_private_profile_by_user
         return [self._map_profile_to_dict(profile) for profile in combined_profiles]
 
-    def _find_time_format(self, df: pd.DataFrame) -> str:
+    def _find_time_format(self, df: DataFrame) -> str:
         """
         Finds the time format used in the data frame, returns it and converts the timestamps to datetime objects.
+        Raises a ValueError if the timestamps do not match any of the formats
         """
+        # TODO: Pull formats from config
         formats = [
             "%d/%m/%Y %H:%M",
             "%d-%m-%Y %H:%M",
@@ -191,13 +200,13 @@ class LoadProfileService(BaseService):
         ]
         for format in formats:
             try:
-                df["timestamp"] = pd.to_datetime(df["timestamp"], format=format)
+                df["timestamp"] = to_datetime(df["timestamp"], format=format)
                 return format
             except ValueError:
                 pass
         raise ValueError("Could not determine time format")
 
-    def _validate_and_prepare_profile_data(self, df: pd.DataFrame) -> None:
+    def _validate_and_prepare_profile_data(self, df: DataFrame) -> None:
         """Validates and prepares the data frame for processing."""
         if df.empty:
             raise ValueError("Empty data frame")
@@ -231,12 +240,12 @@ class LoadProfileService(BaseService):
         file,
         interval_15_minutes: bool,
         house_id: UUID,
-    ):
+    ) -> Dict[str, Union[str, UUID]]:
         content = await file.read()
         if file.filename.endswith(".xlsx"):
-            df = pd.read_excel(BytesIO(content))
+            df = read_excel(BytesIO(content))
         elif file.filename.endswith(".csv"):
-            df = pd.read_csv(BytesIO(content))
+            df = read_csv(BytesIO(content))
         else:
             raise ValueError("Unsupported file type")
 
@@ -318,15 +327,15 @@ class LoadProfileService(BaseService):
         return file
 
     @staticmethod
-    async def read_excel(file):
+    async def read_excel(file) -> DataFrame:
         content = await file.read()
-        df = pd.read_excel(BytesIO(content), engine="openpyxl")
+        df = read_excel(BytesIO(content), engine="openpyxl")
         return df
 
     @staticmethod
-    async def read_csv(file):
+    async def read_csv(file) -> DataFrame:
         content = await file.read()
-        df = pd.read_csv(BytesIO(content))
+        df = read_csv(BytesIO(content))
         return df
 
     def create_interpolation_array(
@@ -344,11 +353,11 @@ class LoadProfileService(BaseService):
     def process_dataframe(
         self,
         user_id,
-        df: pd.DataFrame,
+        df: DataFrame,
         profile_name: str,
         house_id: UUID,
         is_15_mins_interval: bool,
-    ):
+    ) -> tuple[list[Dict[str, Any]], Dict[str, Any]]:
         profile_data = {
             "active": True,
             "created_by": user_id,
@@ -373,7 +382,7 @@ class LoadProfileService(BaseService):
         result = self._load_profile_completer.complete_data(
             timestamps, consumption_kwh, interpolation_array
         )
-        df = pd.DataFrame({"timestamp": interpolation_array, "consumption_kwh": result})
+        df = DataFrame({"timestamp": interpolation_array, "consumption_kwh": result})
         df.insert(2, "profile_id", load_profile.id)
         logger.info(df.head())
         details = df.to_dict("records")
@@ -388,7 +397,7 @@ class LoadProfileService(BaseService):
         return self._load_profile_repository.get_public_profiles()
 
     @staticmethod
-    def _validate_15_minute_intervals(df: pd.DataFrame):
+    def _validate_15_minute_intervals(df: DataFrame) -> None:
         timestamps = df.iloc[:, 0]
         interval_to_validate = 15  # minutes
         interval_in_seconds = 60 * interval_to_validate
