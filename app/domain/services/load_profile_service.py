@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Union
 from uuid import UUID
-
 from app.data.interfaces.load.iload_generation_enginer_repository import (
     ILoadGenerationEngineRepository,
 )
@@ -37,7 +36,6 @@ from app.domain.interfaces.net_topology.iload_profile_file_completer import (
     BaseLoadProfileFileCompleter,
 )
 from app.domain.services.base_service import BaseService
-
 from app.utils.logger import logger
 
 
