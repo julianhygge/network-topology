@@ -33,7 +33,7 @@ from app.data.interfaces.load.ipredefined_templates_repository import (
 )
 from app.domain.interfaces.enums.load_source_enum import LoadSource
 from app.domain.interfaces.net_topology.iload_profile_file_completer import (
-    BaseLoadProfileFileCompleter,
+    ILoadProfileFileCompleter,
 )
 from app.domain.services.base_service import BaseService
 from app.utils.logger import logger
@@ -49,7 +49,7 @@ class LoadProfileService(BaseService):
         load_profile_builder_repository: ILoadProfileBuilderRepository,
         load_generation_engine_repository: ILoadGenerationEngineRepository,
         predefined_templates_repository: IPredefinedTemplatesRepository,
-        load_profile_completer: BaseLoadProfileFileCompleter,
+        load_profile_completer: ILoadProfileFileCompleter,
         configuration: Dict[str, Any],
     ):
         super().__init__(repository)

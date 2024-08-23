@@ -1,13 +1,13 @@
 from pandas import DataFrame
 from numpy import interp
 from app.domain.interfaces.net_topology.iload_profile_file_completer import (
-    BaseLoadProfileFileCompleter,
+    ILoadProfileFileCompleter,
 )
 from scipy.interpolate import Akima1DInterpolator, CubicSpline, PchipInterpolator
 from app.utils.logger import logger
 
 
-class LoadProfileFileCompleterLinear(BaseLoadProfileFileCompleter):
+class LoadProfileFileCompleterLinear(ILoadProfileFileCompleter):
     def complete_data(
         self,
         timestamps,
@@ -23,7 +23,7 @@ class LoadProfileFileCompleterLinear(BaseLoadProfileFileCompleter):
         return result
 
 
-class LoadProfileFileCompleterSpline(BaseLoadProfileFileCompleter):
+class LoadProfileFileCompleterSpline(ILoadProfileFileCompleter):
     def complete_data(
         self,
         timestamps,
@@ -39,7 +39,7 @@ class LoadProfileFileCompleterSpline(BaseLoadProfileFileCompleter):
         return result
 
 
-class LoadProfileFileCompleterPChip(BaseLoadProfileFileCompleter):
+class LoadProfileFileCompleterPChip(ILoadProfileFileCompleter):
     def complete_data(self, timestamps, consumption_kwh, interpolation_timestamps):
         logger.info("Completing data with pchip interpolation")
         pchip = PchipInterpolator(timestamps, consumption_kwh)
@@ -47,7 +47,7 @@ class LoadProfileFileCompleterPChip(BaseLoadProfileFileCompleter):
         return result
 
 
-class LoadProfileFileCompleterAkima1D(BaseLoadProfileFileCompleter):
+class LoadProfileFileCompleterAkima1D(ILoadProfileFileCompleter):
     def complete_data(self, timestamps, consumption_kwh, interpolation_timestamps):
         logger.info("Completing data with akima 1d interpolation")
         akima1D = Akima1DInterpolator(timestamps, consumption_kwh)
