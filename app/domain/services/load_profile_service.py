@@ -52,6 +52,7 @@ class LoadProfileService(BaseService):
         load_generation_engine_repository: ILoadGenerationEngineRepository,
         predefined_templates_repository: IPredefinedTemplatesRepository,
         load_profile_completer: BaseLoadProfileFileCompleter,
+        configuration: Dict[str, Any],
     ):
         super().__init__(repository)
         self._load_profile_repository = repository
@@ -61,8 +62,22 @@ class LoadProfileService(BaseService):
         self._load_profile_builder_repository = load_profile_builder_repository
         self._load_generation_engine_repository = load_generation_engine_repository
         self._load_predefined_templates_repository = predefined_templates_repository
-        self._LOAD_PROFILE_MIN_DAYS = 100  # TODO: Take from config file
         self._load_profile_completer = load_profile_completer
+        self._load_profile_min_days = configuration["min_days"]
+        # self._load_profile_time_formats = configuration["time_formats"]
+        self._load_profile_time_formats = [
+            "%d/%m/%Y %H:%M",
+            "%d-%m-%Y %H:%M",
+            "%m/%d/%Y %H:%M",
+            "%Y-%m-%d %H:%M",
+            "%Y/%m/%d %H:%M",
+            "%d/%m/%Y",
+            "%d-%m-%Y",
+            "%m/%d/%Y",
+            "%Y-%m-%d",
+            "%Y/%m/%d",
+        ]
+        self._load_profile_max_interval_length = configuration["max_interval_length"]
 
     def _map_profile_to_dict(self, profile):
         data = {
@@ -181,24 +196,12 @@ class LoadProfileService(BaseService):
         combined_profiles = get_public_profiles + get_private_profile_by_user
         return [self._map_profile_to_dict(profile) for profile in combined_profiles]
 
-    def _find_time_format(self, df: DataFrame) -> str:
+    @staticmethod
+    def _find_time_format(df: DataFrame, formats: list[str]) -> str:
         """
         Finds the time format used in the data frame, returns it and converts the timestamps to datetime objects.
         Raises a ValueError if the timestamps do not match any of the formats
         """
-        # TODO: Pull formats from config
-        formats = [
-            "%d/%m/%Y %H:%M",
-            "%d-%m-%Y %H:%M",
-            "%m/%d/%Y %H:%M",
-            "%Y-%m-%d %H:%M",
-            "%Y/%m/%d %H:%M",
-            "%d/%m/%Y",
-            "%d-%m-%Y",
-            "%m/%d/%Y",
-            "%Y-%m-%d",
-            "%Y/%m/%d",
-        ]
         for format in formats:
             try:
                 df["timestamp"] = to_datetime(df["timestamp"], format=format)
@@ -214,6 +217,7 @@ class LoadProfileService(BaseService):
         if len(df.columns) < 2:
             raise ValueError("Data frame must have at least 2 columns")
         number_of_columns_to_remove = len(df.columns) - 2
+        # Must check the number of columns to remove is greater than 0 to avoid removing the first two columns
         if number_of_columns_to_remove > 0:
             df.drop(df.columns[-number_of_columns_to_remove:], axis=1, inplace=True)
 
@@ -222,17 +226,17 @@ class LoadProfileService(BaseService):
             inplace=True,
         )
 
-        self._find_time_format(df)
+        self._find_time_format(df, self._load_profile_time_formats)
 
         min_date = df.iat[0, 0]
         max_date = df.iat[-1, 0]
         if min_date >= max_date:
             raise ValueError("Dates are not ascending")
         diff = max_date - min_date
-        if diff.days > 366:  # TODO: Handle specific year
+        if diff.days > 366:
             raise ValueError("Data spans more than a year")
-        if diff.days < self._LOAD_PROFILE_MIN_DAYS:
-            raise ValueError("Data spans less than a day")
+        if diff.days < self._load_profile_min_days:
+            raise ValueError(f"Data spans less than {self._load_profile_min_days} days")
 
     async def upload_profile_service_file(
         self,
@@ -254,9 +258,8 @@ class LoadProfileService(BaseService):
         if interval_15_minutes:
             self._validate_intervals(df)
         else:
-            day = 60 * 24
-            # TODO: Pull from config
-            self._validate_intervals(df, day, False)
+            hours = 60 * self._load_profile_max_interval_length
+            self._validate_intervals(df, hours, False)
 
         with self.repository.database_instance.atomic():
             details, load_profile = self.process_dataframe(

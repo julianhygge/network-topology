@@ -69,14 +69,13 @@ class ApiConfiguration(metaclass=Singleton):
 
     def _get_load_profile_config(self):
         load_profile_config = self.get("load_profile")
-        if (
-            load_profile_config is None
-            or "interpolation_strategy" not in load_profile_config
-        ):
-            return {"interpolation_strategy": LoadProfileStrategy.Linear}
         load_profile_config["interpolation_strategy"] = LoadProfileStrategy(
             load_profile_config.interpolation_strategy
         )
+        load_profile_config["max_interval_length"] = int(
+            load_profile_config.max_interval_length
+        )
+        load_profile_config["min_days"] = int(load_profile_config.min_days)
         return load_profile_config
 
     def _get_postgres_config(self):
