@@ -55,6 +55,10 @@ def get_electrical_appliances_service() -> IService:
     return c.electrical_appliances_service()
 
 
+def get_solar_profile_service() -> IService:
+    return c.solar_profile_service()
+
+
 def get_load_profile_service():
     return c.load_profile_service()
 

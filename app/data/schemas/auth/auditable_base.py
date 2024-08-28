@@ -3,6 +3,7 @@ from peewee import DateTimeField, ForeignKeyField
 from app.data.schemas.schema_base import BaseModel
 from app.data.schemas.transactional.user_schema import User
 
+
 class AuditableBase(BaseModel):
     created_on = DateTimeField(default=datetime.datetime.utcnow)
     modified_on = DateTimeField(default=datetime.datetime.utcnow)
