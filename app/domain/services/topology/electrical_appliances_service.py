@@ -1,5 +1,5 @@
 from app.domain.services.base_service import BaseService
-from app.data.repositories.topology.electrical_appliances_repository import ElectricalAppliancesRepository
+from app.data.repositories.master.electrical_appliances_repository import ElectricalAppliancesRepository
 
 
 class ElectricalAppliancesService(BaseService):

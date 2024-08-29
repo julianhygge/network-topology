@@ -56,14 +56,14 @@ class LoadGenerationEngineRequest(BaseModel):
 
 
 class LoadGenerationEngineResponse(BaseModel):
-    user_id: UUID
-    profile_id: int
+    user_id: UUID = Field(..., example="824960c0-974c-4c57-8803-85f5f407b304")
+    profile_id: int = Field(..., example="1")
     type: LoadGenerationType
-    average_kwh: Optional[float]
-    average_monthly_bill: Optional[float]
-    max_demand_kw: Optional[float]
-    created_on: datetime
-    modified_on: datetime
+    average_kwh: Optional[float] = Field(None, ge=0)
+    average_monthly_bill: Optional[float] = Field(None, ge=0)
+    max_demand_kw: Optional[float] = Field(None, ge=0)
+    created_on: datetime = Field(..., example="2024-05-07 12:40")
+    modified_on: datetime = Field(..., example="2024-05-07 12:40")
     links: Dict[str, str] = Field(
         default={"self": "/v1/load_profiles/"},
         example={"self": "/v1/load_profiles/", "next": "/v1/load_profiles/?page=2"}
