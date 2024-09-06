@@ -18,16 +18,21 @@ class SolarProfileService(BaseService, ISolarProfileService):
 
         if not data['solar_available']:
             data['installed_capacity_kw'] = None
-            data['tilt_type'] = None
             data['years_since_installation'] = None
+
+        if not data['solar_available'] and not data['simulate_using_different_capacity']:
+            data['simulated_available_space_sqft'] = None
 
         created = self.repository.create(**data)
         created_dicts = self.repository.to_dicts(created)
+        created_dicts['tilt_type'] = created.tilt_type.value
         return created_dicts
 
     def get_solar_profile_by_house_id(self, house_id):
         lst = self.repository.get_solar_profile_by_house_id(house_id)
+
         solar_data = self.repository.to_dicts(lst)
+
         return solar_data
 
     def delete_solar_profile_by_house_id(self, house_id):

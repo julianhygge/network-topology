@@ -25,15 +25,19 @@ async def create_solar_profile(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@solar_router.get("/{house_id}", response_model=SolarProfileListResponse)
+@solar_router.get("/{house_id}")
 async def get_solar_profile(
         house_id: UUID,
         service: ISolarProfileService = Depends(get_solar_profile_service),
         _: str = Depends(permission(Resources.LoadProfiles, Permission.Create))):
     try:
         body = service.get_solar_profile_by_house_id(house_id)
-        response = SolarProfileListResponse(items=[SolarProfileResponse(**item) for item in body])
-        return response
+        print(f'Body {body}')
+        if body:
+            response = SolarProfileResponse(**body)
+            return response
+        # response = SolarProfileListResponse(items=[SolarProfileResponse(**item) for item in body])
+        return None
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

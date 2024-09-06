@@ -14,7 +14,8 @@ class SolarProfile(AuditableBase):
     years_since_installation = DecimalField(max_digits=4, decimal_places=2, null=True)
     simulate_using_different_capacity = BooleanField(null=True)
     capacity_for_simulation_kw = DecimalField(max_digits=4, decimal_places=2)
-    available_space_sqft = DecimalField(max_digits=4, decimal_places=2, null=True)
+    available_space_sqft = DecimalField(max_digits=5, decimal_places=2, null=True)
+    simulated_available_space_sqft = DecimalField(max_digits=4, decimal_places=2, null=True)
 
     class Meta:
         schema = 'solar'

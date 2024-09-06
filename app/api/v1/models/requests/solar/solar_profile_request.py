@@ -13,18 +13,34 @@ class SolarProfileRequestModel(BaseModel):
     solar_available: bool = Field(..., example=False)
     house_id: UUID4 = Field(..., example="824960c0-974c-4c57-8803-85f5f407b304")
     installed_capacity_kw: Optional[Decimal] = Field(None, example="65.0", ge=0)
-    tilt_type: Optional[TiltType] = Field(..., example='fixed')
+    tilt_type: TiltType = Field(..., example='fixed')
     years_since_installation: Optional[Decimal] = Field(None, example="10", ge=0)
     available_space_sqft: Optional[Decimal] = Field(None, example="10", ge=0)
+    simulated_available_space_sqft: Optional[Decimal] = Field(None, example="10", ge=0)
     simulate_using_different_capacity: bool
     capacity_for_simulation_kw: Optional[Decimal] = Field(None, example="65.0", ge=0)
 
     @model_validator(mode="before")
     def validate_solar_profile(cls, values):
+        if 'installed_capacity_kw' in values and isinstance(values['installed_capacity_kw'], str):
+            values['installed_capacity_kw'] = Decimal(values['installed_capacity_kw'])
+
+        if 'years_since_installation' in values and isinstance(values['years_since_installation'], str):
+            values['years_since_installation'] = Decimal(values['years_since_installation'])
+
+        if 'capacity_for_simulation_kw' in values and isinstance(values['capacity_for_simulation_kw'], str):
+            values['capacity_for_simulation_kw'] = Decimal(values['capacity_for_simulation_kw'])
+
+        if 'available_space_sqft' in values and isinstance(values['available_space_sqft'], str):
+            values['available_space_sqft'] = Decimal(values['available_space_sqft'])
+
+        if 'simulated_available_space_sqft' in values and isinstance(values['simulated_available_space_sqft'], str):
+            values['simulated_available_space_sqft'] = Decimal(values['simulated_available_space_sqft'])
+
         solar_available = values.get('solar_available')
         simulate_using_different_capacity = values.get('simulate_using_different_capacity')
 
-        if values.get('tilt_type') not in TiltType:
+        if values.get('tilt_type') not in [t.value for t in TiltType]:
             raise ValueError("tilt_type must be either 'fixed' or 'tracking' ")
 
         if solar_available:
