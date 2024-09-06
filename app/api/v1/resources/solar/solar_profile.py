@@ -32,7 +32,6 @@ async def get_solar_profile(
         _: str = Depends(permission(Resources.LoadProfiles, Permission.Create))):
     try:
         body = service.get_solar_profile_by_house_id(house_id)
-        print(f'Body {body}')
         if body:
             response = SolarProfileResponse(**body)
             return response

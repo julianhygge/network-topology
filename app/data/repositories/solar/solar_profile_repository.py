@@ -8,8 +8,8 @@ class SolarProfileRepository(BaseRepository, ISolarProfileRepository):
     id_field = SolarProfile.id
 
     def get_solar_profile_by_house_id(self, house_id):
-        return self.model.get(self.model.house_id == house_id)
-        # return self.model.select().where(self.model.house_id == house_id)
+        return self.model.get_or_none(self.model.house_id == house_id)
+     
 
     def delete_solar_profile_by_house_id(self, house_id):
         return self.model.delete().where(self.model.house_id == house_id).execute()
