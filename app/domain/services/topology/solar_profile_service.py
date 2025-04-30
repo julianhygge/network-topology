@@ -30,10 +30,11 @@ class SolarProfileService(BaseService, ISolarProfileService):
 
     def get_solar_profile_by_house_id(self, house_id):
         lst = self.repository.get_solar_profile_by_house_id(house_id)
-
-        solar_data = self.repository.to_dicts(lst)
-
-        return solar_data
+        if not None:
+            solar_data = self.repository.to_dicts(lst)
+            return solar_data
+        else:
+            return None
 
     def delete_solar_profile_by_house_id(self, house_id):
         self.repository.delete_solar_profile_by_house_id(house_id)
