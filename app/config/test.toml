@@ -1,0 +1,45 @@
+# Settings specific to the TEST environment
+# Inherits from settings.toml and overrides values.
+# Sensitive values are loaded from environment variables (e.g., .env file).
+
+[TEST]
+# Dynaconf implicitly merges with [DEFAULT] from settings.toml
+
+# Postgres (Overrides/Specifics for test)
+postgres_host = "${API_DB_HOST=192.168.0.200}" # Default from test.ini
+postgres_port = "${API_DB_PORT=9814}"        # Default from test.ini
+postgres_database = "${API_DB_DATABASE=network-topology-test-nodes}" # Default from test.ini
+postgres_user = "${API_DB_USER=postgres}"      # Default from test.ini
+postgres_password = "${API_DB_PASSWORD}"       # Loaded from env (No default, uses Hygge4EV in test.ini)
+
+# MQTT (Overrides/Specifics for test)
+mqtt_id = "${API_MQTT_ID=hygge_test_server_ntt}" # Default from test.ini
+mqtt_broken_url = "${API_MQTT_BROKEN_URL=localhost}" # Default from test.ini
+mqtt_application_name = "${API_MQTT_APPLICATION_NAME=network-topology-test-nodes}" # Default from test.ini
+mqtt_host = "${API_MQTT_HOST=localhost}"         # Default from test.ini
+mqtt_port = "${API_MQTT_PORT=8883}"            # Default from test.ini
+mqtt_username = "${API_MQTT_USERNAME=hygge-box}"   # Default from test.ini
+mqtt_password = "${API_MQTT_PASSWORD}"           # Loaded from env (No default, uses adminhygge1234 in test.ini)
+
+# Logging (Overrides/Specifics for test)
+logging_level = "INFO" # Default from test.ini (same as settings.toml)
+logging_log_directory = "${API_LOG_DIRECTORY=/var/log/application}" # Default from test.ini
+
+# SMS (Overrides/Specifics for test - No provider/key in test.ini)
+# sms_provider_server = "${API_SMS_PROVIDER_SERVER}" # No value in test.ini
+# sms_api_key = "${API_SMS_API_KEY}"                 # No value in test.ini
+
+# Session (Overrides/Specifics for test)
+session_token_secret = "${API_SESSION_TOKEN_SECRET}" # Loaded from env (No default, uses secret-to-change-in-production in test.ini)
+
+# Topic (Specific to dev/test)
+topic_topics = "powermeter/main/meghalaya 2, powermeter/full/meghalaya 2, inverter/meghalaya 2"
+
+# Simulation - Assuming defaults from settings.toml are okay for test
+# Add overrides here if needed
+
+# CORS - Assuming defaults from settings.toml are okay for test
+# Add overrides here if needed
+
+# Load Profile - Assuming defaults from settings.toml are okay for test
+# Add overrides here if needed

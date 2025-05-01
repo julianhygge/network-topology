@@ -1,0 +1,45 @@
+# Settings specific to the DEV environment
+# Inherits from settings.toml and overrides values.
+# Sensitive values are loaded from environment variables (e.g., .env file).
+
+[DEV]
+# Dynaconf implicitly merges with [DEFAULT] from settings.toml
+
+# Postgres (Overrides/Specifics for dev)
+postgres_host = "${API_DB_HOST}"           # Loaded from env
+postgres_port = "${API_DB_PORT=5432}"      # Default from dev.ini
+postgres_database = "${API_DB_DATABASE}"   # Loaded from env
+postgres_user = "${API_DB_USER=postgres}"    # Default from dev.ini
+postgres_password = "${API_DB_PASSWORD}"     # Loaded from env
+
+# MQTT (Overrides/Specifics for dev)
+mqtt_id = "${API_MQTT_ID=hygge_test_server_ntt}" # Default from dev.ini
+mqtt_broken_url = "${API_MQTT_BROKEN_URL=localhost}" # Default from dev.ini
+mqtt_application_name = "${API_MQTT_APPLICATION_NAME=network-topology-test}" # Default from dev.ini
+mqtt_host = "${API_MQTT_HOST}"       # Default from dev.ini
+mqtt_port = "${API_MQTT_PORT}"          # Default from dev.ini
+mqtt_username = "${API_MQTT_USERNAME}" # Default from dev.ini
+mqtt_password = "${API_MQTT_PASSWORD}"         # Loaded from env
+
+# Logging (Overrides/Specifics for dev)
+logging_level = "INFO" # Default from dev.ini (same as settings.toml)
+logging_log_directory = "${API_LOG_DIRECTORY=/var/log/application}" # Default from dev.ini
+
+# SMS (Overrides/Specifics for dev - No provider/key in dev.ini)
+# sms_provider_server = "${API_SMS_PROVIDER_SERVER}" # No value in dev.ini
+# sms_api_key = "${API_SMS_API_KEY}"                 # No value in dev.ini
+
+# Session (Overrides/Specifics for dev)
+session_token_secret = "${API_SESSION_TOKEN_SECRET}" # Loaded from env
+
+# Topic (Specific to dev/test)
+topic_topics = "powermeter/main/meghalaya 2, powermeter/full/meghalaya 2, inverter/meghalaya 2"
+
+# Simulation - Assuming defaults from settings.toml are okay for dev
+# Add overrides here if needed
+
+# CORS - Assuming defaults from settings.toml are okay for dev
+# Add overrides here if needed
+
+# Load Profile - Assuming defaults from settings.toml are okay for dev
+# Add overrides here if needed

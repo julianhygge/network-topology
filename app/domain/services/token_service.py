@@ -2,7 +2,7 @@ import datetime
 import jwt
 from jwt import ExpiredSignatureError
 from app.api.authorization.enums import Permission
-from app.config.iconfiguration import IConfiguration
+from app.config.i_configuration import IConfiguration
 from app.data.interfaces.igroup_repository import IGroupRepository
 from app.data.interfaces.irepository import IRepository
 from app.data.interfaces.iuser_repository import IUserRepository
@@ -18,10 +18,10 @@ class TokenService(ITokenService):
                  account_repo: IRepository,
                  group_repo: IGroupRepository
                  ):
-        self._session_token_secret = configuration.session_secret.session_token_secret
-        self._session_validity_in_hours = int(configuration.session_secret.session_validity_in_hours)
+        self._session_token_secret = configuration.session.session_token_secret
+        self._session_validity_in_hours = int(configuration.session.session_validity_in_hours)
         self._session_validity_in_hours_refresh_token = int(
-            configuration.session_secret.session_validity_in_hours_refresh_token)
+            configuration.session.session_validity_in_hours_refresh_token)
         self._account_repo = account_repo
         self._group_repo = group_repo
 

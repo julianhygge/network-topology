@@ -1,5 +1,6 @@
 from dependency_injector import containers, providers
 from app.config.configuration import ApiConfiguration
+from app.config.i_configuration import LoadProfileStrategy
 from app.data.interfaces.irepository import IRepository
 from app.data.repositories.authorization.auth_attempt_repository import (
     AuthAttemptRepository,
@@ -34,7 +35,6 @@ from app.data.repositories.master.electrical_appliances_repository import (
     ElectricalAppliancesRepository,
 )
 from app.data.schemas.hygge_database import HyggeDatabase
-from app.domain.interfaces.enums.load_profile_strategy_enum import LoadProfileStrategy
 from app.domain.interfaces.net_topology.iload_profile_file_completer import (
     ILoadProfileFileCompleter,
 )
@@ -63,7 +63,7 @@ from app.domain.services.user_service import UserService
 def _load_profile_completer_factory(
     configuration: ApiConfiguration,
 ) -> type[ILoadProfileFileCompleter]:
-    strategy = configuration.load_profile["interpolation_strategy"]
+    strategy = configuration.load_profile.interpolation_strategy
     if strategy == LoadProfileStrategy.Spline:
         return LoadProfileFileCompleterSpline
     elif strategy == LoadProfileStrategy.PChip:

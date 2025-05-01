@@ -1,0 +1,57 @@
+# Settings specific to the INT (Integration) environment
+# Inherits from settings.toml and overrides values.
+# Sensitive values are loaded from environment variables (e.g., .env file).
+
+[INT]
+# Dynaconf implicitly merges with [DEFAULT] from settings.toml
+
+# Postgres (Overrides/Specifics for int)
+postgres_host = "${API_DB_HOST=localhost}" # Default from int.ini
+postgres_port = "${API_DB_PORT=9814}"      # Default from int.ini
+postgres_database = "${API_DB_DATABASE=network-topology-test}" # Default from int.ini
+postgres_user = "${API_DB_USER=postgres}"    # Default from int.ini
+postgres_password = "${API_DB_PASSWORD}"     # Loaded from env (No default, uses Hygge4EV in int.ini)
+
+# MQTT (Overrides/Specifics for int)
+mqtt_id = "${API_MQTT_ID=hygge_simulator_test_local}" # Default from int.ini
+mqtt_broken_url = "${API_MQTT_BROKEN_URL=localhost}" # Default from int.ini
+mqtt_application_name = "${API_MQTT_APPLICATION_NAME=hygge-simulator}" # Default from int.ini
+mqtt_host = "${API_MQTT_HOST=localhost}"       # Default from int.ini
+mqtt_port = "${API_MQTT_PORT=8000}"          # Default from int.ini
+mqtt_username = "${API_MQTT_USERNAME=hygge-box}" # Default from int.ini
+mqtt_password = "${API_MQTT_PASSWORD}"         # Loaded from env (No default, uses adminhygge1234 in int.ini)
+
+# Logging (Overrides/Specifics for int)
+logging_level = "DEBUG" # Default from int.ini
+logging_log_directory = "${API_LOG_DIRECTORY=log}" # Default from int.ini
+
+# OTP (Overrides/Specifics for int)
+otp_max_otp_verification_attempts = 3 # Override default from settings.toml
+otp_max_resend_otp_attempts = 3       # Override default from settings.toml
+otp_max_resend_otp_attempt_window_in_min = 15 # Override default from settings.toml
+
+# SMS (Overrides/Specifics for int)
+sms_provider_server = "${API_SMS_PROVIDER_SERVER=https://2factor.in/API/V1}" # Default from int.ini
+sms_api_key = "${API_SMS_API_KEY}" # Loaded from env (No default, uses key from int.ini)
+
+# Session (Overrides/Specifics for int)
+session_token_secret = "${API_SESSION_TOKEN_SECRET}" # Loaded from env (No default, uses secret-to-change-in-production in int.ini)
+
+# Simulation (Values from int.ini)
+simulation_initial_battery_soc = 0.0
+simulation_solar_peak_percentage_for_charging = 40.0
+simulation_load_peak_percentage_for_discharging = 95.0
+simulation_charge_battery_efficiency = 100.0
+simulation_discharge_battery_efficiency = 100.0
+simulation_default_panel_capacity = 540.0
+simulation_default_battery_capacity_required = 800.0
+simulation_battery_dynamic_percentage_allocation = 40.0
+simulation_battery_base_percentage_allocation = 30.0
+
+# CORS - Assuming defaults from settings.toml are okay for int
+# Add overrides here if needed
+
+# Load Profile - Assuming defaults from settings.toml are okay for int
+# Add overrides here if needed
+
+# Topic - Assuming this section is not needed for int

@@ -1,123 +1,176 @@
 import os
-from pathlib import Path
-import dynaconf
-from app.domain.interfaces.enums.load_profile_strategy_enum import LoadProfileStrategy
+import glob
+from typing import Any, Optional
+
+from dynaconf import Dynaconf
+
+from app.config.i_configuration import (
+    IConfiguration,
+    DbConfig,
+    LoggingConfig,
+    SessionConfig,
+    OTPConfig,
+    SMSConfig,
+    MQTTConfig,
+    SimulationConfig,
+    CorsConfig,
+    LoadProfileConfig,
+    TopicConfig,
+    LoadProfileStrategy,
+)
 
 
-class Singleton(type):
-    _instances = {}
+class ApiConfiguration(IConfiguration):
+    _settings: Dynaconf
 
-    def __call__(cls, *args, **kwargs):
-        app_env = kwargs.get("app_env", None)
-        key = (cls, app_env)
+    def __init__(self):
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        config_dir = os.path.dirname(current_dir)
+        project_root = os.path.dirname(config_dir)
+        config_files_path = os.path.join(project_root, "config", "*.toml")
+        files = glob.glob(config_files_path)
 
-        if key not in cls._instances:
-            cls._instances[key] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[key]
+        if not files:
+            files = glob.glob(os.path.join(current_dir, "*.toml"))
 
-
-class ApiConfiguration(metaclass=Singleton):
-
-    def __init__(self, app_env=None):
-        if app_env is None:
-            app_env = os.environ.get("APP_ENV") or "local"
-        base_dir = Path(__file__).resolve().parent.parent
-        config_file_path = base_dir / "config" / "{}.ini".format(app_env)
-
-        self.settings = dynaconf.Dynaconf(
-            envvar_prefix="DYNACONF", settings_files=[config_file_path]
+        self._settings = Dynaconf(
+            settings_files=files,
+            envvar_prefix="HYGGE",
+            default_env="local",
+            merge_enabled=True,
+            load_dotenv=True,
+            env_switcher="ENV_FOR_DYNACONF",
+            environments=True,
         )
 
     @property
-    def db(self):
-        return self._get_postgres_config()
+    def db(self) -> DbConfig:
+        s = self._settings
+        return DbConfig(
+            max_connections=int(s.get("db_max_connections")),
+            stale_timeout=int(s.get("db_stale_timeout")),
+            host=s.get("db_host"),
+            port=int(s.get("db_port")),
+            database=s.get("db_database"),
+            user=s.get("db_user"),
+            password=s.get("db_password"),
+            options=s.get("db_options")
+        )
 
     @property
-    def logging(self):
-        return self.get("logging")
+    def logging(self) -> LoggingConfig:
+        s = self._settings
+        return LoggingConfig(
+            level=s.get("logging_level"),
+            log_directory=s.get("log_directory"),
+            system_user_id=s.get("logging_system_user_id"),
+        )
 
     @property
-    def session_secret(self):
-        return self.get("session")
+    def session(self) -> SessionConfig:
+        s = self._settings
+        secret = s.get("session_token_secret") or s.get("session.session_token_secret")
+        return SessionConfig(
+            session_token_secret=secret,
+            session_validity_in_hours=int(s.get("session_validity_in_hours")),
+            session_validity_in_hours_refresh_token=int(s.get("session_validity_in_hours_refresh_token")),
+        )
 
     @property
-    def otp(self):
-        return self._get_otp_config()
+    def otp(self) -> OTPConfig:
+        s = self._settings
+        return OTPConfig(
+            max_otp_verification_attempts=int(s.get("otp_max_otp_verification_attempts")),
+            max_resend_otp_attempts=int(s.get("otp_max_resend_otp_attempts")),
+            max_resend_otp_attempt_window_in_min=int(s.get("otp_max_resend_otp_attempt_window_in_min")),
+            otp_validity_in_secs=int(s.get("otp_otp_validity_in_secs")),
+            master_otp_admin=int(s.get("otp_master_otp_admin")),
+            master_otp_user=int(s.get("otp_master_otp_user")),
+            admin_number=int(s.get("otp_admin_number")),
+            user_number=int(s.get("otp_user_number")),
+        )
 
     @property
-    def sms(self):
-        return self.get("sms")
+    def sms(self) -> SMSConfig:
+        s = self._settings
+        return SMSConfig(
+            sms_provider_server=s.get("sms_provider_server"),
+            api_key=s.get("sms_api_key"),
+            otp_sms_template_name=s.get("sms_otp_sms_template_name"),
+            default_number=s.get("sms_default_number"),
+            topic=s.get("sms_topic"),
+        )
 
     @property
-    def mqtt(self):
-        return self.get("mqtt")
+    def mqtt(self) -> MQTTConfig:
+        s = self._settings
+        return MQTTConfig(
+            id=s.get("mqtt_id"),
+            broken_url=s.get("mqtt_broken_url"),
+            application_name=s.get("mqtt_application_name"),
+            host=s.get("mqtt_host"),
+            port=int(s.get("mqtt_port")),
+            username=s.get("mqtt_username"),
+            password=s.get("mqtt_password")
+        )
 
     @property
-    def simulation(self):
-        return self._get_simulation_config()
+    def simulation(self) -> SimulationConfig:
+        s = self._settings
+        dyn_alloc_old = s.get("simulation_battery_dynamic_allocation")
+        base_alloc_old = s.get("simulation_battery_base_allocation")
+
+        return SimulationConfig(
+            initial_battery_soc=float(s.get("simulation_initial_battery_soc")),
+            solar_peak_percentage_for_charging=float(s.get("simulation_solar_peak_percentage_for_charging")),
+            load_peak_percentage_for_discharging=float(s.get("simulation_load_peak_percentage_for_discharging")),
+            charge_battery_efficiency=float(s.get("simulation_charge_battery_efficiency")),
+            discharge_battery_efficiency=float(s.get("simulation_discharge_battery_efficiency")),
+            default_panel_capacity=float(s.get("simulation_default_panel_capacity")),
+            default_battery_capacity_required=float(s.get("simulation_default_battery_capacity_required")),
+            battery_dynamic_percentage_allocation=float(s.get("simulation_battery_dynamic_percentage_allocation")),
+            battery_base_percentage_allocation=float(s.get("simulation_battery_base_percentage_allocation")),
+            battery_dynamic_allocation=float(dyn_alloc_old) if dyn_alloc_old is not None else None,
+            battery_base_allocation=float(base_alloc_old) if base_alloc_old is not None else None,
+        )
 
     @property
-    def cors(self):
-        return self.get("cors")
+    def cors(self) -> CorsConfig:
+        s = self._settings
+        return CorsConfig(
+            origins=s.cors_origins,
+            methods=s.cors_methods,
+            headers=s.cors_headers,
+            allow_credentials=bool(s.cors_allow_credentials)
+        )
 
     @property
-    def load_profile(self):
-        return self._get_load_profile_config()
+    def load_profile(self) -> LoadProfileConfig:
+        s = self._settings
+        strategy_str = s.get("load_profile_interpolation_strategy")
+        strategy_enum = LoadProfileStrategy.Linear
 
-    def get(self, setting, default=None):
-        return self.settings.get(setting, default)
+        if strategy_str:
+            try:
+                strategy_enum = LoadProfileStrategy(strategy_str)
+            except ValueError:
+                print(f"Warning: Invalid load_profile_interpolation_strategy '{strategy_str}'. Using default.")
 
-    def _get_load_profile_config(self):
-        load_profile_config = self.get("load_profile")
-        load_profile_config["interpolation_strategy"] = LoadProfileStrategy(
-            load_profile_config.interpolation_strategy
+        return LoadProfileConfig(
+            interpolation_strategy=strategy_enum,
+            max_interval_length=int(s.get("load_profile_max_interval_length")),
+            min_days=int(s.get("load_profile_min_days")),
+            time_formats=s.get("load_profile_time_formats")
         )
-        load_profile_config["max_interval_length"] = int(
-            load_profile_config.max_interval_length
-        )
-        load_profile_config["min_days"] = int(load_profile_config.min_days)
-        return load_profile_config
 
-    def _get_postgres_config(self):
-        db_config = self.get("postgres")
-        db_config["port"] = int(db_config.port)
-        return db_config
+    @property
+    def topic(self) -> Optional[TopicConfig]:
+        s = self._settings
+        topics_str = s.get("topic_topics")
+        if topics_str is not None:
+            topics_list = [t.strip() for t in topics_str.split(",")]
+            return TopicConfig(topics=topics_list)
+        return None
 
-    def _get_otp_config(self):
-        otp_config = self.get("otp")
-        otp_config["max_otp_verification_attempts"] = int(
-            otp_config.max_otp_verification_attempts
-        )
-        otp_config["max_resend_otp_attempts"] = int(otp_config.max_resend_otp_attempts)
-        otp_config["max_resend_otp_attempt_window_in_min"] = int(
-            otp_config.max_resend_otp_attempt_window_in_min
-        )
-        otp_config["otp_validity_in_secs"] = int(otp_config.otp_validity_in_secs)
-        otp_config["master_otp_admin"] = int(otp_config.master_otp_admin)
-        otp_config["master_otp_user"] = int(otp_config.master_otp_user)
-        return otp_config
-
-    def _get_simulation_config(self):
-        data = self.get("simulation")
-        data["initial_battery_soc"] = float(data["initial_battery_soc"])
-        data["solar_peak_percentage_for_charging"] = float(
-            data["solar_peak_percentage_for_charging"]
-        )
-        data["load_peak_percentage_for_discharging"] = float(
-            data["load_peak_percentage_for_discharging"]
-        )
-        data["charge_battery_efficiency"] = float(data["charge_battery_efficiency"])
-        data["discharge_battery_efficiency"] = float(
-            data["discharge_battery_efficiency"]
-        )
-        data["default_panel_capacity"] = float(data["default_panel_capacity"])
-        data["default_battery_capacity_required"] = float(
-            data["default_battery_capacity_required"]
-        )
-        data["battery_dynamic_allocation"] = float(
-            data["battery_dynamic_percentage_allocation"]
-        )
-        data["battery_base_allocation"] = float(
-            data["battery_base_percentage_allocation"]
-        )
-        return data
+    def get(self, setting: str, default: Any = None) -> Any:
+        return self._settings.get(setting, default)
