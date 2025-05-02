@@ -1,38 +1,37 @@
-# Settings specific to the LOCAL environment
-# Inherits from settings.toml and overrides values.
-# Sensitive values are loaded from environment variables (e.g., .env file).
+# Sensitive values are loaded from environment variables (example.env file).
 
 [LOCAL]
-# merges with [DEFAULT] from settings.toml
 
-# Postgres (Overrides/Specifics for local)
-db_host = "${HYGGE_DB_HOST}" # Default to localhost if env var not set
-db_port = "${HYGGE_DB_PORT}"      # Default to 5432 if env var not set
-db_database = "${HYGGE_DB_DATABASE}" # Default from local.ini if env var not set
-db_user = "${HYGGE_DB_USER}"    # Default from local.ini if env var not set
-db_password = "${HYGGE_DB_PASSWORD}"     # No default for password
+# Postgres
+db_host = "${HYGGE_DB_HOST}" 
+db_port = "${HYGGE_DB_PORT}"     
+db_database = "${HYGGE_DB_DATABASE}" 
+db_user = "${HYGGE_DB_USER}"    
+db_password = "${HYGGE_DB_PASSWORD}"     
 db_max_connections=20
 db_stale_timeout=50
 db_options="-csearch_path=public,authentication,support,telemetry,payment,master,transactional,engagement"
 
 
 
-# MQTT (Overrides/Specifics for local)
-mqtt_id = "${HYGGE_MQTT_ID}" # Default from local.ini
-mqtt_broken_url = "${HYGGE_MQTT_BROKEN_URL}" # Default from local.ini
-mqtt_application_name = "${HYGGE_MQTT_APPLICATION_NAME=network-topology-local}" # Default from local.ini
-mqtt_host = "${HYGGE_MQTT_HOST}"       # Default from local.ini
-mqtt_port = "${HYGGE_MQTT_PORT}"          # Default from local.ini
-mqtt_username = "${HYGGE_MQTT_USERNAME}" # Default from local.ini
-mqtt_password = "${HYGGE_MQTT_PASSWORD}"         # No default for password
+# MQTT 
+mqtt_id = "${HYGGE_MQTT_ID}"
+mqtt_broken_url = "${HYGGE_MQTT_BROKEN_URL}" 
+mqtt_application_name = "${HYGGE_MQTT_APPLICATION_NAME}"
+mqtt_host = "${HYGGE_MQTT_HOST}"     
+mqtt_port = "${HYGGE_MQTT_PORT}"         
+mqtt_username = "${HYGGE_MQTT_USERNAME}"
+mqtt_password = "${HYGGE_MQTT_PASSWORD}"       
 
-# Logging (Overrides/Specifics for local)
-logging_level = "DEBUG" # Override default from settings.toml
-logging_log_directory = "${HYGGE_LOG_DIRECTORY}" # Default from local.ini
+# Logging 
+logging_level = "DEBUG" 
+logging_log_directory = "${HYGGE_LOG_DIRECTORY}"
 
-# SMS (Overrides/Specifics for local)
+# SMS 
 
 sms_provider_server="https://2factor.in/API/V1"
+sms_api_key="${HYGGE_SMS_API_KEY}"
+
 sms_api_key="30db2df9-5ae4-11eb-8153-0200cd936042"
 sms_otp_sms_template_name="Hygge EV"
 sms_default_number="1111111111"
@@ -44,23 +43,20 @@ session_token_secret = "${HYGGE_SESSION_TOKEN_SECRET}"
 session_validity_in_hours=3600
 session_validity_in_hours_refresh_token=3600
 
-# Topic - Local might not need this section if it's dev/test specific
-# Remove or comment out if not applicable to local
-# topic_topics = "..."
 
 # Simulation - Assuming defaults from settings.toml are okay for local
-simulacion_initial_battery_soc = 0
-simulacion_solar_peak_percentage_for_charging = 40
-simulacion_load_peak_percentage_for_discharging = 95
-simulacion_charge_battery_efficiency = 100
-simulacion_discharge_battery_efficiency = 100
-simulacion_default_panel_capacity = 540
-simulacion_default_battery_capacity_required = 800
-simulacion_battery_dynamic_percentage_allocation = 40
-simulacion_battery_base_percentage_allocation = 30
+simulation_initial_battery_soc = 0
+simulation_solar_peak_percentage_for_charging = 40
+simulation_load_peak_percentage_for_discharging = 95
+simulation_charge_battery_efficiency = 100
+simulation_discharge_battery_efficiency = 100
+simulation_default_panel_capacity = 540
+simulation_default_battery_capacity_required = 800
+simulation_battery_dynamic_percentage_allocation = 40
+simulation_battery_base_percentage_allocation = 30
 
-otp_max_otp_verification_attempts=3
-otp_max_resend_otp_attempts=3
+otp_max_otp_verification_attempts=60
+otp_max_resend_otp_attempts=60
 otp_max_resend_otp_attempt_window_in_min=15
 otp_validity_in_secs=180
 otp_master_otp_admin = 215543
@@ -68,7 +64,7 @@ otp_master_otp_user = 543215
 otp_admin_number = 6475295635
 otp_user_number = 6475295636
 
-# CORS - Assuming defaults from settings.toml are okay for local
+# CORS 
 cors_origins = "*"
 cors_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 cors_headers = ["Authorization", "Content-Type"]

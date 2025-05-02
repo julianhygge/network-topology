@@ -83,7 +83,7 @@ class ApiConfiguration(IConfiguration):
             max_otp_verification_attempts=int(s.get("otp_max_otp_verification_attempts")),
             max_resend_otp_attempts=int(s.get("otp_max_resend_otp_attempts")),
             max_resend_otp_attempt_window_in_min=int(s.get("otp_max_resend_otp_attempt_window_in_min")),
-            otp_validity_in_secs=int(s.get("otp_otp_validity_in_secs")),
+            otp_validity_in_secs=int(s.get("otp_validity_in_secs")),
             master_otp_admin=int(s.get("otp_master_otp_admin")),
             master_otp_user=int(s.get("otp_master_otp_user")),
             admin_number=int(s.get("otp_admin_number")),
