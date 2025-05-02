@@ -31,8 +31,6 @@ logging_log_directory = "${HYGGE_LOG_DIRECTORY}"
 
 sms_provider_server="https://2factor.in/API/V1"
 sms_api_key="${HYGGE_SMS_API_KEY}"
-
-sms_api_key="30db2df9-5ae4-11eb-8153-0200cd936042"
 sms_otp_sms_template_name="Hygge EV"
 sms_default_number="1111111111"
 sms_topic="hygge/topic/sms/otp"
