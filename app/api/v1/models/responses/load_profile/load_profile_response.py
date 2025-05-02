@@ -1,3 +1,5 @@
+"""Pydantic models for load profile responses."""
+
 from datetime import datetime
 from decimal import Decimal
 from typing import Dict, List, Optional
@@ -7,6 +9,8 @@ from pydantic import BaseModel, Field, UUID4
 
 
 class LoadProfileResponse(BaseModel):
+    """Response model for a single load profile."""
+
     links: Dict[str, str] = Field(
         default={"self": "/v1/load_profiles/"},
         example={"self": "/v1/load_profiles/", "next": "/v1/load_profiles/?page=2"}
@@ -64,26 +68,32 @@ class LoadProfileResponse(BaseModel):
     )
 
     class Config:
+        """Pydantic configuration."""
         from_attributes = True
 
 
 class LoadProfilesListResponse(BaseModel):
+    """Response model for a list of load profiles."""
     items: List[LoadProfileResponse]
 
 
 class UserResponse(BaseModel):
+    """Simplified user response containing only the ID."""
     id: UUID = Field(..., example="94522a0a-c8f1-40f8-a2e5-9aed2dc00001")
 
 
 class LoadProfilesResponse(BaseModel):
+    """Simplified load profile response containing only the ID."""
     id: int = Field(..., example=88)
 
 
 class ElectricalAppliancesResponse(BaseModel):
+    """Simplified electrical appliance response containing only the ID."""
     id: int = Field(..., example=1)
 
 
 class LoadProfileBuilderItemResponse(BaseModel):
+    """Response model for a single item within the load profile builder."""
     id: int = Field(..., example=2)
     created_on: datetime = Field(..., example="2024-07-31T14:51:46.964639")
     modified_on: datetime = Field(..., example="2024-07-31T14:51:46.964639")
@@ -96,6 +106,7 @@ class LoadProfileBuilderItemResponse(BaseModel):
 
 
 class LoadProfileBuilderItemsResponse(BaseModel):
+    """Response model for a list of items from the load profile builder."""
     message: str = Field(..., example="Items saved successfully")
     links: Dict[str, str] = Field(
         default={"self": "/v1/load_profiles/"},
@@ -129,6 +140,7 @@ class LoadProfileBuilderItemsResponse(BaseModel):
 
 
 class LoadPredefinedTemplateResponse(BaseModel):
+    """Response model for a load profile created from a predefined template."""
     id: int
     profile_id: int
     template_id: int
@@ -142,10 +154,12 @@ class LoadPredefinedTemplateResponse(BaseModel):
 
 
 class LoadPredefinedMasterTemplateResponse(BaseModel):
+    """Response model for a master predefined template."""
     id: int
     name: str
     power_kw: int
 
 
 class LoadPredefinedTemplateListResponse(BaseModel):
+    """Response model for a list of master predefined templates."""
     items: List[LoadPredefinedMasterTemplateResponse]

@@ -1,4 +1,7 @@
+"""Dependency injection container setup using dependency-injector."""
+
 from dependency_injector import containers, providers
+
 from app.config.configuration import ApiConfiguration
 from app.config.i_configuration import LoadProfileStrategy
 from app.data.interfaces.irepository import IRepository
@@ -63,17 +66,33 @@ from app.domain.services.user_service import UserService
 def _load_profile_completer_factory(
     configuration: ApiConfiguration,
 ) -> type[ILoadProfileFileCompleter]:
+    """
+    Factory function to select the load profile completer based on config.
+
+    Args:
+        configuration: The application configuration.
+
+    Returns:
+        The class type of the selected load profile completer.
+    """
     strategy = configuration.load_profile.interpolation_strategy
     if strategy == LoadProfileStrategy.Spline:
         return LoadProfileFileCompleterSpline
-    elif strategy == LoadProfileStrategy.PChip:
+    if strategy == LoadProfileStrategy.PChip:
         return LoadProfileFileCompleterPChip
-    elif strategy == LoadProfileStrategy.Akima1D:
+    if strategy == LoadProfileStrategy.Akima1D:
         return LoadProfileFileCompleterAkima1D
+    # Default to Linear if no match or invalid strategy
     return LoadProfileFileCompleterLinear
 
 
 class Container(containers.DeclarativeContainer):
+    """
+    Main dependency injection container for the application.
+
+    Configures and provides instances of repositories, services, and other
+    components needed throughout the application.
+    """
     configuration = providers.Singleton(ApiConfiguration)
     HyggeDatabase.set_config(configuration().db)
     _user_repository = providers.Singleton(UserRepository)

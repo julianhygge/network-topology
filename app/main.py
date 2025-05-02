@@ -1,3 +1,5 @@
+"""Main application file for the Network Topology API."""
+
 from fastapi import FastAPI
 from app.api.middlewares.auth_middleware import AuthorizationMiddleware
 from app.api.middlewares.cors_middleware import add_cors_middleware
@@ -17,6 +19,7 @@ from app.exceptions.exception_handlers import add_exception_handlers
 
 
 def add_app_middleware(cc_app: FastAPI):
+    """Adds necessary middleware to the FastAPI application."""
     cc_app.add_middleware(DatabaseMiddleware)  # type:ignore
     cc_app.add_middleware(LoggerMiddleware)  # type:ignore
     cc_app.add_middleware(AuthorizationMiddleware)  # type:ignore
@@ -25,6 +28,7 @@ def add_app_middleware(cc_app: FastAPI):
 
 
 def add_routes(cc_app: FastAPI):
+    """Includes API routers for different functionalities."""
     version_1 = '/v1/'
     cc_app.include_router(auth_router, prefix=f'{version_1}auth')
     cc_app.include_router(user_router, prefix=f'{version_1}users')

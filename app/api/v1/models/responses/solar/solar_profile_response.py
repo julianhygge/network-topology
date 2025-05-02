@@ -1,12 +1,16 @@
-from pydantic import BaseModel, UUID4
-from typing import Optional, List
-from datetime import datetime
+"""Pydantic models for solar profile responses."""
+
 from decimal import Decimal
+from typing import Optional, List
+
+from pydantic import BaseModel, UUID4
 
 from app.api.v1.models.requests.solar.solar_profile_request import TiltType
 
 
 class SolarProfileResponse(BaseModel):
+    """Response model for a single solar profile."""
+
     solar_available: bool
     house_id: UUID4
     installed_capacity_kw: Optional[Decimal]
@@ -19,4 +23,6 @@ class SolarProfileResponse(BaseModel):
 
 
 class SolarProfileListResponse(BaseModel):
+    """Response model for a list of solar profiles."""
+
     items: List[SolarProfileResponse]

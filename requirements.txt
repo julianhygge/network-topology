@@ -7,7 +7,7 @@ python-multipart
 paho-mqtt==1.5.1
 xlrd>=1.0.0
 fastapi~=0.110.0
-starlette~=0.46.2
+starlette # Let pip resolve the compatible version with fastapi
 psycopg2-binary~=2.9.9
 uvicorn~=0.28.0
 dynaconf[toml]~=3.2.7
@@ -20,3 +20,5 @@ pytest-mock~=3.14.0
 python-dateutil~=2.9.0.post0
 pandas~=2.2.2
 scipy~=1.13.0
+
+pylint~=3.1.0 # Added for static code analysis

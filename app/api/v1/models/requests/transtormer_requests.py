@@ -1,17 +1,23 @@
+"""Pydantic models for transformer and house node requests and responses."""
+
 from decimal import Decimal
 from enum import Enum
-from pydantic import BaseModel, UUID4, Field
 from typing import Optional
+
+from pydantic import BaseModel, UUID4, Field
+
 from app.data.schemas.enums.enums import NodeStatusEnum
 
 
 class BatteryEnum(str, Enum):
-    Lithium = "Lithium-ion"
-    LeadAcid = "Lead-acid"
-    NickelMetal = "Nickel-Metal"
+    """Enum defining battery types."""
+    LITHIUM = "Lithium-ion"
+    LEAD_ACID = "Lead-acid"
+    NICKEL_METAL = "Nickel-Metal"
 
 
 class HouseUpdateRequestModel(BaseModel):
+    """Request model for updating house node details."""
     load_profile: Optional[str] = Field(None, example="")
     has_solar: Optional[bool] = Field(None, example="True")
     solar_kw: Optional[Decimal] = Field(None, example="2.9")
@@ -26,6 +32,7 @@ class HouseUpdateRequestModel(BaseModel):
 
 
 class HouseResponseModel(BaseModel):
+    """Response model for house node details."""
     id: UUID4 = Field(..., example="824960c0-974c-4c57-8803-85f5f407b304")
     status: NodeStatusEnum = Field(..., example="complete")
     load_profile: Optional[str] = Field(None, example="")
@@ -42,6 +49,7 @@ class HouseResponseModel(BaseModel):
 
 
 class TransformerUpdateRequestModel(BaseModel):
+    """Request model for updating transformer node details."""
     max_capacity_kw: Optional[Decimal] = Field(None, example="28.9")
     allow_export: bool = Field(..., example="True")
     name: Optional[str] = Field(None, example="Shantipuram")
@@ -54,6 +62,7 @@ class TransformerUpdateRequestModel(BaseModel):
 
 
 class TransformerResponseModel(BaseModel):
+    """Response model for transformer node details."""
     id: UUID4 = Field(..., example="824960c0-974c-4c57-8803-85f5f407b304")
     status: NodeStatusEnum = Field(..., example="complete")
     max_capacity_kw: Optional[Decimal] = Field(None, example="45.7")

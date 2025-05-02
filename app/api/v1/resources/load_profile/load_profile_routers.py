@@ -1,3 +1,5 @@
+"""Combines routers related to load profiles."""
+
 from fastapi import APIRouter
 from app.api.v1.resources.load_profile.load_profile import load_router
 
