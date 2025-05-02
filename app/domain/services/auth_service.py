@@ -9,7 +9,7 @@ from app.domain.interfaces.i_token_service import ITokenService
 from app.domain.interfaces.enums.groups_enum import Groups
 from app.exceptions.hygge_exceptions import UserDoesNotExist, InvalidAttemptState
 from app.utils import string_util
-from app.utils.datetime_util import before_now, datetime_now
+from app.utils.datetime_util import before_now, utc_now_iso
 from app.utils.logger import logger
 
 
@@ -83,7 +83,7 @@ class AuthService(IAuthService):
             return {
                 "state_token": str(auth_attempt.txn_id),
                 "attempts_remaining": self._max_otp_verification_attempts - auth_attempt.verification_attempt_count,
-                "created_time": datetime_now(),
+                "created_time": utc_now_iso(),
                 "status": AuthenticationStateEnum.Restricted.value,
                 "status_desc": authentication_state_desc[auth_attempt.state]
             }
@@ -136,7 +136,7 @@ class AuthService(IAuthService):
 
         data_response = {
             "state_token": str(new_attempt.txn_id),
-            "modified_on": datetime_now(),
+            "modified_on": utc_now_iso(),
             "status": new_attempt.state.value,
             "status_desc": new_attempt.state_desc,
             "attempts_remaining": self._max_otp_verification_attempts - new_attempt.verification_attempt_count,

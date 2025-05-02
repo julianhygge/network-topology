@@ -7,7 +7,7 @@ from app.data.interfaces.igroup_repository import IGroupRepository
 from app.data.interfaces.irepository import IRepository
 from app.data.interfaces.iuser_repository import IUserRepository
 from app.domain.interfaces.i_token_service import ITokenService
-from app.utils.datetime_util import after_now, current_time_millis, datetime_now
+from app.utils.datetime_util import after_now, current_time_millis, utc_now_iso
 from app.utils.json_util import UUIDEncoder
 from app.utils.logger import logger
 
@@ -26,7 +26,7 @@ class TokenService(ITokenService):
         self._group_repo = group_repo
 
     def issue_new_token(self, session_user, txn_id):
-        query = self._group_repo.fetch_roles_and_permissions_by_groups(session_user=session_user, now=datetime_now())
+        query = self._group_repo.fetch_roles_and_permissions_by_groups(session_user=session_user, now=utc_now_iso())
         roles = set([])
         permissions = set([])
         for rec in query:

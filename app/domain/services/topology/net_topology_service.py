@@ -7,7 +7,7 @@ from app.domain.interfaces.enums.node_type import NodeType
 from app.domain.interfaces.net_topology.i_net_topology_service import INetTopologyService
 from app.domain.services.topology.topology_service_base import TopologyServiceBase
 from app.exceptions.hygge_exceptions import NotFoundException, InvalidDataException
-from app.utils.datetime_util import datetime_now
+from app.utils.datetime_util import utc_now_iso
 
 
 class NetTopologyService(TopologyServiceBase, INetTopologyService):
@@ -235,7 +235,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         if not transformer:
             raise NotFoundException(f"Transformer with id {transformer_id} not found")
 
-        data["modified_on"] = datetime_now()
+        data["modified_on"] = utc_now_iso()
         data["modified_by"] = user_id
         self.transformer_repo.update(transformer_id, **data)
 
@@ -262,7 +262,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         if not house:
             raise NotFoundException(f"House with id {house_id} not found")
 
-        data["modified_on"] = datetime_now()
+        data["modified_on"] = utc_now_iso()
         data["modified_by"] = user_id
         self.house_repo.update(house_id, **data)
         updated_house = self.house_repo.read(house_id)

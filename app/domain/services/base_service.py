@@ -1,8 +1,9 @@
-import datetime
 import uuid
 from typing import List, Dict, Any, Optional, Union
+
 from app.data.interfaces.irepository import IRepository
 from app.domain.interfaces.i_service import IService
+from app.utils.datetime_util import utc_now
 
 
 class BaseService(IService):
@@ -24,7 +25,7 @@ class BaseService(IService):
         return item_dict
 
     def update(self, user_id: str, item_id: int, **kwargs) -> Optional[Dict[str, Any]]:
-        kwargs["modified_on"] = datetime.datetime.utcnow()
+        kwargs["modified_on"] = utc_now()
         kwargs["modified_by"] = user_id
         update_result = self.repository.update(item_id, **kwargs)
         if update_result:
