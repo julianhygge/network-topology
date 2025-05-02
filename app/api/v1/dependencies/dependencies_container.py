@@ -35,7 +35,7 @@ from app.data.repositories.master.electrical_appliances_repository import (
     ElectricalAppliancesRepository,
 )
 from app.data.schemas.hygge_database import HyggeDatabase
-from app.domain.interfaces.net_topology.iload_profile_file_completer import (
+from app.domain.interfaces.net_topology.i_load_profile_file_completer import (
     ILoadProfileFileCompleter,
 )
 from app.domain.services.auth_service import AuthService

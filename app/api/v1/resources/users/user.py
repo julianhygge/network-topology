@@ -6,7 +6,7 @@ from app.api.authorization.enums import Resources, Permission
 from app.api.v1.dependencies.container_instance import get_user_service
 from app.api.v1.models.requests.auth.auth_request import UserRequestModel
 from app.api.v1.models.responses.auth.auth_response import UserResponseModel, UserListResponse, UserLinkResponseModel
-from app.domain.interfaces.iservice import IService
+from app.domain.interfaces.i_service import IService
 from starlette.requests import Request
 from app.exceptions.hygge_exceptions import NotFoundException
 

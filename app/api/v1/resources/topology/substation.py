@@ -21,9 +21,9 @@ from app.api.v1.models.responses.substation import (
     SubstationResponseModelList,
     SubstationTopology,
 )
-from app.domain.interfaces.iservice import IService
-from app.domain.interfaces.net_topology.inet_topology_service import INetTopologyService
-from app.domain.interfaces.net_topology.isubstation_service import ISubstationService
+from app.domain.interfaces.i_service import IService
+from app.domain.interfaces.net_topology.i_net_topology_service import INetTopologyService
+from app.domain.interfaces.net_topology.i_substation_service import ISubstationService
 
 substation_router = APIRouter(tags=["Substations"])
 

@@ -1,6 +1,6 @@
-from app.domain.interfaces.isms_service import ISmsService
+from app.domain.interfaces.i_sms_service import ISmsService
 from app.utils.logger import logger
-from app.domain.interfaces.imqtt_service import IMQTTService
+from app.domain.interfaces.i_mqtt_service import IMQTTService
 
 
 class SmsService(ISmsService):

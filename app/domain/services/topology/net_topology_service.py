@@ -4,7 +4,7 @@ from app.data.interfaces.irepository import IRepository
 from app.data.interfaces.topology.inode_repository import INodeRepository
 from app.data.schemas.enums.enums import NodeStatusEnum
 from app.domain.interfaces.enums.node_type import NodeType
-from app.domain.interfaces.net_topology.inet_topology_service import INetTopologyService
+from app.domain.interfaces.net_topology.i_net_topology_service import INetTopologyService
 from app.domain.services.topology.topology_service_base import TopologyServiceBase
 from app.exceptions.hygge_exceptions import NotFoundException, InvalidDataException
 from app.utils.datetime_util import datetime_now

@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import List, Dict, Any, Optional, Union
 from app.data.interfaces.irepository import IRepository
-from app.domain.interfaces.iservice import IService
+from app.domain.interfaces.i_service import IService
 
 
 class BaseService(IService):

@@ -6,7 +6,7 @@ from app.config.i_configuration import IConfiguration
 from app.data.interfaces.igroup_repository import IGroupRepository
 from app.data.interfaces.irepository import IRepository
 from app.data.interfaces.iuser_repository import IUserRepository
-from app.domain.interfaces.itoken_service import ITokenService
+from app.domain.interfaces.i_token_service import ITokenService
 from app.utils.datetime_util import after_now, current_time_millis, datetime_now
 from app.utils.json_util import UUIDEncoder
 from app.utils.logger import logger

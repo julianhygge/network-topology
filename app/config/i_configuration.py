@@ -1,14 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, List, Optional
 
+from app.domain.interfaces.enums.load_profile_strategy_enum import LoadProfileStrategy
 
-class LoadProfileStrategy(Enum):
-    Linear = "Linear"
-    Spline = "Spline"
-    PChip = "PChip"
-    Akima1D = "Akima1D"
 
 @dataclass(frozen=True)
 class DbConfig:

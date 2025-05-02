@@ -1,6 +1,6 @@
 import json
 from app.utils.json_util import UUIDEncoder
-from app.domain.interfaces.imqtt_service import IMQTTService
+from app.domain.interfaces.i_mqtt_service import IMQTTService
 import paho.mqtt.client as mqtt
 
 

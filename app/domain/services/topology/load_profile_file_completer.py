@@ -1,6 +1,6 @@
 from pandas import DataFrame
 from numpy import interp
-from app.domain.interfaces.net_topology.iload_profile_file_completer import (
+from app.domain.interfaces.net_topology.i_load_profile_file_completer import (
     ILoadProfileFileCompleter,
 )
 from scipy.interpolate import Akima1DInterpolator, CubicSpline, PchipInterpolator

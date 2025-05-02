@@ -3,7 +3,7 @@ import uuid
 from uuid import UUID
 from app.data.interfaces.topology.inode_repository import INodeRepository
 from app.api.v1.models.responses.breadcrumb import BreadcrumbResponseModel, BreadcrumbItem
-from app.domain.interfaces.inode_service import INodeService
+from app.domain.interfaces.i_node_service import INodeService
 
 
 class NodeService(INodeService):

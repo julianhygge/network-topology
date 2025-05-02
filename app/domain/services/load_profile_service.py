@@ -32,7 +32,7 @@ from app.data.interfaces.load.ipredefined_templates_repository import (
     IPredefinedTemplatesRepository,
 )
 from app.domain.interfaces.enums.load_source_enum import LoadSource
-from app.domain.interfaces.net_topology.iload_profile_file_completer import (
+from app.domain.interfaces.net_topology.i_load_profile_file_completer import (
     ILoadProfileFileCompleter,
 )
 from app.domain.services.base_service import BaseService

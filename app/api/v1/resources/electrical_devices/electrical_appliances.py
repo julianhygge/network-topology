@@ -4,7 +4,7 @@ from app.api.v1.models.requests.electrical_appliances import AppliancesRequest
 from app.utils.logger import logger
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Resources, Permission
-from app.domain.interfaces.iservice import IService
+from app.domain.interfaces.i_service import IService
 from app.api.v1.models.responses.electrical_appliances import AppliancesResponse, AppliancesListResponse
 
 appliances_router = APIRouter(tags=['Appliances'])

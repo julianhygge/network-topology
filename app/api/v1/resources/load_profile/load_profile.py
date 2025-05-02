@@ -14,7 +14,7 @@ from app.api.v1.models.requests.load_profile.load_profile_update import LoadProf
 from app.api.v1.models.responses.load_profile.load_profile_response import LoadProfileResponse, \
     LoadProfilesListResponse, LoadProfileBuilderItemsResponse, LoadProfileBuilderItemResponse, \
     LoadPredefinedTemplateResponse, LoadPredefinedTemplateListResponse, LoadPredefinedMasterTemplateResponse
-from app.domain.interfaces.iservice import IService
+from app.domain.interfaces.i_service import IService
 
 load_router = APIRouter(tags=["Load Profile"])
 
