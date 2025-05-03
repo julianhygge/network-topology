@@ -4,12 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import UUID4
 
 from app.api.authorization.authorization import permission
-from app.api.authorization.enums import Permission, Resources
+from app.api.authorization.enums import Permission as p, Resources as r
 from app.api.v1.dependencies.container_instance import (
     get_net_topology_service,
     get_transformer_service,
 )
-from app.api.v1.models.requests.transtormer_requests import (
+from app.api.v1.models.requests.transformer_requests import (
     TransformerResponseModel,
     TransformerUpdateRequestModel,
 )
@@ -19,14 +19,14 @@ from app.domain.interfaces.net_topology.i_net_topology_service import (
 )
 from app.exceptions.hygge_exceptions import NotFoundException
 
-transformer_router = APIRouter(tags=["Transformers"])
+tr_router = APIRouter(tags=["Transformers"])
 
 
-@transformer_router.put("/{transformer_id}", response_model=TransformerResponseModel)
+@tr_router.put("/{transformer_id}", response_model=TransformerResponseModel)
 async def update_transformer(
     transformer_id: UUID4,
     transformer_data: TransformerUpdateRequestModel,
-    user_id: str = Depends(permission(Resources.TRANSFORMERS, Permission.UPDATE)),
+    user_id: str = Depends(permission(r.TRANSFORMERS, p.UPDATE)),
     service: INetTopologyService = Depends(get_net_topology_service),
 ) -> TransformerResponseModel:
     """
@@ -57,10 +57,10 @@ async def update_transformer(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
-@transformer_router.get("/{transformer_id}", response_model=TransformerResponseModel)
+@tr_router.get("/{transformer_id}", response_model=TransformerResponseModel)
 async def get(
     transformer_id: UUID4,
-    _: str = Depends(permission(Resources.TRANSFORMERS, Permission.RETRIEVE)),
+    _: str = Depends(permission(r.TRANSFORMERS, p.RETRIEVE)),
     service: IService = Depends(get_transformer_service),
 ) -> TransformerResponseModel:
     """

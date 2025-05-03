@@ -15,7 +15,7 @@ from app.api.v1.resources.load_profile.load_profile import load_router
 from app.api.v1.resources.topology.breadcrumb import breadcrumb_router
 from app.api.v1.resources.topology.house import house_router
 from app.api.v1.resources.topology.substation import substation_router
-from app.api.v1.resources.topology.transformer import transformer_router
+from app.api.v1.resources.topology.transformer import tr_router
 from app.api.v1.resources.users.group import group_router
 from app.api.v1.resources.users.user import user_router
 from app.config.servers import hygge_servers
@@ -38,7 +38,7 @@ def add_routes(cc_app: FastAPI):
     cc_app.include_router(user_router, prefix=f"{version_1}users")
     cc_app.include_router(group_router, prefix=f"{version_1}groups")
     cc_app.include_router(substation_router, prefix=f"{version_1}substations")
-    cc_app.include_router(transformer_router, prefix=f"{version_1}transformers")
+    cc_app.include_router(tr_router, prefix=f"{version_1}transformers")
     cc_app.include_router(house_router, prefix=f"{version_1}houses")
     cc_app.include_router(load_router, prefix=f"{version_1}load")
 
