@@ -1,5 +1,7 @@
-from typing import List, Dict, Union, Any
+from typing import Any, Dict, List, Union
+
 from peewee import ModelSelect
+
 from app.data.interfaces.i_repository import IRepository, T
 from app.data.schemas.hygge_database import HyggeDatabase
 

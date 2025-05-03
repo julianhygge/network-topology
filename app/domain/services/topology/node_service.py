@@ -1,8 +1,10 @@
-from typing import Dict, Any, Optional, List
 import uuid
+from typing import Any, Dict, List, Optional
 from uuid import UUID
+
+from app.api.v1.models.responses.breadcrumb import (BreadcrumbItem,
+                                                    BreadcrumbResponseModel)
 from app.data.interfaces.topology.i_node_repository import INodeRepository
-from app.api.v1.models.responses.breadcrumb import BreadcrumbResponseModel, BreadcrumbItem
 from app.domain.interfaces.i_node_service import INodeService
 
 

@@ -1,6 +1,8 @@
 import datetime
+
 import jwt
 from jwt import ExpiredSignatureError
+
 from app.api.authorization.enums import Permission
 from app.config.i_configuration import IConfiguration
 from app.data.interfaces.i_group_repository import IGroupRepository

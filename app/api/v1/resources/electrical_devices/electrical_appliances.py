@@ -1,14 +1,14 @@
 """API endpoints for managing electrical appliances."""
-from fastapi import APIRouter, HTTPException, Depends
-from app.api.v1.dependencies.container_instance import get_electrical_appliances_service
-from app.api.v1.models.requests.electrical_appliances import AppliancesRequest
+from fastapi import APIRouter, Depends, HTTPException
+
 from app.api.authorization.authorization import permission
-from app.api.authorization.enums import Resources, Permission
-from app.domain.interfaces.i_service import IService
+from app.api.authorization.enums import Permission, Resources
+from app.api.v1.dependencies.container_instance import \
+    get_electrical_appliances_service
+from app.api.v1.models.requests.electrical_appliances import AppliancesRequest
 from app.api.v1.models.responses.electrical_appliances import (
-    AppliancesResponse,
-    AppliancesListResponse,
-)
+    AppliancesListResponse, AppliancesResponse)
+from app.domain.interfaces.i_service import IService
 
 appliances_router = APIRouter(tags=['Appliances'])
 

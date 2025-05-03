@@ -1,5 +1,8 @@
 import datetime
-from peewee import UUIDField, BooleanField, CharField, ForeignKeyField, DateTimeField
+
+from peewee import (BooleanField, CharField, DateTimeField, ForeignKeyField,
+                    UUIDField)
+
 from app.data.schemas.schema_base import BaseModel, InfDateTimeField
 
 

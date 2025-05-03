@@ -1,12 +1,15 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.exceptions import HTTPException
 from starlette import status
 from starlette.responses import JSONResponse
 from uvicorn.protocols.utils import ClientDisconnected
-from fastapi import Request
-from app.exceptions.hygge_exceptions import (DatabaseException, InvalidAttemptState, UserDoesNotExist,
+
+from app.exceptions.hygge_exceptions import (DatabaseException, HyggeException,
+                                             InvalidAttemptState,
+                                             NotFoundException,
                                              UnauthorizedError,
-                                             NotFoundException, UserAlreadyExistException, HyggeException)
+                                             UserAlreadyExistException,
+                                             UserDoesNotExist)
 from app.utils.logger import logger
 
 

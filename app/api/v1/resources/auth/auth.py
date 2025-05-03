@@ -1,14 +1,12 @@
 """API endpoints for user authentication using OTP."""
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.v1.dependencies.container_instance import get_auth_service
 from app.api.v1.models.requests.auth.auth_request import (
-    OtpRequest, OtpVerificationRequest, OtpRequestModelResponse
-)
+    OtpRequest, OtpRequestModelResponse, OtpVerificationRequest)
 from app.api.v1.models.responses.auth.auth_response import (
-    OtpVerificationModelResponse, OtpVerificationSuccessModelResponse
-)
+    OtpVerificationModelResponse, OtpVerificationSuccessModelResponse)
 from app.domain.interfaces.i_auth_service import IAuthService
 from app.exceptions.hygge_exceptions import UnauthorizedError
 from app.utils.logger import logger

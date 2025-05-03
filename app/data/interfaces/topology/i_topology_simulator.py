@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import List
 from decimal import Decimal
+from typing import List
 from uuid import UUID
 
 from app.data.interfaces.dtos.topology_dtos import HouseDTO, TransformerDTO

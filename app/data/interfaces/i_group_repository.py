@@ -3,7 +3,8 @@ Module for the group repository interface.
 """
 from abc import abstractmethod
 from enum import Enum
-from typing import NamedTuple, List
+from typing import List, NamedTuple
+
 from app.data.interfaces.i_repository import IRepository, T
 
 

@@ -1,8 +1,10 @@
-from typing import Dict, Any
+from typing import Any, Dict
 
-from app.domain.interfaces.solar.isolar_profile_service import ISolarProfileService
+from app.data.repositories.solar.solar_profile_repository import \
+    SolarProfileRepository
+from app.domain.interfaces.solar.isolar_profile_service import \
+    ISolarProfileService
 from app.domain.services.base_service import BaseService
-from app.data.repositories.solar.solar_profile_repository import SolarProfileRepository
 
 
 class SolarProfileService(BaseService, ISolarProfileService):

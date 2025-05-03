@@ -1,7 +1,9 @@
-from peewee import ForeignKeyField, CharField, BooleanField, IntegerField, DateTimeField, DoubleField, BlobField, \
-    DecimalField
+from peewee import (BlobField, BooleanField, CharField, DateTimeField,
+                    DecimalField, DoubleField, ForeignKeyField, IntegerField)
+
 from app.data.schemas.auth.auditable_base import AuditableBase
-from app.data.schemas.master.master_schema import ElectricalAppliances, PredefinedTemplates
+from app.data.schemas.master.master_schema import (ElectricalAppliances,
+                                                   PredefinedTemplates)
 from app.data.schemas.schema_base import BaseModel
 from app.data.schemas.transactional.topology_schema import Node
 from app.data.schemas.transactional.user_schema import User

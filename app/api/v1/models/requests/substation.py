@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, UUID4, Field, constr
+from pydantic import UUID4, BaseModel, Field, constr
 
 
 class ActionEnum(str, Enum):

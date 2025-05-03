@@ -2,9 +2,9 @@
 
 from decimal import Decimal
 from enum import Enum
-from typing import Optional, Any, Dict
+from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, UUID4, Field, model_validator
+from pydantic import UUID4, BaseModel, Field, model_validator
 
 
 class TiltType(str, Enum):

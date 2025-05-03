@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, UUID4
+from pydantic import UUID4, BaseModel, Field
 
 
 class LoadProfileResponse(BaseModel):

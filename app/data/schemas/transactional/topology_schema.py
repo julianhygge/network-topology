@@ -1,6 +1,8 @@
 import uuid
 
-from peewee import UUIDField, BooleanField, CharField, ForeignKeyField, DecimalField, TextField, IntegerField
+from peewee import (BooleanField, CharField, DecimalField, ForeignKeyField,
+                    IntegerField, TextField, UUIDField)
+
 from app.data.schemas.auth.auditable_base import AuditableBase
 from app.data.schemas.schema_base import InfDateTimeField
 

@@ -1,4 +1,4 @@
-from typing import Any, Union, Tuple
+from typing import Any, Tuple, Union
 
 from app.data.interfaces.i_repository import IRepository
 from app.data.schemas.enums.enums import NodeStatusEnum

@@ -1,19 +1,21 @@
 """Main application file for the Network Topology API."""
 
 from fastapi import FastAPI
+
 from app.api.middlewares.auth_middleware import AuthorizationMiddleware
 from app.api.middlewares.cors_middleware import add_cors_middleware
 from app.api.middlewares.db_session_middleware import DatabaseMiddleware
 from app.api.middlewares.logger_middleware import LoggerMiddleware
 from app.api.v1.resources.auth.auth import auth_router
+from app.api.v1.resources.electrical_devices.electrical_appliances import \
+    appliances_router
 from app.api.v1.resources.load_profile.load_profile import load_router
-from app.api.v1.resources.topology.house import house_router
 from app.api.v1.resources.topology.breadcrumb import breadcrumb_router
+from app.api.v1.resources.topology.house import house_router
 from app.api.v1.resources.topology.substation import substation_router
 from app.api.v1.resources.topology.transformer import transformer_router
 from app.api.v1.resources.users.group import group_router
 from app.api.v1.resources.users.user import user_router
-from app.api.v1.resources.electrical_devices.electrical_appliances import appliances_router
 from app.config.servers import hygge_servers
 from app.exceptions.exception_handlers import add_exception_handlers
 

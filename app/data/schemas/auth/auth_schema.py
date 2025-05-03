@@ -1,9 +1,12 @@
 import datetime
 import enum
-from peewee import UUIDField, CharField, BooleanField, BigAutoField, ManyToManyField, \
-    DeferredThroughModel, ForeignKeyField, CompositeKey, IntegerField, DateTimeField
+
+from peewee import (BigAutoField, BooleanField, CharField, CompositeKey,
+                    DateTimeField, DeferredThroughModel, ForeignKeyField,
+                    IntegerField, ManyToManyField, UUIDField)
 from playhouse.postgres_ext import BinaryJSONField
-from app.data.schemas.enums.enums import UserRoles, EnumField
+
+from app.data.schemas.enums.enums import EnumField, UserRoles
 from app.data.schemas.schema_base import BaseModel, InfDateTimeField
 from app.data.schemas.transactional.user_schema import User
 

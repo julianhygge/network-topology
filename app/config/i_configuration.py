@@ -4,7 +4,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
-from app.domain.interfaces.enums.load_profile_strategy_enum import LoadProfileStrategy
+from app.domain.interfaces.enums.load_profile_strategy_enum import \
+    LoadProfileStrategy
 
 
 @dataclass(frozen=True)

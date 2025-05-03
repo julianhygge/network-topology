@@ -1,7 +1,10 @@
-from peewee import BooleanField, ForeignKeyField, DecimalField, UUIDField, CharField
+import uuid
+
+from peewee import (BooleanField, CharField, DecimalField, ForeignKeyField,
+                    UUIDField)
+
 from app.data.schemas.auth.auditable_base import AuditableBase
 from app.data.schemas.transactional.topology_schema import Node
-import uuid
 
 
 class SolarProfile(AuditableBase):

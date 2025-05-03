@@ -5,15 +5,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.authorization.authorization import permission
-from app.api.authorization.enums import Resources, Permission
-from app.api.v1.dependencies.container_instance import get_solar_profile_service
+from app.api.authorization.enums import Permission, Resources
+from app.api.v1.dependencies.container_instance import \
+    get_solar_profile_service
 from app.api.v1.models.requests.solar.solar_profile_request import (
-    SolarProfileRequestModel, SolarProfileUpdateModel
-)
-from app.api.v1.models.responses.solar.solar_profile_response import (
+    SolarProfileRequestModel, SolarProfileUpdateModel)
+from app.api.v1.models.responses.solar.solar_profile_response import \
     SolarProfileResponse
-)
-from app.domain.interfaces.solar.isolar_profile_service import ISolarProfileService
+from app.domain.interfaces.solar.isolar_profile_service import \
+    ISolarProfileService
 
 solar_router = APIRouter(tags=["Solar"])
 

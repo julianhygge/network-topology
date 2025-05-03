@@ -1,8 +1,9 @@
 import datetime
+
 from peewee import DoesNotExist, IntegrityError
 
 from app.data.repositories.base_repository import BaseRepository
-from app.data.schemas.auth.auth_schema import UserGroupRel, Groups
+from app.data.schemas.auth.auth_schema import Groups, UserGroupRel
 
 
 class UserGroupRelRepository(BaseRepository):

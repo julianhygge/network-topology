@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from starlette import status
 
 from app.api.authorization.authorization import permission
-from app.api.authorization.enums import Resources, Permission
+from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import get_user_service
 from app.domain.interfaces.i_service import IService
 

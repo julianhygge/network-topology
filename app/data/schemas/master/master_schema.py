@@ -1,5 +1,8 @@
 import datetime
-from peewee import CharField, PrimaryKeyField, BooleanField, DateTimeField, ForeignKeyField, DoubleField
+
+from peewee import (BooleanField, CharField, DateTimeField, DoubleField,
+                    ForeignKeyField, PrimaryKeyField)
+
 from app.data.schemas.schema_base import BaseModel
 from app.data.schemas.transactional.user_schema import User
 

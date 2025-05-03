@@ -1,6 +1,7 @@
 """Configuration for CORS middleware."""
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
+
 from app.api.v1.dependencies.container_instance import get_configuration
 
 

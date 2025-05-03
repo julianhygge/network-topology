@@ -4,17 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import UUID4
 
 from app.api.authorization.authorization import permission
-from app.api.authorization.enums import Resources, Permission
+from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
-    get_net_topology_service,
-    get_transformer_service,
-)
+    get_net_topology_service, get_transformer_service)
 from app.api.v1.models.requests.transtormer_requests import (
-    TransformerResponseModel,
-    TransformerUpdateRequestModel,
-)
+    TransformerResponseModel, TransformerUpdateRequestModel)
 from app.domain.interfaces.i_service import IService
-from app.domain.interfaces.net_topology.i_net_topology_service import INetTopologyService
+from app.domain.interfaces.net_topology.i_net_topology_service import \
+    INetTopologyService
 from app.exceptions.hygge_exceptions import NotFoundException
 
 transformer_router = APIRouter(tags=["Transformers"])

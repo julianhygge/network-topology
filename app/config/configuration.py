@@ -1,25 +1,16 @@
 """Configuration for the API."""
 
-import os
 import glob
+import os
 from typing import Any, Optional
 
 from dynaconf import Dynaconf
 
-from app.config.i_configuration import (
-    IConfiguration,
-    DbConfig,
-    LoggingConfig,
-    SessionConfig,
-    OTPConfig,
-    SMSConfig,
-    MQTTConfig,
-    SimulationConfig,
-    CorsConfig,
-    LoadProfileConfig,
-    TopicConfig,
-    LoadProfileStrategy,
-)
+from app.config.i_configuration import (CorsConfig, DbConfig, IConfiguration,
+                                        LoadProfileConfig, LoadProfileStrategy,
+                                        LoggingConfig, MQTTConfig, OTPConfig,
+                                        SessionConfig, SimulationConfig,
+                                        SMSConfig, TopicConfig)
 
 
 class ApiConfiguration(IConfiguration):

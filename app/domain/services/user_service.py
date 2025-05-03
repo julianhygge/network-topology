@@ -1,12 +1,12 @@
 import datetime
 import uuid
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from app.data.interfaces.i_repository import IRepository
 from app.data.interfaces.i_user_repository import IUserRepository
+from app.domain.interfaces.enums.groups_enum import Groups
 from app.domain.interfaces.i_token_service import ITokenService
 from app.domain.interfaces.i_user_service import IUserService
-from app.domain.interfaces.enums.groups_enum import Groups
 from app.domain.services.base_service import BaseService
 
 

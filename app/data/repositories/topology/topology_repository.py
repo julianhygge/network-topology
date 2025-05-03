@@ -1,13 +1,17 @@
+from typing import List, Optional
 from uuid import UUID
-from peewee import IntegrityError, DoesNotExist
-from typing import Optional, List
-from peewee import fn
+
+from peewee import DoesNotExist, IntegrityError, fn
+
 from app.data.interfaces.topology.i_house_repository import IHouseRepository
 from app.data.interfaces.topology.i_node_repository import INodeRepository
-from app.data.interfaces.topology.i_transformer_repository import ITransformerRepository
+from app.data.interfaces.topology.i_transformer_repository import \
+    ITransformerRepository
 from app.data.repositories.base_repository import BaseRepository
-from app.data.schemas.transactional.topology_schema import Account, Locality, Substation, Transformer, \
-    House, Node
+from app.data.schemas.transactional.topology_schema import (Account, House,
+                                                            Locality, Node,
+                                                            Substation,
+                                                            Transformer)
 from app.utils.logger import logger
 
 

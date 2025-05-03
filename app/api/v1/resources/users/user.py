@@ -5,12 +5,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.authorization.authorization import permission
-from app.api.authorization.enums import Resources, Permission
+from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import get_user_service
 from app.api.v1.models.requests.auth.auth_request import UserRequestModel
 from app.api.v1.models.responses.auth.auth_response import (
-    UserResponseModel, UserListResponse, UserLinkResponseModel
-)
+    UserLinkResponseModel, UserListResponse, UserResponseModel)
 from app.domain.interfaces.i_service import IService
 from app.exceptions.hygge_exceptions import NotFoundException
 from app.utils.logger import logger

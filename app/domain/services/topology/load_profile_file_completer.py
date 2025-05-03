@@ -1,9 +1,10 @@
-from pandas import DataFrame
 from numpy import interp
-from app.domain.interfaces.net_topology.i_load_profile_file_completer import (
-    ILoadProfileFileCompleter,
-)
-from scipy.interpolate import Akima1DInterpolator, CubicSpline, PchipInterpolator
+from pandas import DataFrame
+from scipy.interpolate import (Akima1DInterpolator, CubicSpline,
+                               PchipInterpolator)
+
+from app.domain.interfaces.net_topology.i_load_profile_file_completer import \
+    ILoadProfileFileCompleter
 from app.utils.logger import logger
 
 

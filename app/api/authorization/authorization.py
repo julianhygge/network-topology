@@ -1,10 +1,10 @@
 """Authorization dependencies for FastAPI."""
 
-from fastapi import HTTPException, status, Security
+from fastapi import HTTPException, Security, status
 from fastapi.security import HTTPBearer
 from starlette.requests import Request
 
-from app.api.authorization.enums import Resources, Permission
+from app.api.authorization.enums import Permission, Resources
 
 
 def permission(resource: Resources, action: Permission):

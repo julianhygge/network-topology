@@ -1,4 +1,5 @@
 import enum
+
 from peewee import CharField
 
 

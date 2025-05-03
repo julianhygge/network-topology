@@ -1,10 +1,10 @@
 """Middleware for handling authorization."""
 
+from fastapi import status
+from jwt import DecodeError, ExpiredSignatureError, InvalidSignatureError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from fastapi import status
-from jwt import ExpiredSignatureError, InvalidSignatureError, DecodeError
 
 from app.api.v1.dependencies.container_instance import get_token_service
 from app.utils.logger import logger

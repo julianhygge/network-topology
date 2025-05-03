@@ -1,13 +1,17 @@
 import enum
 import uuid
-from app.data.interfaces.i_auth_attempt_repository import IAuthAttemptRepository
+
+from app.data.interfaces.i_auth_attempt_repository import \
+    IAuthAttemptRepository
 from app.data.interfaces.i_user_repository import IUserRepository
-from app.data.repositories.authorization.user_group_rel_repository import UserGroupRelRepository
+from app.data.repositories.authorization.user_group_rel_repository import \
+    UserGroupRelRepository
+from app.domain.interfaces.enums.groups_enum import Groups
 from app.domain.interfaces.i_auth_service import IAuthService
 from app.domain.interfaces.i_sms_service import ISmsService
 from app.domain.interfaces.i_token_service import ITokenService
-from app.domain.interfaces.enums.groups_enum import Groups
-from app.exceptions.hygge_exceptions import UserDoesNotExist, InvalidAttemptState
+from app.exceptions.hygge_exceptions import (InvalidAttemptState,
+                                             UserDoesNotExist)
 from app.utils import string_util
 from app.utils.datetime_util import before_now, utc_now_iso
 from app.utils.logger import logger

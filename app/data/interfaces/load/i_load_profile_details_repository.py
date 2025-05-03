@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from typing import List
+
 from app.data.interfaces.i_repository import IRepository, T
 
 

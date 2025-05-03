@@ -3,15 +3,22 @@ from uuid import UUID
 
 from peewee import DoesNotExist
 
-from app.data.interfaces.load.i_load_generation_enginer_repository import ILoadGenerationEngineRepository
-from app.data.interfaces.load.i_load_load_profile_repository import ILoadProfileRepository
-from app.data.interfaces.load.i_load_profile_builder_repository import ILoadProfileBuilderRepository
-from app.data.interfaces.load.i_load_profile_details_repository import ILoadProfileDetailsRepository
-from app.data.interfaces.load.i_load_profile_files_repository import ILoadProfileFilesRepository
-from app.data.interfaces.load.i_predefined_templates_repository import IPredefinedTemplatesRepository
+from app.data.interfaces.load.i_load_generation_enginer_repository import \
+    ILoadGenerationEngineRepository
+from app.data.interfaces.load.i_load_load_profile_repository import \
+    ILoadProfileRepository
+from app.data.interfaces.load.i_load_profile_builder_repository import \
+    ILoadProfileBuilderRepository
+from app.data.interfaces.load.i_load_profile_details_repository import \
+    ILoadProfileDetailsRepository
+from app.data.interfaces.load.i_load_profile_files_repository import \
+    ILoadProfileFilesRepository
+from app.data.interfaces.load.i_predefined_templates_repository import \
+    IPredefinedTemplatesRepository
 from app.data.repositories.base_repository import BaseRepository
-from app.data.schemas.load_profile.load_profile_schema import LoadProfiles, LoadProfileDetails, LoadProfileFiles, \
-    LoadProfileBuilderItems, LoadGenerationEngine, LoadPredefinedTemplates
+from app.data.schemas.load_profile.load_profile_schema import (
+    LoadGenerationEngine, LoadPredefinedTemplates, LoadProfileBuilderItems,
+    LoadProfileDetails, LoadProfileFiles, LoadProfiles)
 
 
 class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):

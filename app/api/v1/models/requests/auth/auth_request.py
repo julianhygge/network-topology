@@ -1,7 +1,7 @@
 """Pydantic models for authentication requests."""
 
 from datetime import datetime
-from typing import Optional, Any, Generator, Callable
+from typing import Any, Callable, Generator, Optional
 from uuid import UUID
 
 from fastapi import UploadFile

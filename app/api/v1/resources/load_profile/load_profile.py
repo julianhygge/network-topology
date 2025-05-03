@@ -2,9 +2,8 @@
 from io import BytesIO
 from uuid import UUID
 
-from fastapi import (
-    File, Form, APIRouter, HTTPException, status, Request, UploadFile, Depends
-)
+from fastapi import (APIRouter, Depends, File, Form, HTTPException, Request,
+                     UploadFile, status)
 from fastapi.responses import JSONResponse
 from peewee import DoesNotExist
 from starlette.responses import StreamingResponse
@@ -12,23 +11,15 @@ from starlette.responses import StreamingResponse
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
-    get_load_profile_service, get_predefined_template_service
-)
+    get_load_profile_service, get_predefined_template_service)
 from app.api.v1.models.requests.load_profile.load_profile_update import (
-    LoadProfileBuilderItemsRequest,
-    LoadGenerationEngineResponse,
-    LoadGenerationEngineRequest,
-    LoadPredefinedTemplateRequest,
-)
+    LoadGenerationEngineRequest, LoadGenerationEngineResponse,
+    LoadPredefinedTemplateRequest, LoadProfileBuilderItemsRequest)
 from app.api.v1.models.responses.load_profile.load_profile_response import (
-    LoadProfileResponse,
-    LoadProfilesListResponse,
-    LoadProfileBuilderItemsResponse,
-    LoadProfileBuilderItemResponse,
-    LoadPredefinedTemplateResponse,
-    LoadPredefinedTemplateListResponse,
-    LoadPredefinedMasterTemplateResponse,
-)
+    LoadPredefinedMasterTemplateResponse, LoadPredefinedTemplateListResponse,
+    LoadPredefinedTemplateResponse, LoadProfileBuilderItemResponse,
+    LoadProfileBuilderItemsResponse, LoadProfileResponse,
+    LoadProfilesListResponse)
 from app.domain.interfaces.i_service import IService
 
 load_router = APIRouter(tags=["Load Profile"])

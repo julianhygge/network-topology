@@ -2,6 +2,7 @@
 Module for the transformer repository interface.
 """
 from abc import abstractmethod
+
 from app.data.interfaces.i_repository import IRepository, T
 
 

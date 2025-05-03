@@ -1,9 +1,9 @@
 """Pydantic models for solar profile responses."""
 
 from decimal import Decimal
-from typing import Optional, List
+from typing import List, Optional
 
-from pydantic import BaseModel, UUID4
+from pydantic import UUID4, BaseModel
 
 from app.api.v1.models.requests.solar.solar_profile_request import TiltType
 

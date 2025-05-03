@@ -1,7 +1,9 @@
 import uuid
-from typing import Union, Optional, Dict, Any
+from typing import Any, Dict, Optional, Union
+
 from app.data.interfaces.i_repository import IRepository
-from app.domain.services.topology.topology_service_base import TopologyServiceBase
+from app.domain.services.topology.topology_service_base import \
+    TopologyServiceBase
 
 
 class TransformerService(TopologyServiceBase):

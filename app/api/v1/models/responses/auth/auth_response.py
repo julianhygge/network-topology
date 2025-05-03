@@ -1,9 +1,9 @@
 """Pydantic models for authentication and user responses."""
 
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field, UUID4, EmailStr
+from pydantic import UUID4, BaseModel, EmailStr, Field
 
 
 class OtpVerificationModelResponse(BaseModel):

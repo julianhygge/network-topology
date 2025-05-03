@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Dict, Any, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from app.data.interfaces.i_repository import IRepository
 from app.domain.interfaces.i_service import IService

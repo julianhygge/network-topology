@@ -2,6 +2,7 @@
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+
 from app.data.schemas.hygge_database import HyggeDatabase
 
 

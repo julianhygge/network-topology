@@ -1,5 +1,7 @@
 import datetime
+
 from peewee import DateTimeField, ForeignKeyField
+
 from app.data.schemas.schema_base import BaseModel
 from app.data.schemas.transactional.user_schema import User
 

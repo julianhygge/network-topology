@@ -6,24 +6,19 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import UUID4
 
 from app.api.authorization.authorization import permission
-from app.api.authorization.enums import Resources, Permission
+from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
-    get_net_topology_service,
-    get_substation_service,
-)
+    get_net_topology_service, get_substation_service)
 from app.api.v1.models.requests.substation import (
-    SubstationTopologyRequestModel,
-    SubstationRequestModel,
-    SubstationsRequestModel,
-)
+    SubstationRequestModel, SubstationsRequestModel,
+    SubstationTopologyRequestModel)
 from app.api.v1.models.responses.substation import (
-    SubstationResponseModel,
-    SubstationResponseModelList,
-    SubstationTopology,
-)
+    SubstationResponseModel, SubstationResponseModelList, SubstationTopology)
 from app.domain.interfaces.i_service import IService
-from app.domain.interfaces.net_topology.i_net_topology_service import INetTopologyService
-from app.domain.interfaces.net_topology.i_substation_service import ISubstationService
+from app.domain.interfaces.net_topology.i_net_topology_service import \
+    INetTopologyService
+from app.domain.interfaces.net_topology.i_substation_service import \
+    ISubstationService
 from app.utils.logger import logger
 
 substation_router = APIRouter(tags=["Substations"])

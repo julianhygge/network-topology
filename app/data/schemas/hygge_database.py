@@ -1,5 +1,6 @@
 from peewee import OperationalError
 from playhouse.pool import PooledPostgresqlDatabase
+
 from app.data.schemas.schema_base import BaseModel
 
 

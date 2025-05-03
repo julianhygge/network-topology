@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.authorization.authorization import permission
-from app.api.authorization.enums import Resources, Permission
+from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import get_node_service
 from app.api.v1.models.responses.breadcrumb import BreadcrumbResponseModel
 from app.domain.interfaces.i_node_service import INodeService

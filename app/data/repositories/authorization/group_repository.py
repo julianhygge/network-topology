@@ -1,7 +1,11 @@
 from typing import List
-from app.data.interfaces.igroup_repository import IGroupRepository, RolePermission
+
+from app.data.interfaces.igroup_repository import (IGroupRepository,
+                                                   RolePermission)
 from app.data.repositories.base_repository import BaseRepository
-from app.data.schemas.auth.auth_schema import Groups, Permissions, Roles, UserGroupRel, RolePermissionRel, GroupRoleRel
+from app.data.schemas.auth.auth_schema import (GroupRoleRel, Groups,
+                                               Permissions, RolePermissionRel,
+                                               Roles, UserGroupRel)
 
 
 class GroupRepository(BaseRepository, IGroupRepository):

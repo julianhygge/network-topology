@@ -6,12 +6,12 @@ formatting dates and times, and determining the start/end of various periods
 (day, week, month, year). Ensures timezone awareness, primarily using UTC.
 """
 import calendar
-import platform
 import datetime
+import platform
 from enum import Enum
+
 import pytz
 from dateutil.relativedelta import relativedelta
-
 
 # Define UTC timezone object for reuse
 UTC = datetime.timezone.utc

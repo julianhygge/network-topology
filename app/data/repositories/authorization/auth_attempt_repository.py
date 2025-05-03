@@ -1,7 +1,10 @@
 import datetime
 from typing import List
+
 from peewee import OperationalError
-from app.data.interfaces.i_auth_attempt_repository import IAuthAttemptRepository
+
+from app.data.interfaces.i_auth_attempt_repository import \
+    IAuthAttemptRepository
 from app.data.repositories.base_repository import BaseRepository
 from app.data.schemas.auth.auth_schema import AuthAttempts
 from app.exceptions.hygge_exceptions import DatabaseException
