@@ -15,7 +15,9 @@ class IService(ABC):
         pass
 
     @abstractmethod
-    def update(self, user_id: str, item_id: Union[int, UUID], **kwargs) -> Optional[Dict[str, Any]]:
+    def update(
+        self, user_id: str, item_id: Union[int, UUID], **kwargs
+    ) -> Optional[Dict[str, Any]]:
         pass
 
     @abstractmethod

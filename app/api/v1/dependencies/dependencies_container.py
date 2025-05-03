@@ -5,30 +5,42 @@ from dependency_injector import containers, providers
 from app.config.configuration import ApiConfiguration
 from app.config.i_configuration import LoadProfileStrategy
 from app.data.interfaces.i_repository import IRepository
-from app.data.repositories.authorization.auth_attempt_repository import \
-    AuthAttemptRepository
-from app.data.repositories.authorization.group_repository import \
-    GroupRepository
-from app.data.repositories.authorization.user_group_rel_repository import \
-    UserGroupRelRepository
+from app.data.repositories.authorization.auth_attempt_repository import (
+    AuthAttemptRepository,
+)
+from app.data.repositories.authorization.group_repository import GroupRepository
+from app.data.repositories.authorization.user_group_rel_repository import (
+    UserGroupRelRepository,
+)
 from app.data.repositories.authorization.user_repository import (
-    AccountRepository, UserRepository)
+    AccountRepository,
+    UserRepository,
+)
 from app.data.repositories.load_profile.load_profile_repository import (
-    LoadGenerationEngineRepository, LoadProfileBuilderItemsRepository,
-    LoadProfileDetailsRepository, LoadProfileFilesRepository,
-    LoadProfilesRepository, PredefinedTemplatesRepository)
-from app.data.repositories.master.electrical_appliances_repository import \
-    ElectricalAppliancesRepository
-from app.data.repositories.master.predefined_template_repository import \
-    PredefinedMasterTemplatesRepository
-from app.data.repositories.solar.solar_profile_repository import \
-    SolarProfileRepository
+    LoadGenerationEngineRepository,
+    LoadProfileBuilderItemsRepository,
+    LoadProfileDetailsRepository,
+    LoadProfileFilesRepository,
+    LoadProfilesRepository,
+    PredefinedTemplatesRepository,
+)
+from app.data.repositories.master.electrical_appliances_repository import (
+    ElectricalAppliancesRepository,
+)
+from app.data.repositories.master.predefined_template_repository import (
+    PredefinedMasterTemplatesRepository,
+)
+from app.data.repositories.solar.solar_profile_repository import SolarProfileRepository
 from app.data.repositories.topology.topology_repository import (
-    HouseRepository, NodeRepository, SubstationRepository,
-    TransformerRepository)
+    HouseRepository,
+    NodeRepository,
+    SubstationRepository,
+    TransformerRepository,
+)
 from app.data.schemas.hygge_database import HyggeDatabase
-from app.domain.interfaces.net_topology.i_load_profile_file_completer import \
-    ILoadProfileFileCompleter
+from app.domain.interfaces.net_topology.i_load_profile_file_completer import (
+    ILoadProfileFileCompleter,
+)
 from app.domain.services.auth_service import AuthService
 from app.domain.services.base_service import BaseService
 from app.domain.services.load_profile_service import LoadProfileService
@@ -37,13 +49,14 @@ from app.domain.services.sms_service import SmsService
 from app.domain.services.token_service import TokenService
 from app.domain.services.topology.house_service import HouseService
 from app.domain.services.topology.load_profile_file_completer import (
-    LoadProfileFileCompleterAkima1D, LoadProfileFileCompleterLinear,
-    LoadProfileFileCompleterPChip, LoadProfileFileCompleterSpline)
-from app.domain.services.topology.net_topology_service import \
-    NetTopologyService
+    LoadProfileFileCompleterAkima1D,
+    LoadProfileFileCompleterLinear,
+    LoadProfileFileCompleterPChip,
+    LoadProfileFileCompleterSpline,
+)
+from app.domain.services.topology.net_topology_service import NetTopologyService
 from app.domain.services.topology.node_service import NodeService
-from app.domain.services.topology.solar_profile_service import \
-    SolarProfileService
+from app.domain.services.topology.solar_profile_service import SolarProfileService
 from app.domain.services.topology.substation_service import SubstationService
 from app.domain.services.topology.topology_simulator import TopologySimulator
 from app.domain.services.topology.transformer_service import TransformerService
@@ -80,6 +93,7 @@ class Container(containers.DeclarativeContainer):
     Configures and provides instances of repositories, services, and other
     components needed throughout the application.
     """
+
     configuration = providers.Singleton(ApiConfiguration)
     HyggeDatabase.set_config(configuration().db)
     _user_repository = providers.Singleton(UserRepository)

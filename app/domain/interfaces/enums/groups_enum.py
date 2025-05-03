@@ -6,6 +6,5 @@ class Groups(Enum):
     User = 2
     Guest = 3
 
-
     def __str__(self):
         return self.name

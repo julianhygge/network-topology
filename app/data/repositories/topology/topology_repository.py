@@ -5,13 +5,16 @@ from peewee import DoesNotExist, IntegrityError, fn
 
 from app.data.interfaces.topology.i_house_repository import IHouseRepository
 from app.data.interfaces.topology.i_node_repository import INodeRepository
-from app.data.interfaces.topology.i_transformer_repository import \
-    ITransformerRepository
+from app.data.interfaces.topology.i_transformer_repository import ITransformerRepository
 from app.data.repositories.base_repository import BaseRepository
-from app.data.schemas.transactional.topology_schema import (Account, House,
-                                                            Locality, Node,
-                                                            Substation,
-                                                            Transformer)
+from app.data.schemas.transactional.topology_schema import (
+    Account,
+    House,
+    Locality,
+    Node,
+    Substation,
+    Transformer,
+)
 from app.utils.logger import logger
 
 
@@ -48,7 +51,9 @@ class TransformerRepository(BaseRepository, ITransformerRepository):
     id_field = Transformer.id
 
     def get_transformers_by_substation_id(self, substation_id: UUID):
-        transformers = Transformer.select().where(Transformer.substation == substation_id)
+        transformers = Transformer.select().where(
+            Transformer.substation == substation_id
+        )
         return transformers
 
 
@@ -57,10 +62,11 @@ class HouseRepository(BaseRepository, IHouseRepository):
     id_field = House.id
 
     def get_houses_by_substation_id(self, substation_id: UUID):
-        houses = (House
-                  .select()
-                  .join(Transformer)
-                  .where(Transformer.substation == substation_id))
+        houses = (
+            House.select()
+            .join(Transformer)
+            .where(Transformer.substation == substation_id)
+        )
         return houses
 
 
@@ -75,9 +81,11 @@ class NodeRepository(BaseRepository, INodeRepository):
             return None
 
     def get_children(self, parent_id: UUID) -> List[Node]:
-        return list(Node.select()
-                    .where(Node.parent == parent_id)
-                    .order_by(Node.created_on, fn.COALESCE(Node.nomenclature, '')))
+        return list(
+            Node.select()
+            .where(Node.parent == parent_id)
+            .order_by(Node.created_on, fn.COALESCE(Node.nomenclature, ""))
+        )
 
     def get_parent(self, node_id: UUID) -> Optional[Node]:
         node = self.read(node_id)

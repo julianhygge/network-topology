@@ -23,7 +23,9 @@ class UserRepository(BaseRepository, IUserRepository):
         return self.model.get_or_none(self.model.phone_number == phone_number)
 
     def fetch_account_by_phone_number(self, phone_number: str) -> T:
-        return self.model_account.get_or_none(self.model_account.phone_number == phone_number)
+        return self.model_account.get_or_none(
+            self.model_account.phone_number == phone_number
+        )
 
     def insert_into_user_and_group(self, user_data, data) -> T:
         try:
@@ -31,7 +33,7 @@ class UserRepository(BaseRepository, IUserRepository):
                 # self.model_account.create(**user_data)
                 user = self.model.create(**user_data)
                 # self.model_user_group.create(**data)
-                user_id = user_data['id']
+                user_id = user_data["id"]
                 # self.model_user_group.update(user_id, **data)
                 self.update_user_group(user_id, **data)
                 return self.to_dicts(user)
@@ -40,9 +42,9 @@ class UserRepository(BaseRepository, IUserRepository):
             raise
 
     def create(self, **query) -> T:
-        if 'logo_file' in query:
-            with open(query.pop('logo_file'), 'rb') as f:
-                query['logo'] = f.read()
+        if "logo_file" in query:
+            with open(query.pop("logo_file"), "rb") as f:
+                query["logo"] = f.read()
         obj = self.model.create(**query)
         return obj
 
@@ -51,5 +53,6 @@ class UserRepository(BaseRepository, IUserRepository):
         return obj
 
     def update_user_group(self, user_id, **query):
-        UserGroupRel.update(**query).where(UserGroupRel.user_record_id == user_id).execute()
-
+        UserGroupRel.update(**query).where(
+            UserGroupRel.user_record_id == user_id
+        ).execute()

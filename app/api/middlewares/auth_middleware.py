@@ -9,11 +9,7 @@ from starlette.responses import JSONResponse
 from app.api.v1.dependencies.container_instance import get_token_service
 from app.utils.logger import logger
 
-not_needed_auth_urls = [
-    '/v1/auth/',
-    '/docs',
-    "/openapi.json"
-]
+not_needed_auth_urls = ["/v1/auth/", "/docs", "/openapi.json"]
 
 
 token_service = get_token_service()
@@ -34,26 +30,29 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             The response from the next middleware or endpoint, or an
             authorization error response.
         """
-        if request.method.upper() != 'OPTIONS' and not any(
-                url in request.url.path for url in not_needed_auth_urls):
-            auth = request.headers.get('Authorization')
+        if request.method.upper() != "OPTIONS" and not any(
+            url in request.url.path for url in not_needed_auth_urls
+        ):
+            auth = request.headers.get("Authorization")
             try:
                 if auth is not None:
-                    claims = token_service.decode_token(str.replace(str(auth), 'Bearer ', ''))
+                    claims = token_service.decode_token(
+                        str.replace(str(auth), "Bearer ", "")
+                    )
                     token_service.validate_token_claims(claims)
-                    logger.info('user: %s', claims.get('user'))
+                    logger.info("user: %s", claims.get("user"))
                     request.state.claims = claims
                 else:
-                    request.state.authorization_error = 'Unauthorized'
+                    request.state.authorization_error = "Unauthorized"
             except ExpiredSignatureError:
-                request.state.authorization_error = 'Expired Signature'
+                request.state.authorization_error = "Expired Signature"
             except InvalidSignatureError:
-                request.state.authorization_error = 'Invalid token'
+                request.state.authorization_error = "Invalid token"
             except DecodeError:
-                request.state.authorization_error = 'Invalid token'
+                request.state.authorization_error = "Invalid token"
             # Catching a broad exception to prevent application crashes
             # due to unexpected errors during authorization.
-            except Exception as ex: # pylint: disable=broad-exception-caught
+            except Exception as ex:  # pylint: disable=broad-exception-caught
                 logger.error("Unknown error when trying to authorize: %s", ex)
                 response = JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

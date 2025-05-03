@@ -9,7 +9,10 @@ from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import get_user_service
 from app.api.v1.models.requests.auth.auth_request import UserRequestModel
 from app.api.v1.models.responses.auth.auth_response import (
-    UserLinkResponseModel, UserListResponse, UserResponseModel)
+    UserLinkResponseModel,
+    UserListResponse,
+    UserResponseModel,
+)
 from app.domain.interfaces.i_service import IService
 from app.exceptions.hygge_exceptions import NotFoundException
 from app.utils.logger import logger
@@ -21,7 +24,7 @@ user_router = APIRouter(tags=["Users"])
 async def create_user(
     user_data: UserRequestModel,
     user_id: str = Depends(permission(Resources.USERS, Permission.CREATE)),
-    service: IService = Depends(get_user_service)
+    service: IService = Depends(get_user_service),
 ) -> UserResponseModel:
     """
     Create a new user.
@@ -64,12 +67,14 @@ async def get_users(
     """
     try:
         data_list = service.list_all()
-        response = UserListResponse(items=[
-            UserLinkResponseModel(
-                **item,
-                links={"self": f"{request.url.path}{str(item['id'])}"}
-            ) for item in data_list
-        ])
+        response = UserListResponse(
+            items=[
+                UserLinkResponseModel(
+                    **item, links={"self": f"{request.url.path}{str(item['id'])}"}
+                )
+                for item in data_list
+            ]
+        )
         return response
     except Exception as e:
         logger.exception("Error retrieving users: %s", e)
@@ -82,7 +87,7 @@ async def update(
     user_data: UserRequestModel,
     user_id: UUID,
     logged_user_id: str = Depends(permission(Resources.USERS, Permission.UPDATE)),
-    service: IService = Depends(get_user_service)
+    service: IService = Depends(get_user_service),
 ) -> UserResponseModel:
     """
     Update an existing user.
@@ -110,7 +115,7 @@ async def update(
         if updated_data is None:
             raise NotFoundException(f"User with ID {user_id} not found.")
         # Assuming update returns the full updated object including 'id'
-        updated_data['links'] = {"self": f"{request.url.path}"}
+        updated_data["links"] = {"self": f"{request.url.path}"}
         return UserResponseModel(**updated_data)
     except NotFoundException as e:
         # Re-raise NotFoundException to be handled by its specific handler
@@ -124,7 +129,7 @@ async def update(
 async def delete(
     user_id: UUID,
     _: str = Depends(permission(Resources.USERS, Permission.DELETE)),
-    service: IService = Depends(get_user_service)
+    service: IService = Depends(get_user_service),
 ) -> None:
     """
     Delete a user.
@@ -142,4 +147,4 @@ async def delete(
     delete_result = service.delete(user_id)
     if not delete_result:
         raise NotFoundException(f"User with ID {user_id} not found for deletion.")
-    return None # Return None for 204 No Content
+    return None  # Return None for 204 No Content

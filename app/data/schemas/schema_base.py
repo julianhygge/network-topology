@@ -21,8 +21,8 @@ class InfDateTimeField(DateTimeField):
     def db_value(self, value):
         """Converts Python datetime values to database string representation."""
         if value == datetime.datetime.max:
-            return 'infinity'
+            return "infinity"
         elif value == datetime.datetime.min:
-            return '-infinity'
+            return "-infinity"
         else:
             return super().db_value(value)

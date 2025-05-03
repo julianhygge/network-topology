@@ -4,12 +4,15 @@ from starlette import status
 from starlette.responses import JSONResponse
 from uvicorn.protocols.utils import ClientDisconnected
 
-from app.exceptions.hygge_exceptions import (DatabaseException, HyggeException,
-                                             InvalidAttemptState,
-                                             NotFoundException,
-                                             UnauthorizedError,
-                                             UserAlreadyExistException,
-                                             UserDoesNotExist)
+from app.exceptions.hygge_exceptions import (
+    DatabaseException,
+    HyggeException,
+    InvalidAttemptState,
+    NotFoundException,
+    UnauthorizedError,
+    UserAlreadyExistException,
+    UserDoesNotExist,
+)
 from app.utils.logger import logger
 
 
@@ -54,10 +57,7 @@ def add_exception_handlers(app: FastAPI):
 
     @app.exception_handler(HyggeException)
     async def hygge_exception_handler(_: Request, exc: HyggeException):
-        return JSONResponse(
-            status_code=400,
-            content=exc.to_dict()
-        )
+        return JSONResponse(status_code=400, content=exc.to_dict())
 
 
 async def handle_unexpected_error(_, exc):
@@ -65,56 +65,39 @@ async def handle_unexpected_error(_, exc):
     return JSONResponse(
         status_code=500,
         content={"detail": "Unknown Error"},
-
     )
 
 
 async def handle_http_errors(_, exc):
     logger.exception(exc)
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail}
-    )
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
 async def handle_invalid_attempt_state(_, exc):
     logger.exception(exc)
-    return JSONResponse(
-        status_code=401,
-        content={"detail": str(exc)}
-    )
+    return JSONResponse(status_code=401, content={"detail": str(exc)})
 
 
 async def handle_user_does_not_exist(_, exc):
     logger.exception(exc)
-    return JSONResponse(
-        status_code=401,
-        content={"detail": str(exc)}
-    )
+    return JSONResponse(status_code=401, content={"detail": str(exc)})
 
 
 async def handle_user_already_exist(_, exc):
     logger.info(exc)
-    return JSONResponse(
-        status_code=409,
-        content={"detail": str(exc)}
-    )
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
 
 
 async def handle_database_error(_, exc: DatabaseException):
     logger.exception(exc)
     return JSONResponse(
-        status_code=500,
-        content={"detail": exc.message, "details": exc.details}
+        status_code=500, content={"detail": exc.message, "details": exc.details}
     )
 
 
 async def handle_unauthorized_error(_, exc: UnauthorizedError):
     logger.exception(exc)
-    return JSONResponse(
-        status_code=401,
-        content={"detail": exc.message}
-    )
+    return JSONResponse(status_code=401, content={"detail": exc.message})
 
 
 async def handle_item_not_found(request: Request, exc: NotFoundException):
@@ -126,7 +109,4 @@ async def handle_item_not_found(request: Request, exc: NotFoundException):
         "type": "NOT_FOUND",
         "suggestions": "Check the request and try again.",
     }
-    return JSONResponse(
-        status_code=status.HTTP_404_NOT_FOUND,
-        content=response_content
-    )
+    return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=response_content)

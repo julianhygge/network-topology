@@ -5,4 +5,3 @@ from app.data.schemas.master.master_schema import ElectricalAppliances
 class ElectricalAppliancesRepository(BaseRepository):
     model = ElectricalAppliances
     id_field = ElectricalAppliances.id
-

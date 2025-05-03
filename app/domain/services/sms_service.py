@@ -15,10 +15,13 @@ class SmsService(ISmsService):
             if phone_number != self._default_number:
                 topic_name = self._topic
                 application_name = self._application_name
-                self._mqtt_service.send_sms(topic_name=topic_name,
-                                            application_name=application_name,
-                                            mobile_no=phone_number, otp=otp,
-                                            txn_id=txn_id)
+                self._mqtt_service.send_sms(
+                    topic_name=topic_name,
+                    application_name=application_name,
+                    mobile_no=phone_number,
+                    otp=otp,
+                    txn_id=txn_id,
+                )
         except Exception as e:
             logger.error("Failed to push sms message in queue", e)
             # raise

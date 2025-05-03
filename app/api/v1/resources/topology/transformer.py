@@ -6,12 +6,17 @@ from pydantic import UUID4
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
-    get_net_topology_service, get_transformer_service)
+    get_net_topology_service,
+    get_transformer_service,
+)
 from app.api.v1.models.requests.transtormer_requests import (
-    TransformerResponseModel, TransformerUpdateRequestModel)
+    TransformerResponseModel,
+    TransformerUpdateRequestModel,
+)
 from app.domain.interfaces.i_service import IService
-from app.domain.interfaces.net_topology.i_net_topology_service import \
-    INetTopologyService
+from app.domain.interfaces.net_topology.i_net_topology_service import (
+    INetTopologyService,
+)
 from app.exceptions.hygge_exceptions import NotFoundException
 
 transformer_router = APIRouter(tags=["Transformers"])
@@ -43,14 +48,13 @@ async def update_transformer(
     """
     try:
         updated_transformer = service.update_transformer(
-            user_id, str(transformer_id),
-            transformer_data.model_dump(exclude_unset=True)
+            user_id,
+            str(transformer_id),
+            transformer_data.model_dump(exclude_unset=True),
         )
         return updated_transformer
     except NotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
 @transformer_router.get("/{transformer_id}", response_model=TransformerResponseModel)
@@ -79,6 +83,4 @@ async def get(
         data = service.read(transformer_id)
         return data
     except NotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e

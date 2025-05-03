@@ -47,7 +47,9 @@ class SubstationResponseModel(BaseModel):
     name: str = Field(..., example="Grid2")
     active: bool = Field(..., example="True")
     created_on: datetime = Field(..., example="2024-05-07 12:40")
-    modified_by: Optional[UUID4] = Field(None, example="74f5596d-1df2-45ff-834c-a0511674c57f")
+    modified_by: Optional[UUID4] = Field(
+        None, example="74f5596d-1df2-45ff-834c-a0511674c57f"
+    )
     modified_on: Optional[datetime] = Field(None, example="2024-05-07 12:40")
 
 

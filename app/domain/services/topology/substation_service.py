@@ -2,8 +2,7 @@ from typing import Any
 from uuid import UUID
 
 from app.data.interfaces.i_repository import IRepository
-from app.domain.interfaces.net_topology.i_substation_service import \
-    ISubstationService
+from app.domain.interfaces.net_topology.i_substation_service import ISubstationService
 from app.domain.services.base_service import BaseService
 
 

@@ -1,19 +1,21 @@
 """API endpoints for managing electrical appliances."""
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
-from app.api.v1.dependencies.container_instance import \
-    get_electrical_appliances_service
+from app.api.v1.dependencies.container_instance import get_electrical_appliances_service
 from app.api.v1.models.requests.electrical_appliances import AppliancesRequest
 from app.api.v1.models.responses.electrical_appliances import (
-    AppliancesListResponse, AppliancesResponse)
+    AppliancesListResponse,
+    AppliancesResponse,
+)
 from app.domain.interfaces.i_service import IService
 
-appliances_router = APIRouter(tags=['Appliances'])
+appliances_router = APIRouter(tags=["Appliances"])
 
 
-@appliances_router.get('/', response_model=AppliancesListResponse)
+@appliances_router.get("/", response_model=AppliancesListResponse)
 async def get_appliances(
     service: IService = Depends(get_electrical_appliances_service),
     _: str = Depends(permission(Resources.ELECTRICALS, Permission.RETRIEVE)),
@@ -33,13 +35,15 @@ async def get_appliances(
     """
     try:
         body = service.list_all()
-        response = AppliancesListResponse(items=[AppliancesResponse(**item) for item in body])
+        response = AppliancesListResponse(
+            items=[AppliancesResponse(**item) for item in body]
+        )
         return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@appliances_router.post('/', response_model=AppliancesResponse)
+@appliances_router.post("/", response_model=AppliancesResponse)
 async def create_appliances(
     data: AppliancesRequest,
     service: IService = Depends(get_electrical_appliances_service),
@@ -67,7 +71,7 @@ async def create_appliances(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@appliances_router.put('/{appliance_id}/update')
+@appliances_router.put("/{appliance_id}/update")
 async def update_appliances(
     data: AppliancesRequest,
     appliance_id: int,
@@ -97,7 +101,7 @@ async def update_appliances(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@appliances_router.delete('/{appliance_id}/delete')
+@appliances_router.delete("/{appliance_id}/delete")
 async def delete_appliance(
     appliance_id: int,
     service: IService = Depends(get_electrical_appliances_service),

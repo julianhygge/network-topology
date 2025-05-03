@@ -3,22 +3,33 @@ from uuid import UUID
 
 from peewee import DoesNotExist
 
-from app.data.interfaces.load.i_load_generation_enginer_repository import \
-    ILoadGenerationEngineRepository
-from app.data.interfaces.load.i_load_load_profile_repository import \
-    ILoadProfileRepository
-from app.data.interfaces.load.i_load_profile_builder_repository import \
-    ILoadProfileBuilderRepository
-from app.data.interfaces.load.i_load_profile_details_repository import \
-    ILoadProfileDetailsRepository
-from app.data.interfaces.load.i_load_profile_files_repository import \
-    ILoadProfileFilesRepository
-from app.data.interfaces.load.i_predefined_templates_repository import \
-    IPredefinedTemplatesRepository
+from app.data.interfaces.load.i_load_generation_enginer_repository import (
+    ILoadGenerationEngineRepository,
+)
+from app.data.interfaces.load.i_load_load_profile_repository import (
+    ILoadProfileRepository,
+)
+from app.data.interfaces.load.i_load_profile_builder_repository import (
+    ILoadProfileBuilderRepository,
+)
+from app.data.interfaces.load.i_load_profile_details_repository import (
+    ILoadProfileDetailsRepository,
+)
+from app.data.interfaces.load.i_load_profile_files_repository import (
+    ILoadProfileFilesRepository,
+)
+from app.data.interfaces.load.i_predefined_templates_repository import (
+    IPredefinedTemplatesRepository,
+)
 from app.data.repositories.base_repository import BaseRepository
 from app.data.schemas.load_profile.load_profile_schema import (
-    LoadGenerationEngine, LoadPredefinedTemplates, LoadProfileBuilderItems,
-    LoadProfileDetails, LoadProfileFiles, LoadProfiles)
+    LoadGenerationEngine,
+    LoadPredefinedTemplates,
+    LoadProfileBuilderItems,
+    LoadProfileDetails,
+    LoadProfileFiles,
+    LoadProfiles,
+)
 
 
 class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
@@ -27,22 +38,37 @@ class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
 
     def get_load_profiles_by_user_id(self, user_id) -> List[LoadProfiles]:
         try:
-            return list(self.model.select().where((self.model.user_id == user_id) & (~self.model.public))
-                        .order_by(self.model.id.asc()))
+            return list(
+                self.model.select()
+                .where((self.model.user_id == user_id) & (~self.model.public))
+                .order_by(self.model.id.asc())
+            )
         except DoesNotExist:
             return []
 
     def get_public_profiles(self) -> List[LoadProfiles]:
         try:
-            return list(self.model.select().where(self.model.public).order_by(self.model.id.asc()))
+            return list(
+                self.model.select()
+                .where(self.model.public)
+                .order_by(self.model.id.asc())
+            )
         except DoesNotExist:
             return []
 
-    def get_load_profiles_by_user_id_and_house_id(self, user_id, house_id) -> List[LoadProfiles]:
+    def get_load_profiles_by_user_id_and_house_id(
+        self, user_id, house_id
+    ) -> List[LoadProfiles]:
         try:
-            return list(self.model.select().where((self.model.user_id == user_id) & (~self.model.public) &
-                                                  (self.model.house_id == house_id))
-                        .order_by(self.model.id.asc()))
+            return list(
+                self.model.select()
+                .where(
+                    (self.model.user_id == user_id)
+                    & (~self.model.public)
+                    & (self.model.house_id == house_id)
+                )
+                .order_by(self.model.id.asc())
+            )
         except DoesNotExist:
             return []
 
@@ -58,7 +84,7 @@ class LoadProfilesRepository(BaseRepository, ILoadProfileRepository):
                 profile_name=load_source,
                 source=load_source,
                 public=False,
-                active=True
+                active=True,
             )
 
         return profile
@@ -79,11 +105,12 @@ class LoadProfileDetailsRepository(BaseRepository, ILoadProfileDetailsRepository
         self.model.insert_many(details).execute()
 
     def get_load_details_by_load_id(self, load_id):
-        load_details_dicts = (self.model
-                              .select(self.model.timestamp, self.model.consumption_kwh)
-                              .where(self.model.profile_id == load_id)
-                              .order_by(self.model.timestamp.asc())
-                              .dicts())
+        load_details_dicts = (
+            self.model.select(self.model.timestamp, self.model.consumption_kwh)
+            .where(self.model.profile_id == load_id)
+            .order_by(self.model.timestamp.asc())
+            .dicts()
+        )
 
         return list(load_details_dicts) if load_details_dicts else None
 
@@ -93,7 +120,9 @@ class LoadProfileFilesRepository(BaseRepository, ILoadProfileFilesRepository):
     id_field = LoadProfileFiles.id
 
     def save_file(self, profile_id, filename, content):
-        return self.model.create(profile_id=profile_id, filename=filename, content=content)
+        return self.model.create(
+            profile_id=profile_id, filename=filename, content=content
+        )
 
     def get_file(self, profile_id):
         return self.model.get(self.model.profile_id == profile_id)
@@ -115,7 +144,7 @@ class LoadProfileBuilderItemsRepository(BaseRepository, ILoadProfileBuilderRepos
     def update_items_in_bulk(self, items):
         with self.database_instance.atomic():
             for item in items:
-                self.model.update(**item).where(self.model.id == item['id']).execute()
+                self.model.update(**item).where(self.model.id == item["id"]).execute()
 
 
 class LoadGenerationEngineRepository(BaseRepository, ILoadGenerationEngineRepository):
@@ -135,10 +164,7 @@ class PredefinedTemplatesRepository(BaseRepository, IPredefinedTemplatesReposito
 
     def create_or_update(self, profile_id, template_id):
         template, created = self.model.get_or_create(
-            profile_id=profile_id,
-            defaults={
-                'template_id': template_id
-            }
+            profile_id=profile_id, defaults={"template_id": template_id}
         )
         if not created:
             template.template_id = template_id

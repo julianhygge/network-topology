@@ -14,11 +14,12 @@ class UserGroupRelRepository(BaseRepository):
         return self.model.delete().where(self.model.user_record_id == user_id).execute()
 
     def get_groups_by_user_id(self, user_id):
-        return (Groups
-                .select()
-                .join(self.model, on=(Groups.id == self.model.group_id))
-                .where(self.model.user_record_id == user_id)
-                .distinct())
+        return (
+            Groups.select()
+            .join(self.model, on=(Groups.id == self.model.group_id))
+            .where(self.model.user_record_id == user_id)
+            .distinct()
+        )
 
     def add_user_to_group(self, logged_user_id, user_id, group_id):
         try:
@@ -30,7 +31,7 @@ class UserGroupRelRepository(BaseRepository):
                 created_on=datetime.datetime.utcnow(),
                 modified_on=datetime.datetime.utcnow(),
                 created_by=logged_user_id,
-                modified_by=logged_user_id
+                modified_by=logged_user_id,
             )
             return True
         except IntegrityError:
@@ -39,8 +40,7 @@ class UserGroupRelRepository(BaseRepository):
     def remove_user_from_group(self, user_id, group_id):
         try:
             query = self.model.delete().where(
-                (self.model.user == user_id) &
-                (self.model.group_id == group_id)
+                (self.model.user == user_id) & (self.model.group_id == group_id)
             )
             num_deleted = query.execute()
             return num_deleted > 0

@@ -12,11 +12,14 @@ from app.domain.services.base_service import BaseService
 
 class UserService(BaseService, IUserService):
 
-    def __init__(self, token_service: ITokenService,
-                 user_repository: IUserRepository,
-                 group_repository: IRepository,
-                 account_repository: IRepository,
-                 user_group_repository):
+    def __init__(
+        self,
+        token_service: ITokenService,
+        user_repository: IUserRepository,
+        group_repository: IRepository,
+        account_repository: IRepository,
+        user_group_repository,
+    ):
         super().__init__(user_repository)
         self._token_service = token_service
         self._user_repository = user_repository
@@ -25,13 +28,15 @@ class UserService(BaseService, IUserService):
         self._account_repository = account_repository
 
     def create(self, user_id, **user_data):
-        account = self._user_repository.fetch_account_by_phone_number(user_data['phone_number'])
+        account = self._user_repository.fetch_account_by_phone_number(
+            user_data["phone_number"]
+        )
 
         txn_id = str(uuid.uuid4())
 
         user_data["id"] = account.id
         user_data["created_by"] = account.id
-        user_data['modified_by'] = account.id
+        user_data["modified_by"] = account.id
         user_data["record_id"] = account.id
         user_data["user_name"] = user_data["name"]
         user_data["alias_name"] = user_data["name"]
@@ -42,13 +47,9 @@ class UserService(BaseService, IUserService):
             "modified_by": account.id,
             "user_record_id": account.id,
             "group_id": Groups.User.value,
-            "active": True
-
+            "active": True,
         }
-        account_data = {
-            "type": str(Groups.User),
-            "alias_name": user_data["name"]
-        }
+        account_data = {"type": str(Groups.User), "alias_name": user_data["name"]}
 
         with self._user_repository.database_instance.atomic():
             user = self._user_repository.insert_into_user_and_group(user_data, data)
@@ -71,16 +72,21 @@ class UserService(BaseService, IUserService):
         all_groups = self._group_repository.list()
         all_groups_dicts = self.repository.to_dicts(all_groups)
 
-        groups_info = {group['id']: group for group in all_groups_dicts}
+        groups_info = {group["id"]: group for group in all_groups_dicts}
 
         for item in list_dicts:
             user_groups = self._user_group_repository.get_groups_by_user_id(item["id"])
             user_groups_dicts = self.repository.to_dicts(user_groups)
-            user_group_ids = set(group['id'] for group in user_groups_dicts)
+            user_group_ids = set(group["id"] for group in user_groups_dicts)
 
-            item['groups'] = [
-                {'id': group_id, 'name': groups_info[group_id]['description'], 'is_member': group_id in user_group_ids}
-                for group_id in groups_info]
+            item["groups"] = [
+                {
+                    "id": group_id,
+                    "name": groups_info[group_id]["description"],
+                    "is_member": group_id in user_group_ids,
+                }
+                for group_id in groups_info
+            ]
 
         return list_dicts
 
@@ -90,7 +96,9 @@ class UserService(BaseService, IUserService):
             return self._user_repository.delete(user_id)
 
     def add_user_to_group(self, logged_user_id, user_id, group_id):
-        result = self._user_group_repository.add_user_to_group(logged_user_id, user_id, group_id)
+        result = self._user_group_repository.add_user_to_group(
+            logged_user_id, user_id, group_id
+        )
         return result
 
     def remove_user_from_group(self, user_id, group_id):
@@ -101,7 +109,7 @@ class UserService(BaseService, IUserService):
         data = {
             "modified_by": session_user,
             "logo": file_logo,
-            "modified_on": datetime.datetime.utcnow()
+            "modified_on": datetime.datetime.utcnow(),
         }
         obj = self._user_repository.update(user_id, **data)
         return obj

@@ -6,17 +6,27 @@ from typing import Any, Optional
 
 from dynaconf import Dynaconf
 
-from app.config.i_configuration import (CorsConfig, DbConfig, IConfiguration,
-                                        LoadProfileConfig, LoadProfileStrategy,
-                                        LoggingConfig, MQTTConfig, OTPConfig,
-                                        SessionConfig, SimulationConfig,
-                                        SMSConfig, TopicConfig)
+from app.config.i_configuration import (
+    CorsConfig,
+    DbConfig,
+    IConfiguration,
+    LoadProfileConfig,
+    LoadProfileStrategy,
+    LoggingConfig,
+    MQTTConfig,
+    OTPConfig,
+    SessionConfig,
+    SimulationConfig,
+    SMSConfig,
+    TopicConfig,
+)
 
 
 class ApiConfiguration(IConfiguration):
     """
     Implementation of IConfiguration using Dynaconf for loading settings.
     """
+
     _settings: Dynaconf
 
     def __init__(self):
@@ -50,7 +60,7 @@ class ApiConfiguration(IConfiguration):
             database=s.get("db_database"),
             user=s.get("db_user"),
             password=s.get("db_password"),
-            options=s.get("db_options")
+            options=s.get("db_options"),
         )
 
     @property
@@ -113,7 +123,7 @@ class ApiConfiguration(IConfiguration):
             host=s.get("mqtt_host"),
             port=int(s.get("mqtt_port")),
             username=s.get("mqtt_username"),
-            password=s.get("mqtt_password")
+            password=s.get("mqtt_password"),
         )
 
     @property
@@ -146,12 +156,12 @@ class ApiConfiguration(IConfiguration):
             battery_base_percentage_allocation=float(
                 s.get("simulation_battery_base_percentage_allocation")
             ),
-            battery_dynamic_allocation=float(dyn_alloc_old)
-            if dyn_alloc_old is not None
-            else None,
-            battery_base_allocation=float(base_alloc_old)
-            if base_alloc_old is not None
-            else None,
+            battery_dynamic_allocation=(
+                float(dyn_alloc_old) if dyn_alloc_old is not None else None
+            ),
+            battery_base_allocation=(
+                float(base_alloc_old) if base_alloc_old is not None else None
+            ),
         )
 
     @property
@@ -161,7 +171,7 @@ class ApiConfiguration(IConfiguration):
             origins=s.cors_origins,
             methods=s.cors_methods,
             headers=s.cors_headers,
-            allow_credentials=bool(s.cors_allow_credentials)
+            allow_credentials=bool(s.cors_allow_credentials),
         )
 
     @property
@@ -183,7 +193,7 @@ class ApiConfiguration(IConfiguration):
             interpolation_strategy=strategy_enum,
             max_interval_length=int(s.get("load_profile_max_interval_length")),
             min_days=int(s.get("load_profile_min_days")),
-            time_formats=s.get("load_profile_time_formats")
+            time_formats=s.get("load_profile_time_formats"),
         )
 
     @property

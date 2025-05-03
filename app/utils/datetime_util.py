@@ -5,6 +5,7 @@ Provides functions for getting current UTC time, calculating time differences,
 formatting dates and times, and determining the start/end of various periods
 (day, week, month, year). Ensures timezone awareness, primarily using UTC.
 """
+
 import calendar
 import datetime
 import platform
@@ -16,21 +17,26 @@ from dateutil.relativedelta import relativedelta
 # Define UTC timezone object for reuse
 UTC = datetime.timezone.utc
 
+
 class Period(str, Enum):
     """Enumeration for time periods."""
+
     HOURLY = "hour"
     DAILY = "day"
     WEEKLY = "week"
     MONTHLY = "month"
     YEARLY = "year"
 
+
 def utc_now_iso() -> str:
     """Returns the current UTC time as an ISO 8601 formatted string."""
     return datetime.datetime.now(UTC).isoformat()
 
+
 def utc_now() -> datetime.datetime:
     """Returns the current UTC time as a timezone-aware datetime object."""
     return datetime.datetime.now(UTC)
+
 
 def current_time_millis() -> int:
     """Returns the current UTC time in milliseconds since the epoch."""
@@ -60,11 +66,11 @@ def after_now(hours: int) -> datetime.datetime:
 
 def get_ist_time() -> tuple[str, str]:
     """Returns the current IST date and time as formatted strings."""
-    ist = pytz.timezone('Asia/Kolkata')
+    ist = pytz.timezone("Asia/Kolkata")
     ist_time = datetime.datetime.now(ist)
 
-    ist_date = ist_time.strftime('%B %d %Y')  # Format date as "Month day year"
-    ist_time_str = ist_time.strftime('%I:%M %p')  # Format time as "hour:minute AM/PM"
+    ist_date = ist_time.strftime("%B %d %Y")  # Format date as "Month day year"
+    ist_time_str = ist_time.strftime("%I:%M %p")  # Format time as "hour:minute AM/PM"
 
     return ist_date, ist_time_str
 
@@ -77,15 +83,18 @@ def _ensure_aware(dt: datetime.datetime) -> datetime.datetime:
     # Convert to UTC if it's aware but not UTC
     return dt.astimezone(UTC)
 
+
 def start_of_day(dt: datetime.datetime) -> datetime.datetime:
     """Returns the start of the day (00:00:00) for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     return aware_dt.replace(hour=0, minute=0, second=0, microsecond=0)
 
+
 def end_of_day(dt: datetime.datetime) -> datetime.datetime:
     """Returns the end of the day (23:59:59.999999) for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     return aware_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+
 
 def start_of_week(dt: datetime.datetime) -> datetime.datetime:
     """Returns the start of the week (Monday 00:00:00) for the given datetime in UTC."""
@@ -93,32 +102,41 @@ def start_of_week(dt: datetime.datetime) -> datetime.datetime:
     start = aware_dt - datetime.timedelta(days=aware_dt.weekday())
     return start.replace(hour=0, minute=0, second=0, microsecond=0)
 
+
 def end_of_week(dt: datetime.datetime) -> datetime.datetime:
     """Returns the end of the week (Sunday 23:59:59.999999) for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     end = aware_dt + datetime.timedelta(days=(6 - aware_dt.weekday()))
     return end.replace(hour=23, minute=59, second=59, microsecond=999999)
 
+
 def start_of_month(dt: datetime.datetime) -> datetime.datetime:
     """Returns the start of the month (Day 1, 00:00:00) for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     return aware_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
+
 def end_of_month(dt: datetime.datetime) -> datetime.datetime:
     """Returns the end of the month (Last day, 23:59:59.999999) for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     last_day = calendar.monthrange(aware_dt.year, aware_dt.month)[1]
-    return aware_dt.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
+    return aware_dt.replace(
+        day=last_day, hour=23, minute=59, second=59, microsecond=999999
+    )
+
 
 def start_of_year(dt: datetime.datetime) -> datetime.datetime:
     """Returns the start of the year (Jan 1, 00:00:00) for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     return aware_dt.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
 
+
 def end_of_year(dt: datetime.datetime) -> datetime.datetime:
     """Returns the end of the year (Dec 31, 23:59:59.999999) for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
-    return aware_dt.replace(month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
+    return aware_dt.replace(
+        month=12, day=31, hour=23, minute=59, second=59, microsecond=999999
+    )
 
 
 def get_end_of_period(dt: datetime.datetime, period: Period) -> datetime.datetime:
@@ -127,7 +145,7 @@ def get_end_of_period(dt: datetime.datetime, period: Period) -> datetime.datetim
         Period.DAILY: end_of_day,
         Period.WEEKLY: end_of_week,
         Period.MONTHLY: end_of_month,
-        Period.YEARLY: end_of_year
+        Period.YEARLY: end_of_year,
     }
     if period not in periods:
         raise ValueError(f"Unsupported period: {period}")
@@ -161,7 +179,9 @@ def get_start_of_period(period: Period, offset: int = 0) -> datetime.datetime:
         start_dt = start_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     elif period == Period.YEARLY:
         start_dt = now_aware - relativedelta(years=offset)
-        start_dt = start_dt.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_dt = start_dt.replace(
+            month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
     else:
         raise ValueError(f"Unsupported period: {period}")
 
@@ -181,19 +201,19 @@ def format_datetime_custom(dt: datetime.datetime) -> str:
     """
     # Use aware dt for formatting if possible, otherwise use naive
     dt_to_format = _ensure_aware(dt) if dt.tzinfo else dt
-    if platform.system() == 'Windows':
-        formatted_date = dt_to_format.strftime('%B %d %#I:%M %p')
+    if platform.system() == "Windows":
+        formatted_date = dt_to_format.strftime("%B %d %#I:%M %p")
     else:
         # Linux/macOS: %-I removes leading zero for hours
-        formatted_date = dt_to_format.strftime('%B %d %-I:%M %p')
+        formatted_date = dt_to_format.strftime("%B %d %-I:%M %p")
 
     return formatted_date
 
 
 def format_date_dd_mm_yyyy(date_obj: datetime.datetime) -> str:
     """Formats a datetime object into the string 'dd-Mon-yyyy' format.
-       Example: '24-May-2024'.
-       Assumes input date_obj might be naive or aware.
+    Example: '24-May-2024'.
+    Assumes input date_obj might be naive or aware.
     """
     # Use aware dt for formatting if possible, otherwise use naive
     dt_to_format = _ensure_aware(date_obj) if date_obj.tzinfo else date_obj
@@ -208,9 +228,9 @@ def format_datetime_hh_mm_pm_am(dt: datetime.datetime) -> str:
     """
     # Use aware dt for formatting if possible, otherwise use naive
     dt_to_format = _ensure_aware(dt) if dt.tzinfo else dt
-    if platform.system() == 'Windows':
-        formatted_date = dt_to_format.strftime('%#I:%M %p')
+    if platform.system() == "Windows":
+        formatted_date = dt_to_format.strftime("%#I:%M %p")
     else:
-        formatted_date = dt_to_format.strftime('%-I:%M %p')
+        formatted_date = dt_to_format.strftime("%-I:%M %p")
 
     return formatted_date

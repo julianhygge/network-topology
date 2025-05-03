@@ -21,9 +21,9 @@ class EnumField(CharField):
 
 
 class UserRoles(enum.Enum):
-    Admin = 'Admin'
-    User = 'User'
-    Guest = 'Guest'
+    Admin = "Admin"
+    User = "User"
+    Guest = "Guest"
 
 
 class NodeStatusEnum(enum.Enum):

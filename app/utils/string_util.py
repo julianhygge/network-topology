@@ -2,7 +2,7 @@ import secrets
 
 
 def generate_otp():
-    otp = ''
+    otp = ""
     for _ in range(6):
         otp += str(secrets.randbelow(9))
     return otp

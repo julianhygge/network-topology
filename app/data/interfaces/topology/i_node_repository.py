@@ -3,8 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from app.data.interfaces.i_repository import IRepository, T
-from app.data.schemas.transactional.topology_schema import (Locality, Node,
-                                                            Substation)
+from app.data.schemas.transactional.topology_schema import Locality, Node, Substation
 
 
 class INodeRepository(IRepository[T]):

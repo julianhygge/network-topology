@@ -5,18 +5,19 @@ This module initializes the dependency injection container and defines
 functions that can be used with `fastapi Depends` to inject configured
 service instances into route handlers.
 """
+
 from app.api.v1.dependencies.dependencies_container import Container
 from app.config.configuration import ApiConfiguration
-from app.data.interfaces.topology.i_topology_simulator import \
-    ITopologySimulator
+from app.data.interfaces.topology.i_topology_simulator import ITopologySimulator
 from app.domain.interfaces.i_auth_service import IAuthService
 from app.domain.interfaces.i_mqtt_service import IMQTTService
 from app.domain.interfaces.i_node_service import INodeService
 from app.domain.interfaces.i_service import IService
 from app.domain.interfaces.i_sms_service import ISmsService
 from app.domain.interfaces.i_token_service import ITokenService
-from app.domain.interfaces.net_topology.i_net_topology_service import \
-    INetTopologyService
+from app.domain.interfaces.net_topology.i_net_topology_service import (
+    INetTopologyService,
+)
 from app.domain.services.load_profile_service import LoadProfileService
 
 c = Container()

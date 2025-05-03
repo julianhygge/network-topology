@@ -27,12 +27,16 @@ class MQTTService(IMQTTService):
             "content": {
                 "otp": otp,
             },
-            "txnId": txn_id
+            "txnId": txn_id,
         }
 
     def send_sms(self, topic_name, application_name, mobile_no, otp, txn_id):
-        message = self.to_json(self.sms_content_dict(application_name, mobile_no, otp, txn_id))
-        self.send_message_to_topic(topic_name, message, self._broken_url, int(self._port))
+        message = self.to_json(
+            self.sms_content_dict(application_name, mobile_no, otp, txn_id)
+        )
+        self.send_message_to_topic(
+            topic_name, message, self._broken_url, int(self._port)
+        )
 
     def to_json(self, json_dict):
         return json.dumps(json_dict, cls=UUIDEncoder)

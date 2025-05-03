@@ -6,23 +6,24 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
-from app.api.v1.dependencies.container_instance import \
-    get_solar_profile_service
+from app.api.v1.dependencies.container_instance import get_solar_profile_service
 from app.api.v1.models.requests.solar.solar_profile_request import (
-    SolarProfileRequestModel, SolarProfileUpdateModel)
-from app.api.v1.models.responses.solar.solar_profile_response import \
-    SolarProfileResponse
-from app.domain.interfaces.solar.isolar_profile_service import \
-    ISolarProfileService
+    SolarProfileRequestModel,
+    SolarProfileUpdateModel,
+)
+from app.api.v1.models.responses.solar.solar_profile_response import (
+    SolarProfileResponse,
+)
+from app.domain.interfaces.solar.isolar_profile_service import ISolarProfileService
 
 solar_router = APIRouter(tags=["Solar"])
 
 
-@solar_router.post('/', response_model=SolarProfileResponse)
+@solar_router.post("/", response_model=SolarProfileResponse)
 async def create_solar_profile(
-        data: SolarProfileRequestModel,
-        service: ISolarProfileService = Depends(get_solar_profile_service),
-        user_id: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE))
+    data: SolarProfileRequestModel,
+    service: ISolarProfileService = Depends(get_solar_profile_service),
+    user_id: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
 ):
     """
     Create a new solar profile.
@@ -48,9 +49,10 @@ async def create_solar_profile(
 
 @solar_router.get("/{house_id}")
 async def get_solar_profile(
-        house_id: UUID,
-        service: ISolarProfileService = Depends(get_solar_profile_service),
-        _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE))):
+    house_id: UUID,
+    service: ISolarProfileService = Depends(get_solar_profile_service),
+    _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
+):
     """
     Retrieve the solar profile for a specific house.
 
@@ -76,12 +78,13 @@ async def get_solar_profile(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@solar_router.put('/{house-id}')
+@solar_router.put("/{house-id}")
 async def update_solar_profile(
-        house_id: UUID,
-        data: SolarProfileUpdateModel,
-        service: ISolarProfileService = Depends(get_solar_profile_service),
-        user_id: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE))):
+    house_id: UUID,
+    data: SolarProfileUpdateModel,
+    service: ISolarProfileService = Depends(get_solar_profile_service),
+    user_id: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
+):
     """
     Update an existing solar profile for a specific house.
 
@@ -101,11 +104,12 @@ async def update_solar_profile(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@solar_router.delete('/{house_id}')
+@solar_router.delete("/{house_id}")
 async def delete_solar_profile(
-        house_id: UUID,
-        service: ISolarProfileService = Depends(get_solar_profile_service),
-        _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE))):
+    house_id: UUID,
+    service: ISolarProfileService = Depends(get_solar_profile_service),
+    _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
+):
     """
     Delete the solar profile for a specific house.
 

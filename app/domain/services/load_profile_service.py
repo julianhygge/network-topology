@@ -2,25 +2,41 @@ from io import BytesIO
 from typing import Any, Dict, List, Union
 from uuid import UUID
 
-from pandas import (DataFrame, DatetimeIndex, NaT, Timedelta, Timestamp,
-                    date_range, read_csv, read_excel, to_datetime)
+from pandas import (
+    DataFrame,
+    DatetimeIndex,
+    NaT,
+    Timedelta,
+    Timestamp,
+    date_range,
+    read_csv,
+    read_excel,
+    to_datetime,
+)
 
 from app.data.interfaces.iuser_repository import IUserRepository
-from app.data.interfaces.load.i_load_generation_enginer_repository import \
-    ILoadGenerationEngineRepository
-from app.data.interfaces.load.i_load_load_profile_repository import \
-    ILoadProfileRepository
-from app.data.interfaces.load.i_load_profile_builder_repository import \
-    ILoadProfileBuilderRepository
-from app.data.interfaces.load.i_load_profile_details_repository import \
-    ILoadProfileDetailsRepository
-from app.data.interfaces.load.i_load_profile_files_repository import \
-    ILoadProfileFilesRepository
-from app.data.interfaces.load.i_predefined_templates_repository import \
-    IPredefinedTemplatesRepository
+from app.data.interfaces.load.i_load_generation_enginer_repository import (
+    ILoadGenerationEngineRepository,
+)
+from app.data.interfaces.load.i_load_load_profile_repository import (
+    ILoadProfileRepository,
+)
+from app.data.interfaces.load.i_load_profile_builder_repository import (
+    ILoadProfileBuilderRepository,
+)
+from app.data.interfaces.load.i_load_profile_details_repository import (
+    ILoadProfileDetailsRepository,
+)
+from app.data.interfaces.load.i_load_profile_files_repository import (
+    ILoadProfileFilesRepository,
+)
+from app.data.interfaces.load.i_predefined_templates_repository import (
+    IPredefinedTemplatesRepository,
+)
 from app.domain.interfaces.enums.load_source_enum import LoadSource
-from app.domain.interfaces.net_topology.i_load_profile_file_completer import \
-    ILoadProfileFileCompleter
+from app.domain.interfaces.net_topology.i_load_profile_file_completer import (
+    ILoadProfileFileCompleter,
+)
 from app.domain.services.base_service import BaseService
 from app.utils.logger import logger
 

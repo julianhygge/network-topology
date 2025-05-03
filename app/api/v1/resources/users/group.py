@@ -16,15 +16,17 @@ group_router = APIRouter(tags=["Groups"])
 
 class UserGroupRelation(BaseModel):
     """Request model for user-group relationship operations."""
+
     user_id: UUID
     group_id: int
 
 
 @group_router.post(path="/user/", status_code=status.HTTP_200_OK)
 async def add_user(
-        relation: UserGroupRelation,
-        logged_user_id: str = Depends(permission(Resources.USERS, Permission.UPDATE)),
-        service: IService = Depends(get_user_service)):
+    relation: UserGroupRelation,
+    logged_user_id: str = Depends(permission(Resources.USERS, Permission.UPDATE)),
+    service: IService = Depends(get_user_service),
+):
     """
     Add a user to a specific group.
 
@@ -50,15 +52,16 @@ async def add_user(
     raise HTTPException(
         status_code=400,
         detail="Failed to add user to group. User may already be in the group "
-               "or invalid IDs provided."
+        "or invalid IDs provided.",
     )
 
 
 @group_router.delete(path="/user/", status_code=status.HTTP_200_OK)
 async def remove_user(
-        relation: UserGroupRelation,
-        _: str = Depends(permission(Resources.USERS, Permission.UPDATE)),
-        service: IService = Depends(get_user_service)):
+    relation: UserGroupRelation,
+    _: str = Depends(permission(Resources.USERS, Permission.UPDATE)),
+    service: IService = Depends(get_user_service),
+):
     """
     Remove a user from a specific group.
 

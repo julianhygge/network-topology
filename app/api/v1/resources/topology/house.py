@@ -6,12 +6,17 @@ from pydantic import UUID4
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
-    get_house_service, get_net_topology_service)
+    get_house_service,
+    get_net_topology_service,
+)
 from app.api.v1.models.requests.transtormer_requests import (
-    HouseResponseModel, HouseUpdateRequestModel)
+    HouseResponseModel,
+    HouseUpdateRequestModel,
+)
 from app.domain.interfaces.i_service import IService
-from app.domain.interfaces.net_topology.i_net_topology_service import \
-    INetTopologyService
+from app.domain.interfaces.net_topology.i_net_topology_service import (
+    INetTopologyService,
+)
 from app.exceptions.hygge_exceptions import NotFoundException
 
 house_router = APIRouter(tags=["Houses"])
@@ -22,7 +27,7 @@ async def update_house(
     house_id: UUID4,
     house_data: HouseUpdateRequestModel,
     _: str = Depends(permission(Resources.HOUSES, Permission.UPDATE)),
-    service: INetTopologyService = Depends(get_net_topology_service)
+    service: INetTopologyService = Depends(get_net_topology_service),
 ) -> HouseResponseModel:
     """
     Update the details of a specific house node.
@@ -47,16 +52,16 @@ async def update_house(
         )
         return updated_house
     except NotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
 
 @house_router.get("/{house_id}", response_model=HouseResponseModel)
 async def get(
     house_id: UUID4,
-    _: str = Depends(permission(Resources.HOUSES, Permission.RETRIEVE)), # Corrected permission
-    service: IService = Depends(get_house_service)
+    _: str = Depends(
+        permission(Resources.HOUSES, Permission.RETRIEVE)
+    ),  # Corrected permission
+    service: IService = Depends(get_house_service),
 ) -> HouseResponseModel:
     """
     Retrieve the details of a specific house node.
@@ -78,6 +83,4 @@ async def get(
         data = service.read(house_id)
         return data
     except NotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e

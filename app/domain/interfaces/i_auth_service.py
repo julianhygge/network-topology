@@ -5,7 +5,7 @@ class IAuthService(ABC):
 
     @abstractmethod
     def get_registered_user(self, phone_number):
-        """ Get the Registered user """
+        """Get the Registered user"""
 
     @abstractmethod
     def request_otp(self, user, country_code):

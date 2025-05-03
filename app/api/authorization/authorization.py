@@ -18,6 +18,7 @@ def permission(resource: Resources, action: Permission):
     Returns:
         A dependency function that checks for the required permission.
     """
+
     def permission_dependency(request: Request, _=Security(HTTPBearer())):
         """
         Dependency function to check if the user has the required permission.
@@ -32,14 +33,14 @@ def permission(resource: Resources, action: Permission):
         Raises:
             HTTPException: If the user does not have the required permission.
         """
-        claims = getattr(request.state, 'claims', {})
-        permissions = claims.get('permissions', [])
-        user_id = claims.get('user', None)
+        claims = getattr(request.state, "claims", {})
+        permissions = claims.get("permissions", [])
+        user_id = claims.get("user", None)
         required_permission = f"{action.value}-{resource.value}"
         if required_permission not in permissions:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have permission to perform this action."
+                detail="You don't have permission to perform this action.",
             )
         return user_id
 

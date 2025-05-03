@@ -1,17 +1,19 @@
 """
 Module for the base repository interface.
 """
+
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, List, TypeVar, Union
 from uuid import UUID
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class IRepository(ABC, Generic[T]):
     """
     Base interface for repositories.
     """
+
     @property
     @abstractmethod
     def model(self) -> Any:
@@ -69,15 +71,17 @@ class IRepository(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def upsert(self, conflict_target: List[str], defaults: Dict[str, any],
-               **query) -> T:
+    def upsert(
+        self, conflict_target: List[str], defaults: Dict[str, any], **query
+    ) -> T:
         """
         Abstract method to upsert a record.
         """
 
     @abstractmethod
-    def upsert_and_retrieve(self, conflict_target: List[str],
-                            defaults: Dict[str, any], **query) -> T:
+    def upsert_and_retrieve(
+        self, conflict_target: List[str], defaults: Dict[str, any], **query
+    ) -> T:
         """
         Abstract method to upsert and retrieve a record.
         """
@@ -105,5 +109,8 @@ class IRepository(ABC, Generic[T]):
         """
         List records filtered by user ID and active status.
         """
-        return list(self.model.select().where((self.model.created_by == user_id) &
-                                              self.model.active))  # pylint: disable=syntax-error
+        return list(
+            self.model.select().where(
+                (self.model.created_by == user_id) & self.model.active
+            )
+        )  # pylint: disable=syntax-error

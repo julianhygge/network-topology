@@ -23,7 +23,7 @@ class HyggeDatabase:
     def _test_connection(cls):
         """Tests the current database connection."""
         try:
-            cls._instance.execute_sql('SELECT 1;')
+            cls._instance.execute_sql("SELECT 1;")
             return True
         except OperationalError:
             cls._instance.close()
@@ -41,7 +41,7 @@ class HyggeDatabase:
             port=cls._config.port,
             max_connections=cls._config.max_connections,
             stale_timeout=cls._config.stale_timeout,
-            autorollback=True
+            autorollback=True,
         )
         cls._set_utc_timezone(db_instance)
         BaseModel.set_database(db_instance)

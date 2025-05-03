@@ -8,17 +8,24 @@ from pydantic import UUID4
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
-    get_net_topology_service, get_substation_service)
+    get_net_topology_service,
+    get_substation_service,
+)
 from app.api.v1.models.requests.substation import (
-    SubstationRequestModel, SubstationsRequestModel,
-    SubstationTopologyRequestModel)
+    SubstationRequestModel,
+    SubstationsRequestModel,
+    SubstationTopologyRequestModel,
+)
 from app.api.v1.models.responses.substation import (
-    SubstationResponseModel, SubstationResponseModelList, SubstationTopology)
+    SubstationResponseModel,
+    SubstationResponseModelList,
+    SubstationTopology,
+)
 from app.domain.interfaces.i_service import IService
-from app.domain.interfaces.net_topology.i_net_topology_service import \
-    INetTopologyService
-from app.domain.interfaces.net_topology.i_substation_service import \
-    ISubstationService
+from app.domain.interfaces.net_topology.i_net_topology_service import (
+    INetTopologyService,
+)
+from app.domain.interfaces.net_topology.i_substation_service import ISubstationService
 from app.utils.logger import logger
 
 substation_router = APIRouter(tags=["Substations"])
@@ -27,7 +34,9 @@ substation_router = APIRouter(tags=["Substations"])
 @substation_router.get("/{substation_id}", response_model=SubstationTopology)
 async def get_substation_topology(
     substation_id: UUID,
-    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)), # Corrected permission
+    _: str = Depends(
+        permission(Resources.SUBSTATIONS, Permission.RETRIEVE)
+    ),  # Corrected permission
     service: INetTopologyService = Depends(get_net_topology_service),
 ) -> SubstationTopology:
     """
@@ -88,7 +97,7 @@ async def update_substation_topology(
         logger.error("Failed to fetch topology after update for %s", substation_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Substation not found after update attempt."
+            detail="Substation not found after update attempt.",
         )
     return topology
 
@@ -183,8 +192,7 @@ async def get(
 
 
 @substation_router.delete(
-    path="/{substation_id}/delete",
-    status_code=status.HTTP_204_NO_CONTENT
+    path="/{substation_id}/delete", status_code=status.HTTP_204_NO_CONTENT
 )
 async def delete(
     substation_id: UUID,
@@ -206,7 +214,7 @@ async def delete(
     """
     try:
         service.delete(substation_id)
-        return None # Return None for 204 No Content
+        return None  # Return None for 204 No Content
     except Exception as e:
         logger.exception("Error deleting substation %s: %s", substation_id, e)
         # Consider raising NotFoundException if applicable from service.delete

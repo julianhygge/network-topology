@@ -24,7 +24,9 @@ class DatabaseException(HyggeException):
 class ServiceException(HyggeException):
     """Base exception for service layer"""
 
-    def __init__(self, message: str = "Service layer exception", code: ErrorCodeEnum = ""):
+    def __init__(
+        self, message: str = "Service layer exception", code: ErrorCodeEnum = ""
+    ):
         self.message = message
         self.code = code
         super().__init__(message, code)

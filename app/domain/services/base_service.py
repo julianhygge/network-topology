@@ -7,8 +7,7 @@ from app.utils.datetime_util import utc_now
 
 
 class BaseService(IService):
-    def __init__(self,
-                 repository: IRepository):
+    def __init__(self, repository: IRepository):
         self.repository = repository
 
     def create(self, user_id: str, **kwargs) -> Dict[str, Any]:

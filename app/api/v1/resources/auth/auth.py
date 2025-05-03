@@ -4,9 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.v1.dependencies.container_instance import get_auth_service
 from app.api.v1.models.requests.auth.auth_request import (
-    OtpRequest, OtpRequestModelResponse, OtpVerificationRequest)
+    OtpRequest,
+    OtpRequestModelResponse,
+    OtpVerificationRequest,
+)
 from app.api.v1.models.responses.auth.auth_response import (
-    OtpVerificationModelResponse, OtpVerificationSuccessModelResponse)
+    OtpVerificationModelResponse,
+    OtpVerificationSuccessModelResponse,
+)
 from app.domain.interfaces.i_auth_service import IAuthService
 from app.exceptions.hygge_exceptions import UnauthorizedError
 from app.utils.logger import logger
@@ -16,8 +21,7 @@ auth_router = APIRouter(tags=["Authorization"])
 
 @auth_router.post("/user", response_model=OtpRequestModelResponse)
 async def request_otp(
-    req_body: OtpRequest,
-    auth_service: IAuthService = Depends(get_auth_service)
+    req_body: OtpRequest, auth_service: IAuthService = Depends(get_auth_service)
 ) -> OtpRequestModelResponse:
     """
     Request an OTP (One-Time Password) for phone number verification.
@@ -41,14 +45,14 @@ async def request_otp(
 
 
 @auth_router.post(
-    '/{state_token}',
+    "/{state_token}",
     response_model=OtpVerificationSuccessModelResponse,
-    responses={401: {"model": OtpVerificationModelResponse}}
+    responses={401: {"model": OtpVerificationModelResponse}},
 )
 async def verify_otp(
     state_token: str,
     req_body: OtpVerificationRequest,
-    auth_service: IAuthService = Depends(get_auth_service)
+    auth_service: IAuthService = Depends(get_auth_service),
 ) -> OtpVerificationSuccessModelResponse | OtpVerificationModelResponse:
     """
     Verify the provided OTP against the state token.
@@ -66,10 +70,10 @@ async def verify_otp(
         UnauthorizedError: If verification fails unexpectedly.
     """
     body = auth_service.verify_otp(req_body, state_token)
-    if body['status'] in ('OTP_RESTRICTED', 'OTP_FAILED'):
+    if body["status"] in ("OTP_RESTRICTED", "OTP_FAILED"):
         return OtpVerificationModelResponse(**body)
-    if body and body['status'] == 'SUCCESS':
+    if body and body["status"] == "SUCCESS":
         return OtpVerificationSuccessModelResponse(**body)
     # Should not happen if service logic is correct, but raise error if it does
-    logger.error("Unexpected OTP verification status: %s", body.get('status'))
+    logger.error("Unexpected OTP verification status: %s", body.get("status"))
     raise UnauthorizedError()

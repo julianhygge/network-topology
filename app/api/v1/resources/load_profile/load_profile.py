@@ -1,9 +1,18 @@
 """API endpoints for managing Load Profiles."""
+
 from io import BytesIO
 from uuid import UUID
 
-from fastapi import (APIRouter, Depends, File, Form, HTTPException, Request,
-                     UploadFile, status)
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.responses import JSONResponse
 from peewee import DoesNotExist
 from starlette.responses import StreamingResponse
@@ -11,15 +20,24 @@ from starlette.responses import StreamingResponse
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
-    get_load_profile_service, get_predefined_template_service)
+    get_load_profile_service,
+    get_predefined_template_service,
+)
 from app.api.v1.models.requests.load_profile.load_profile_update import (
-    LoadGenerationEngineRequest, LoadGenerationEngineResponse,
-    LoadPredefinedTemplateRequest, LoadProfileBuilderItemsRequest)
+    LoadGenerationEngineRequest,
+    LoadGenerationEngineResponse,
+    LoadPredefinedTemplateRequest,
+    LoadProfileBuilderItemsRequest,
+)
 from app.api.v1.models.responses.load_profile.load_profile_response import (
-    LoadPredefinedMasterTemplateResponse, LoadPredefinedTemplateListResponse,
-    LoadPredefinedTemplateResponse, LoadProfileBuilderItemResponse,
-    LoadProfileBuilderItemsResponse, LoadProfileResponse,
-    LoadProfilesListResponse)
+    LoadPredefinedMasterTemplateResponse,
+    LoadPredefinedTemplateListResponse,
+    LoadPredefinedTemplateResponse,
+    LoadProfileBuilderItemResponse,
+    LoadProfileBuilderItemsResponse,
+    LoadProfileResponse,
+    LoadProfilesListResponse,
+)
 from app.domain.interfaces.i_service import IService
 
 load_router = APIRouter(tags=["Load Profile"])
@@ -50,7 +68,9 @@ async def delete_load_profile(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@load_router.get("/", response_model=LoadProfilesListResponse, status_code=status.HTTP_200_OK)
+@load_router.get(
+    "/", response_model=LoadProfilesListResponse, status_code=status.HTTP_200_OK
+)
 async def list_load_profiles(
     request: Request,
     house_id: UUID,
@@ -73,7 +93,9 @@ async def list_load_profiles(
         HTTPException: 400 if an error occurs during retrieval.
     """
     try:
-        return await _get_load_profiles(load_profile_service, user_id, house_id, request)
+        return await _get_load_profiles(
+            load_profile_service, user_id, house_id, request
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -87,11 +109,10 @@ async def _get_load_profiles(load_profile_service, user_id, house_id, request):
         download = f"{download}download/file?profile_id={profile['profile_id']}"
         delete = self.replace("/upload/", "/")
         delete = f"{delete}{profile['profile_id']}/"
-        profile_data = {**profile, "links": {
-            "self": self,
-            "delete": delete,
-            "download": download
-        }}
+        profile_data = {
+            **profile,
+            "links": {"self": self, "delete": delete, "download": download},
+        }
         profile_response = LoadProfileResponse(**profile_data)
         items.append(profile_response)
     response = LoadProfilesListResponse(items=items)
@@ -129,11 +150,7 @@ async def upload_load_profile(
 
     try:
         data = await load_profile_service.upload_profile_service_file(
-            user_id,
-            profile_name,
-            file,
-            interval_15_minutes,
-            house_id
+            user_id, profile_name, file, interval_15_minutes, house_id
         )
         self = str(request.url.path)
         download = self.replace("/upload/", "/download/")
@@ -141,22 +158,17 @@ async def upload_load_profile(
         delete = self.replace("/upload/", "/")
         delete = f"{delete}{data['profile_id']}/"
         content = {
-            "house_id": str(data['house_id']),
+            "house_id": str(data["house_id"]),
             "message": "File uploaded successfully",
-            "profile_id": data['profile_id'],
-            "file_name": data['file_name'],
-            "user": data['user'],
-            "links": {
-                "download": download,
-                "delete": delete,
-                "self": self
-            }
+            "profile_id": data["profile_id"],
+            "file_name": data["file_name"],
+            "user": data["user"],
+            "links": {"download": download, "delete": delete, "self": self},
         }
         return JSONResponse(content=content, status_code=status.HTTP_202_ACCEPTED)
-    except Exception as exc: # pylint: disable=broad-exception-caught
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         return JSONResponse(
-            content={"message": str(exc)},
-            status_code=status.HTTP_400_BAD_REQUEST
+            content={"message": str(exc)}, status_code=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -185,7 +197,9 @@ async def download_load_profile_file(
         return StreamingResponse(
             BytesIO(file_record.content),
             media_type="application/octet-stream",
-            headers={"Content-Disposition": f"attachment;filename={file_record.filename}"}
+            headers={
+                "Content-Disposition": f"attachment;filename={file_record.filename}"
+            },
         )
     except DoesNotExist as exc:
         raise HTTPException(status_code=404, detail="File not found") from exc
@@ -195,7 +209,7 @@ async def download_load_profile_file(
     "/houses/{house_id}/load-profile-items",
     response_model=LoadProfileBuilderItemsResponse,
     description="Save load profile builder items for a specific house",
-    response_description="The saved load profile builder items"
+    response_description="The saved load profile builder items",
 )
 async def save_load_profile_builder_items(
     request: Request,
@@ -222,7 +236,9 @@ async def save_load_profile_builder_items(
     """
     try:
         items_dicts = [item.model_dump() for item in items.items]
-        updated_items, load_profile_id = service.save_load_profile_items(user_id, house_id, items_dicts)
+        updated_items, load_profile_id = service.save_load_profile_items(
+            user_id, house_id, items_dicts
+        )
         updated_items_response = [
             LoadProfileBuilderItemResponse(
                 id=item.id,
@@ -233,42 +249,41 @@ async def save_load_profile_builder_items(
                 electrical_device_id=item.electrical_device_id.id,
                 rating_watts=item.rating_watts,
                 quantity=item.quantity,
-                hours=item.hours
-            ) for item in updated_items
+                hours=item.hours,
+            )
+            for item in updated_items
         ]
-        index = request.url.path.find('/load/')
+        index = request.url.path.find("/load/")
         if index != -1:
-            new_url_path = request.url.path[:index + len('/load/')]
+            new_url_path = request.url.path[: index + len("/load/")]
         else:
             new_url_path = request.url.path
         delete = f"{new_url_path}{load_profile_id}/"
         return LoadProfileBuilderItemsResponse(
             message="Items retrieved successfully",
-            links={
-                "delete": delete
-            },
+            links={"delete": delete},
             profile_id=load_profile_id,
-            items=updated_items_response
+            items=updated_items_response,
         )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve)) from ve
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="An unexpected error occurred") from exc
+        raise HTTPException(
+            status_code=500, detail="An unexpected error occurred"
+        ) from exc
 
 
 @load_router.get(
     "/houses/{house_id}/load-profile-items",
     response_model=LoadProfileBuilderItemsResponse,
     description="Get builder items for a specific house",
-    response_description="The current load profile builder items"
+    response_description="The current load profile builder items",
 )
 async def get_profile_builder_items(
     request: Request,
     house_id: UUID,
     service=Depends(get_load_profile_service),
-    user_id: str = Depends(
-        permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
-    ),
+    user_id: str = Depends(permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)),
 ):
     """
     Get builder items for a specific house.
@@ -286,7 +301,9 @@ async def get_profile_builder_items(
         HTTPException: 400 for value errors, 500 for unexpected errors.
     """
     try:
-        updated_items, load_profile_id = service.get_load_profile_builder_items(user_id, house_id)
+        updated_items, load_profile_id = service.get_load_profile_builder_items(
+            user_id, house_id
+        )
         updated_items_response = [
             LoadProfileBuilderItemResponse(
                 id=item.id,
@@ -297,35 +314,35 @@ async def get_profile_builder_items(
                 electrical_device_id=item.electrical_device_id.id,
                 rating_watts=item.rating_watts,
                 quantity=item.quantity,
-                hours=item.hours
+                hours=item.hours,
             )
             for item in updated_items
         ]
-        index = request.url.path.find('/load/')
+        index = request.url.path.find("/load/")
         if index != -1:
-            new_url_path = request.url.path[:index + len('/load/')]
+            new_url_path = request.url.path[: index + len("/load/")]
         else:
             new_url_path = request.url.path
         delete = f"{new_url_path}{load_profile_id}/"
         return LoadProfileBuilderItemsResponse(
             message="Items retrieved successfully",
-            links={
-                "delete": delete
-            },
+            links={"delete": delete},
             profile_id=load_profile_id,
-            items=updated_items_response
+            items=updated_items_response,
         )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve)) from ve
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="An unexpected error occurred") from exc
+        raise HTTPException(
+            status_code=500, detail="An unexpected error occurred"
+        ) from exc
 
 
 @load_router.post(
     "/houses/{house_id}/generation-engine",
     response_model=LoadGenerationEngineResponse,
     description="Save load generation engine data for a specific house",
-    response_description="The saved load generation engine data"
+    response_description="The saved load generation engine data",
 )
 async def save_load_generation_engine(
     request: Request,
@@ -352,11 +369,13 @@ async def save_load_generation_engine(
     """
     try:
 
-        engine = service.save_load_generation_engine(user_id, house_id, data.model_dump())
+        engine = service.save_load_generation_engine(
+            user_id, house_id, data.model_dump()
+        )
 
-        index = request.url.path.find('/load/')
+        index = request.url.path.find("/load/")
         if index != -1:
-            new_url_path = request.url.path[:index + len('/load/')]
+            new_url_path = request.url.path[: index + len("/load/")]
         else:
             new_url_path = request.url.path
         delete = f"{new_url_path}{engine.profile_id.id}/"
@@ -372,9 +391,7 @@ async def save_load_generation_engine(
             max_demand_kw=engine.max_demand_kw,
             created_on=engine.created_on,
             modified_on=engine.modified_on,
-            links={
-                "delete": delete
-            }
+            links={"delete": delete},
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -384,7 +401,7 @@ async def save_load_generation_engine(
     "/houses/{house_id}/generation-engine",
     response_model=LoadGenerationEngineResponse,
     description="Get load generation engine data for a specific house",
-    response_description="The load generation engine data"
+    response_description="The load generation engine data",
 )
 async def get_load_generation_engine(
     request: Request,
@@ -411,11 +428,13 @@ async def get_load_generation_engine(
 
         engine = service.get_load_generation_engine(user_id, house_id)
         if engine is None:
-            raise HTTPException(status_code=404, detail="Load generation engine data not found")
+            raise HTTPException(
+                status_code=404, detail="Load generation engine data not found"
+            )
 
-        index = request.url.path.find('/load/')
+        index = request.url.path.find("/load/")
         if index != -1:
-            new_url_path = request.url.path[:index + len('/load/')]
+            new_url_path = request.url.path[: index + len("/load/")]
         else:
             new_url_path = request.url.path
         delete = f"{new_url_path}{engine.profile_id.id}/"
@@ -431,9 +450,7 @@ async def get_load_generation_engine(
             max_demand_kw=engine.max_demand_kw,
             created_on=engine.created_on,
             modified_on=engine.modified_on,
-            links={
-                "delete": delete
-            }
+            links={"delete": delete},
         )
     except HTTPException:
         raise
@@ -445,7 +462,7 @@ async def get_load_generation_engine(
     "/houses/{house_id}/load-predefined-template",
     response_model=LoadPredefinedTemplateResponse,
     description="Create or update a load predefined template for a specific house",
-    response_description="The created or updated load predefined template"
+    response_description="The created or updated load predefined template",
 )
 async def create_or_update_load_predefined_template(
     request: Request,
@@ -472,13 +489,11 @@ async def create_or_update_load_predefined_template(
     """
     try:
         template = service.create_or_update_load_predefined_template(
-            user_id,
-            house_id,
-            template_data.template_id
+            user_id, house_id, template_data.template_id
         )
-        index = request.url.path.find('/load/')
+        index = request.url.path.find("/load/")
         if index != -1:
-            new_url_path = request.url.path[:index + len('/load/')]
+            new_url_path = request.url.path[: index + len("/load/")]
         else:
             new_url_path = request.url.path
         delete = f"{new_url_path}{template.profile_id.id}/"
@@ -490,9 +505,7 @@ async def create_or_update_load_predefined_template(
             name=template.template_id.name,
             power_kw=template.template_id.power_kw,
             profile_source=template.profile_id.source,
-            links={
-                "delete": delete
-            }
+            links={"delete": delete},
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -502,7 +515,7 @@ async def create_or_update_load_predefined_template(
     "/houses/{house_id}/load-predefined-template",
     response_model=LoadPredefinedTemplateResponse,
     description="Get the load predefined template for a specific house",
-    response_description="The load predefined template"
+    response_description="The load predefined template",
 )
 async def get_load_predefined_template(
     request: Request,
@@ -528,10 +541,12 @@ async def get_load_predefined_template(
     try:
         template = service.get_load_predefined_template(user_id, house_id)
         if template is None:
-            raise HTTPException(status_code=404, detail="Load predefined template not found")
-        index = request.url.path.find('/load/')
+            raise HTTPException(
+                status_code=404, detail="Load predefined template not found"
+            )
+        index = request.url.path.find("/load/")
         if index != -1:
-            new_url_path = request.url.path[:index + len('/load/')]
+            new_url_path = request.url.path[: index + len("/load/")]
         else:
             new_url_path = request.url.path
 
@@ -543,9 +558,7 @@ async def get_load_predefined_template(
             name=template.template_id.name,
             power_kw=template.template_id.power_kw,
             profile_source=template.profile_id.source,
-            links={
-                "delete": delete
-            }
+            links={"delete": delete},
         )
     except HTTPException:
         raise
@@ -553,7 +566,7 @@ async def get_load_predefined_template(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@load_router.get('/load_templates', response_model=LoadPredefinedTemplateListResponse)
+@load_router.get("/load_templates", response_model=LoadPredefinedTemplateListResponse)
 async def get_load_templates(
     service: IService = Depends(get_predefined_template_service),
     _: str = Depends(permission(Resources.ELECTRICALS, Permission.RETRIEVE)),

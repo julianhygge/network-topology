@@ -29,6 +29,6 @@ def to_json(json_dict):
 
 def from_json(json_string):
     if not isinstance(json_string, str):
-        return json.loads(json_string.decode('utf-8'))
+        return json.loads(json_string.decode("utf-8"))
     else:
         return json.loads(json_string)
