@@ -4,7 +4,7 @@ from dependency_injector import containers, providers
 
 from app.config.configuration import ApiConfiguration
 from app.config.i_configuration import LoadProfileStrategy
-from app.data.interfaces.irepository import IRepository
+from app.data.interfaces.i_repository import IRepository
 from app.data.repositories.authorization.auth_attempt_repository import (
     AuthAttemptRepository,
 )

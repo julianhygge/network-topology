@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from typing import List
-from app.data.interfaces.irepository import IRepository, T
+from app.data.interfaces.i_repository import IRepository, T
 
 
 class ILoadProfileDetailsRepository(IRepository[T]):

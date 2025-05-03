@@ -1,7 +1,7 @@
 import enum
 import uuid
-from app.data.interfaces.iauth_attempt_repository import IAuthAttemptRepository
-from app.data.interfaces.iuser_repository import IUserRepository
+from app.data.interfaces.i_auth_attempt_repository import IAuthAttemptRepository
+from app.data.interfaces.i_user_repository import IUserRepository
 from app.data.repositories.authorization.user_group_rel_repository import UserGroupRelRepository
 from app.domain.interfaces.i_auth_service import IAuthService
 from app.domain.interfaces.i_sms_service import ISmsService

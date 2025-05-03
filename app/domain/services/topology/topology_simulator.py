@@ -2,8 +2,8 @@ from typing import List
 from decimal import Decimal
 from uuid import UUID
 from app.data.interfaces.dtos.topology_dtos import HouseDTO, TransformerDTO
-from app.data.interfaces.topology.ihouse_repository import IHouseRepository
-from app.data.interfaces.topology.itopology_simulator import ITopologySimulator
+from app.data.interfaces.topology.i_house_repository import IHouseRepository
+from app.data.interfaces.topology.i_topology_simulator import ITopologySimulator
 from app.data.interfaces.topology.itransformer_repository import ITransformerRepository
 
 

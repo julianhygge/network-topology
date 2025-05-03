@@ -1,6 +1,6 @@
 from typing import Any, Union, Tuple
 
-from app.data.interfaces.irepository import IRepository
+from app.data.interfaces.i_repository import IRepository
 from app.data.schemas.enums.enums import NodeStatusEnum
 from app.data.schemas.transactional.topology_schema import House, Transformer
 from app.domain.services.base_service import BaseService

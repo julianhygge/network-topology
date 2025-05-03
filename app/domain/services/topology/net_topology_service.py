@@ -1,7 +1,7 @@
 from typing import Dict, Any, List
 from uuid import UUID
-from app.data.interfaces.irepository import IRepository
-from app.data.interfaces.topology.inode_repository import INodeRepository
+from app.data.interfaces.i_repository import IRepository
+from app.data.interfaces.topology.i_node_repository import INodeRepository
 from app.data.schemas.enums.enums import NodeStatusEnum
 from app.domain.interfaces.enums.node_type import NodeType
 from app.domain.interfaces.net_topology.i_net_topology_service import INetTopologyService

@@ -1,7 +1,7 @@
 import uuid
 from typing import List, Dict, Any, Optional, Union
 
-from app.data.interfaces.irepository import IRepository
+from app.data.interfaces.i_repository import IRepository
 from app.domain.interfaces.i_service import IService
 from app.utils.datetime_util import utc_now
 

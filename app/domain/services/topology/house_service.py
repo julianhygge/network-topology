@@ -1,6 +1,6 @@
 import uuid
 from typing import Union, Optional, Dict, Any
-from app.data.interfaces.irepository import IRepository
+from app.data.interfaces.i_repository import IRepository
 from app.domain.services.topology.topology_service_base import TopologyServiceBase
 
 

@@ -7,7 +7,7 @@ service instances into route handlers.
 """
 from app.api.v1.dependencies.dependencies_container import Container
 from app.config.configuration import ApiConfiguration
-from app.data.interfaces.topology.itopology_simulator import ITopologySimulator
+from app.data.interfaces.topology.i_topology_simulator import ITopologySimulator
 from app.domain.interfaces.i_auth_service import IAuthService
 from app.domain.interfaces.i_mqtt_service import IMQTTService
 from app.domain.interfaces.i_node_service import INodeService

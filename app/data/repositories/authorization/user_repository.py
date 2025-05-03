@@ -1,4 +1,4 @@
-from app.data.interfaces.irepository import T
+from app.data.interfaces.i_repository import T
 from app.data.interfaces.iuser_repository import IUserRepository
 from peewee import IntegrityError
 from app.data.schemas.auth.auth_schema import UserGroupRel

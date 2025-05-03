@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from app.data.interfaces.irepository import IRepository, T
+from app.data.interfaces.i_repository import IRepository, T
 from typing import List, Optional
 from uuid import UUID
 from app.data.schemas.transactional.topology_schema import Locality, Substation, Node

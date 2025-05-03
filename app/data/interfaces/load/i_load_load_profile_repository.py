@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import List
 from uuid import UUID
 
-from app.data.interfaces.irepository import IRepository, T
+from app.data.interfaces.i_repository import IRepository, T
 
 
 class ILoadProfileRepository(IRepository[T]):
