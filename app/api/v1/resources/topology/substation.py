@@ -32,7 +32,7 @@ substation_router = APIRouter(tags=["Substations"])
 @substation_router.get("/{substation_id}", response_model=SubstationTopology)
 async def get_substation_topology(
     substation_id: UUID,
-    _: str = Depends(permission(Resources.Substations, Permission.Retrieve)), # Corrected permission
+    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)), # Corrected permission
     service: INetTopologyService = Depends(get_net_topology_service),
 ) -> SubstationTopology:
     """
@@ -63,7 +63,7 @@ async def get_substation_topology(
 async def update_substation_topology(
     substation_id: UUID4,
     topology_data: SubstationTopologyRequestModel,
-    user_id: str = Depends(permission(Resources.Substations, Permission.Update)),
+    user_id: str = Depends(permission(Resources.SUBSTATIONS, Permission.UPDATE)),
     service: INetTopologyService = Depends(get_net_topology_service),
 ) -> SubstationTopology:
     """
@@ -101,7 +101,7 @@ async def update_substation_topology(
 @substation_router.post("/", response_model=SubstationResponseModel)
 async def create(
     data: SubstationRequestModel,
-    user_id: UUID = Depends(permission(Resources.Substations, Permission.Create)),
+    user_id: UUID = Depends(permission(Resources.SUBSTATIONS, Permission.CREATE)),
     service: IService = Depends(get_substation_service),
 ) -> SubstationResponseModel:
     """
@@ -124,7 +124,7 @@ async def create(
 @substation_router.post("/generate", response_model=SubstationResponseModelList)
 async def generate_substations(
     data: SubstationsRequestModel,
-    user_id: UUID = Depends(permission(Resources.Substations, Permission.Create)),
+    user_id: UUID = Depends(permission(Resources.SUBSTATIONS, Permission.CREATE)),
     service: ISubstationService = Depends(get_substation_service),
 ) -> SubstationResponseModelList:
     """
@@ -156,7 +156,7 @@ async def generate_substations(
 
 @substation_router.get("", response_model=SubstationResponseModelList)
 async def get(
-    _: str = Depends(permission(Resources.Substations, Permission.Retrieve)),
+    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)),
     service: IService = Depends(get_substation_service),
 ) -> SubstationResponseModelList:
     """
@@ -194,7 +194,7 @@ async def get(
 async def delete(
     substation_id: UUID,
     service: IService = Depends(get_substation_service),
-    _: str = Depends(permission(Resources.Substations, Permission.Delete)),
+    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.DELETE)),
 ) -> None:
     """
     Delete a substation.

@@ -1,3 +1,5 @@
+"""Configuration for the API."""
+
 import os
 import glob
 from typing import Any, Optional
@@ -21,6 +23,9 @@ from app.config.i_configuration import (
 
 
 class ApiConfiguration(IConfiguration):
+    """
+    Implementation of IConfiguration using Dynaconf for loading settings.
+    """
     _settings: Dynaconf
 
     def __init__(self):
@@ -73,16 +78,22 @@ class ApiConfiguration(IConfiguration):
         return SessionConfig(
             session_token_secret=secret,
             session_validity_in_hours=int(s.get("session_validity_in_hours")),
-            session_validity_in_hours_refresh_token=int(s.get("session_validity_in_hours_refresh_token")),
+            session_validity_in_hours_refresh_token=int(
+                s.get("session_validity_in_hours_refresh_token")
+            ),
         )
 
     @property
     def otp(self) -> OTPConfig:
         s = self._settings
         return OTPConfig(
-            max_otp_verification_attempts=int(s.get("otp_max_otp_verification_attempts")),
+            max_otp_verification_attempts=int(
+                s.get("otp_max_otp_verification_attempts")
+            ),
             max_resend_otp_attempts=int(s.get("otp_max_resend_otp_attempts")),
-            max_resend_otp_attempt_window_in_min=int(s.get("otp_max_resend_otp_attempt_window_in_min")),
+            max_resend_otp_attempt_window_in_min=int(
+                s.get("otp_max_resend_otp_attempt_window_in_min")
+            ),
             otp_validity_in_secs=int(s.get("otp_validity_in_secs")),
             master_otp_admin=int(s.get("otp_master_otp_admin")),
             master_otp_user=int(s.get("otp_master_otp_user")),
@@ -122,16 +133,34 @@ class ApiConfiguration(IConfiguration):
 
         return SimulationConfig(
             initial_battery_soc=float(s.get("simulation_initial_battery_soc")),
-            solar_peak_percentage_for_charging=float(s.get("simulation_solar_peak_percentage_for_charging")),
-            load_peak_percentage_for_discharging=float(s.get("simulation_load_peak_percentage_for_discharging")),
-            charge_battery_efficiency=float(s.get("simulation_charge_battery_efficiency")),
-            discharge_battery_efficiency=float(s.get("simulation_discharge_battery_efficiency")),
+            solar_peak_percentage_for_charging=float(
+                s.get("simulation_solar_peak_percentage_for_charging")
+            ),
+            load_peak_percentage_for_discharging=float(
+                s.get("simulation_load_peak_percentage_for_discharging")
+            ),
+            charge_battery_efficiency=float(
+                s.get("simulation_charge_battery_efficiency")
+            ),
+            discharge_battery_efficiency=float(
+                s.get("simulation_discharge_battery_efficiency")
+            ),
             default_panel_capacity=float(s.get("simulation_default_panel_capacity")),
-            default_battery_capacity_required=float(s.get("simulation_default_battery_capacity_required")),
-            battery_dynamic_percentage_allocation=float(s.get("simulation_battery_dynamic_percentage_allocation")),
-            battery_base_percentage_allocation=float(s.get("simulation_battery_base_percentage_allocation")),
-            battery_dynamic_allocation=float(dyn_alloc_old) if dyn_alloc_old is not None else None,
-            battery_base_allocation=float(base_alloc_old) if base_alloc_old is not None else None,
+            default_battery_capacity_required=float(
+                s.get("simulation_default_battery_capacity_required")
+            ),
+            battery_dynamic_percentage_allocation=float(
+                s.get("simulation_battery_dynamic_percentage_allocation")
+            ),
+            battery_base_percentage_allocation=float(
+                s.get("simulation_battery_base_percentage_allocation")
+            ),
+            battery_dynamic_allocation=float(dyn_alloc_old)
+            if dyn_alloc_old is not None
+            else None,
+            battery_base_allocation=float(base_alloc_old)
+            if base_alloc_old is not None
+            else None,
         )
 
     @property
@@ -154,7 +183,10 @@ class ApiConfiguration(IConfiguration):
             try:
                 strategy_enum = LoadProfileStrategy(strategy_str)
             except ValueError:
-                print(f"Warning: Invalid load_profile_interpolation_strategy '{strategy_str}'. Using default.")
+                print(
+                    "Warning: Invalid load_profile_interpolation_strategy "
+                    f"'{strategy_str}'. Using default."
+                )
 
         return LoadProfileConfig(
             interpolation_strategy=strategy_enum,

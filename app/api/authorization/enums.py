@@ -1,23 +1,27 @@
+"""Enums for authorization resources and permissions."""
+
 import enum
 
 
 class Resources(enum.Enum):
-    Users = 'users'
-    Groups = 'groups'
-    Roles = 'roles'
-    Houses = 'houses'
-    Accounts = 'accounts'
-    Localities = 'localities'
-    Substations = 'substations'
-    Transformers = 'transformers'
-    Electricals = 'electricals'
-    LoadProfileDetails = 'load_profile_details'
-    LoadProfiles = 'load_profiles'
+    """Enum representing available resources for authorization."""
+    USERS = 'users'
+    GROUPS = 'groups'
+    ROLES = 'roles'
+    HOUSES = 'houses'
+    ACCOUNTS = 'accounts'
+    LOCALITIES = 'localities'
+    SUBSTATIONS = 'substations'
+    TRANSFORMERS = 'transformers'
+    ELECTRICALS = 'electricals'
+    LOAD_PROFILE_DETAILS = 'load_profile_details'
+    LOAD_PROFILES = 'load_profiles'
 
 
 class Permission(enum.Enum):
-    Create = 'create'
-    Retrieve = 'retrieve'
-    Update = 'update'
-    Delete = 'delete'
-    Search = 'search'
+    """Enum representing available permissions for authorization."""
+    CREATE = 'create'
+    RETRIEVE = 'retrieve'
+    UPDATE = 'update'
+    DELETE = 'delete'
+    SEARCH = 'search'

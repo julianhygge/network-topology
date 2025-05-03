@@ -22,7 +22,7 @@ house_router = APIRouter(tags=["Houses"])
 async def update_house(
     house_id: UUID4,
     house_data: HouseUpdateRequestModel,
-    _: str = Depends(permission(Resources.Houses, Permission.Update)),
+    _: str = Depends(permission(Resources.HOUSES, Permission.UPDATE)),
     service: INetTopologyService = Depends(get_net_topology_service)
 ) -> HouseResponseModel:
     """
@@ -56,7 +56,7 @@ async def update_house(
 @house_router.get("/{house_id}", response_model=HouseResponseModel)
 async def get(
     house_id: UUID4,
-    _: str = Depends(permission(Resources.Houses, Permission.Retrieve)), # Corrected permission
+    _: str = Depends(permission(Resources.HOUSES, Permission.RETRIEVE)), # Corrected permission
     service: IService = Depends(get_house_service)
 ) -> HouseResponseModel:
     """

@@ -1,46 +1,90 @@
+"""API endpoints for managing Load Profiles."""
 from io import BytesIO
 from uuid import UUID
 
-from fastapi import File, Form, APIRouter, HTTPException, status, Request, UploadFile, Depends
+from fastapi import (
+    File, Form, APIRouter, HTTPException, status, Request, UploadFile, Depends
+)
 from fastapi.responses import JSONResponse
 from peewee import DoesNotExist
 from starlette.responses import StreamingResponse
 
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
-from app.api.v1.dependencies.container_instance import get_load_profile_service, get_predefined_template_service
-from app.api.v1.models.requests.load_profile.load_profile_update import LoadProfileBuilderItemsRequest, \
-    LoadGenerationEngineResponse, LoadGenerationEngineRequest, LoadPredefinedTemplateRequest
-from app.api.v1.models.responses.load_profile.load_profile_response import LoadProfileResponse, \
-    LoadProfilesListResponse, LoadProfileBuilderItemsResponse, LoadProfileBuilderItemResponse, \
-    LoadPredefinedTemplateResponse, LoadPredefinedTemplateListResponse, LoadPredefinedMasterTemplateResponse
+from app.api.v1.dependencies.container_instance import (
+    get_load_profile_service, get_predefined_template_service
+)
+from app.api.v1.models.requests.load_profile.load_profile_update import (
+    LoadProfileBuilderItemsRequest,
+    LoadGenerationEngineResponse,
+    LoadGenerationEngineRequest,
+    LoadPredefinedTemplateRequest,
+)
+from app.api.v1.models.responses.load_profile.load_profile_response import (
+    LoadProfileResponse,
+    LoadProfilesListResponse,
+    LoadProfileBuilderItemsResponse,
+    LoadProfileBuilderItemResponse,
+    LoadPredefinedTemplateResponse,
+    LoadPredefinedTemplateListResponse,
+    LoadPredefinedMasterTemplateResponse,
+)
 from app.domain.interfaces.i_service import IService
 
 load_router = APIRouter(tags=["Load Profile"])
 
 
 @load_router.delete("/{load_profile_id}/", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_load_profile(load_profile_id: int,
-                              _=Depends(permission(Resources.LoadProfiles, Permission.Delete)),
-                              load_profile_service=Depends(get_load_profile_service)):
+async def delete_load_profile(
+    load_profile_id: int,
+    _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.DELETE)),
+    load_profile_service=Depends(get_load_profile_service),
+):
+    """
+    Delete a specific load profile by its ID.
+
+    Args:
+        load_profile_id: The ID of the load profile to delete.
+        _: Dependency to check delete permission.
+        load_profile_service: Injected load profile service instance.
+
+    Raises:
+        HTTPException: 404 if the profile is not found, 400 for other errors.
+    """
     try:
         result = load_profile_service.delete_profile(load_profile_id)
         if not result:
             raise HTTPException(status_code=404, detail="Load profile not found")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @load_router.get("/", response_model=LoadProfilesListResponse, status_code=status.HTTP_200_OK)
-async def list_load_profiles(request: Request,
-                             house_id: UUID,
-                             user_id: str = Depends(permission(Resources.LoadProfiles,
-                                                               Permission.Retrieve)),
-                             load_profile_service=Depends(get_load_profile_service)):
+async def list_load_profiles(
+    request: Request,
+    house_id: UUID,
+    user_id: str = Depends(permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)),
+    load_profile_service=Depends(get_load_profile_service),
+):
+    """
+    List all load profiles associated with a specific house for the user.
+
+    Args:
+        request: The incoming request object.
+        house_id: The ID of the house to list profiles for.
+        user_id: The ID of the user making the request (from permission).
+        load_profile_service: Injected load profile service instance.
+
+    Returns:
+        A list of load profiles with links.
+
+    Raises:
+        HTTPException: 400 if an error occurs during retrieval.
+    """
     try:
         return await _get_load_profiles(load_profile_service, user_id, house_id, request)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 async def _get_load_profiles(load_profile_service, user_id, house_id, request):
@@ -64,15 +108,31 @@ async def _get_load_profiles(load_profile_service, user_id, house_id, request):
 
 
 @load_router.post("/upload/", status_code=status.HTTP_202_ACCEPTED)
+# pylint: disable=too-many-arguments
 async def upload_load_profile(
-        request: Request,
-        file: UploadFile = File(...),
-        interval_15_minutes: bool = Form(...),
-        house_id: UUID = Form(...),
-        profile_name: str = Form(None),
-        user_id: str = Depends(permission(Resources.LoadProfiles, Permission.Create)),
-        load_profile_service=Depends(get_load_profile_service)
+    request: Request,
+    file: UploadFile = File(...),
+    interval_15_minutes: bool = Form(...),
+    house_id: UUID = Form(...),
+    profile_name: str = Form(None),
+    user_id: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
+    load_profile_service=Depends(get_load_profile_service),
 ):
+    """
+    Upload a load profile file for a specific house.
+
+    Args:
+        request: The incoming request object.
+        file: The uploaded file.
+        interval_15_minutes: Flag indicating if the data is in 15-min intervals.
+        house_id: The ID of the house the profile belongs to.
+        profile_name: Optional name for the profile (defaults to filename).
+        user_id: The ID of the user uploading the file (from permission).
+        load_profile_service: Injected load profile service instance.
+
+    Returns:
+        JSONResponse indicating success or failure, with links.
+    """
     if not profile_name:
         profile_name = file.filename
 
@@ -102,21 +162,42 @@ async def upload_load_profile(
             }
         }
         return JSONResponse(content=content, status_code=status.HTTP_202_ACCEPTED)
-    except Exception as e:
-        return JSONResponse(content={"message": str(e)}, status_code=status.HTTP_400_BAD_REQUEST)
+    except Exception as exc: # pylint: disable=broad-exception-caught
+        return JSONResponse(
+            content={"message": str(exc)},
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @load_router.get("/download/file", status_code=status.HTTP_202_ACCEPTED)
 async def download_load_profile_file(
-        profile_id: int,
-        service=Depends(get_load_profile_service),
-        _: str = Depends(permission(Resources.LoadProfiles, Permission.Retrieve))):
+    profile_id: int,
+    service=Depends(get_load_profile_service),
+    _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)),
+):
+    """
+    Download the file content of a specific load profile.
+
+    Args:
+        profile_id: The ID of the load profile file to download.
+        service: Injected load profile service instance.
+        _: Dependency to check retrieve permission.
+
+    Returns:
+        StreamingResponse containing the file content.
+
+    Raises:
+        HTTPException: 404 if the file is not found.
+    """
     try:
         file_record = service.get_load_profile_file(profile_id)
-        return StreamingResponse(BytesIO(file_record.content), media_type="application/octet-stream",
-                                 headers={"Content-Disposition": f"attachment;filename={file_record.filename}"})
-    except DoesNotExist:
-        raise HTTPException(status_code=404, detail="File not found")
+        return StreamingResponse(
+            BytesIO(file_record.content),
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f"attachment;filename={file_record.filename}"}
+        )
+    except DoesNotExist as exc:
+        raise HTTPException(status_code=404, detail="File not found") from exc
 
 
 @load_router.post(
@@ -126,12 +207,28 @@ async def download_load_profile_file(
     response_description="The saved load profile builder items"
 )
 async def save_load_profile_builder_items(
-        request: Request,
-        house_id: UUID,
-        items: LoadProfileBuilderItemsRequest,
-        service=Depends(get_load_profile_service),
-        user_id: str = Depends(permission(Resources.LoadProfiles, Permission.Retrieve)),
+    request: Request,
+    house_id: UUID,
+    items: LoadProfileBuilderItemsRequest,
+    service=Depends(get_load_profile_service),
+    user_id: str = Depends(permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)),
 ):
+    """
+    Save load profile builder items for a specific house.
+
+    Args:
+        request: The incoming request object.
+        house_id: The ID of the house.
+        items: The load profile builder items to save.
+        service: Injected load profile service instance.
+        user_id: The ID of the user making the request (from permission).
+
+    Returns:
+        The saved load profile builder items with links.
+
+    Raises:
+        HTTPException: 400 for value errors, 500 for unexpected errors.
+    """
     try:
         items_dicts = [item.model_dump() for item in items.items]
         updated_items, load_profile_id = service.save_load_profile_items(user_id, house_id, items_dicts)
@@ -146,8 +243,7 @@ async def save_load_profile_builder_items(
                 rating_watts=item.rating_watts,
                 quantity=item.quantity,
                 hours=item.hours
-            )
-            for item in updated_items
+            ) for item in updated_items
         ]
         index = request.url.path.find('/load/')
         if index != -1:
@@ -164,9 +260,9 @@ async def save_load_profile_builder_items(
             items=updated_items_response
         )
     except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
-    except Exception:
-        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+        raise HTTPException(status_code=400, detail=str(ve)) from ve
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="An unexpected error occurred") from exc
 
 
 @load_router.get(
@@ -176,11 +272,28 @@ async def save_load_profile_builder_items(
     response_description="The current load profile builder items"
 )
 async def get_profile_builder_items(
-        request: Request,
-        house_id: UUID,
-        service=Depends(get_load_profile_service),
-        user_id: str = Depends(permission(Resources.LoadProfiles, Permission.Retrieve)),
+    request: Request,
+    house_id: UUID,
+    service=Depends(get_load_profile_service),
+    user_id: str = Depends(
+        permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
+    ),
 ):
+    """
+    Get builder items for a specific house.
+
+    Args:
+        request: The incoming request object.
+        house_id: The ID of the house.
+        service: Injected load profile service instance.
+        user_id: The ID of the user making the request (from permission).
+
+    Returns:
+        The current load profile builder items with links.
+
+    Raises:
+        HTTPException: 400 for value errors, 500 for unexpected errors.
+    """
     try:
         updated_items, load_profile_id = service.get_load_profile_builder_items(user_id, house_id)
         updated_items_response = [
@@ -212,9 +325,9 @@ async def get_profile_builder_items(
             items=updated_items_response
         )
     except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
-    except Exception:
-        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+        raise HTTPException(status_code=400, detail=str(ve)) from ve
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="An unexpected error occurred") from exc
 
 
 @load_router.post(
@@ -224,12 +337,28 @@ async def get_profile_builder_items(
     response_description="The saved load generation engine data"
 )
 async def save_load_generation_engine(
-        request: Request,
-        house_id: UUID,
-        data: LoadGenerationEngineRequest,
-        service=Depends(get_load_profile_service),
-        user_id: UUID = Depends(permission(Resources.LoadProfiles, Permission.Create)),
+    request: Request,
+    house_id: UUID,
+    data: LoadGenerationEngineRequest,
+    service=Depends(get_load_profile_service),
+    user_id: UUID = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
 ):
+    """
+    Save load generation engine data for a specific house.
+
+    Args:
+        request: The incoming request object.
+        house_id: The ID of the house.
+        data: The load generation engine data to save.
+        service: Injected load profile service instance.
+        user_id: The ID of the user making the request (from permission).
+
+    Returns:
+        The saved load generation engine data with links.
+
+    Raises:
+        HTTPException: 500 if an error occurs during saving.
+    """
     try:
 
         engine = service.save_load_generation_engine(user_id, house_id, data.model_dump())
@@ -257,7 +386,7 @@ async def save_load_generation_engine(
             }
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @load_router.get(
@@ -267,11 +396,26 @@ async def save_load_generation_engine(
     response_description="The load generation engine data"
 )
 async def get_load_generation_engine(
-        request: Request,
-        house_id: UUID,
-        service=Depends(get_load_profile_service),
-        user_id: UUID = Depends(permission(Resources.LoadProfiles, Permission.Retrieve)),
+    request: Request,
+    house_id: UUID,
+    service=Depends(get_load_profile_service),
+    user_id: UUID = Depends(permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)),
 ):
+    """
+    Get load generation engine data for a specific house.
+
+    Args:
+        request: The incoming request object.
+        house_id: The ID of the house.
+        service: Injected load profile service instance.
+        user_id: The ID of the user making the request (from permission).
+
+    Returns:
+        The load generation engine data with links.
+
+    Raises:
+        HTTPException: 404 if data is not found, 500 for unexpected errors.
+    """
     try:
 
         engine = service.get_load_generation_engine(user_id, house_id)
@@ -303,7 +447,7 @@ async def get_load_generation_engine(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @load_router.post(
@@ -313,12 +457,28 @@ async def get_load_generation_engine(
     response_description="The created or updated load predefined template"
 )
 async def create_or_update_load_predefined_template(
-        request: Request,
-        house_id: UUID,
-        template_data: LoadPredefinedTemplateRequest,
-        service=Depends(get_load_profile_service),
-        user_id: UUID = Depends(permission(Resources.LoadProfiles, Permission.Create)),
+    request: Request,
+    house_id: UUID,
+    template_data: LoadPredefinedTemplateRequest,
+    service=Depends(get_load_profile_service),
+    user_id: UUID = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
 ):
+    """
+    Create or update a load predefined template for a specific house.
+
+    Args:
+        request: The incoming request object.
+        house_id: The ID of the house.
+        template_data: The predefined template data.
+        service: Injected load profile service instance.
+        user_id: The ID of the user making the request (from permission).
+
+    Returns:
+        The created or updated load predefined template with links.
+
+    Raises:
+        HTTPException: 500 if an error occurs during the operation.
+    """
     try:
         template = service.create_or_update_load_predefined_template(
             user_id,
@@ -344,7 +504,7 @@ async def create_or_update_load_predefined_template(
             }
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @load_router.get(
@@ -354,11 +514,26 @@ async def create_or_update_load_predefined_template(
     response_description="The load predefined template"
 )
 async def get_load_predefined_template(
-        request: Request,
-        house_id: UUID,
-        service=Depends(get_load_profile_service),
-        user_id: UUID = Depends(permission(Resources.LoadProfiles, Permission.Retrieve)),
+    request: Request,
+    house_id: UUID,
+    service=Depends(get_load_profile_service),
+    user_id: UUID = Depends(permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)),
 ):
+    """
+    Get the load predefined template for a specific house.
+
+    Args:
+        request: The incoming request object.
+        house_id: The ID of the house.
+        service: Injected load profile service instance.
+        user_id: The ID of the user making the request (from permission).
+
+    Returns:
+        The load predefined template with links.
+
+    Raises:
+        HTTPException: 404 if the template is not found, 500 for unexpected errors.
+    """
     try:
         template = service.get_load_predefined_template(user_id, house_id)
         if template is None:
@@ -384,15 +559,32 @@ async def get_load_predefined_template(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @load_router.get('/load_templates', response_model=LoadPredefinedTemplateListResponse)
-async def get_load_templates(service: IService = Depends(get_predefined_template_service),
-                         _: str = Depends(permission(Resources.Electricals, Permission.Retrieve))):
+async def get_load_templates(
+    service: IService = Depends(get_predefined_template_service),
+    _: str = Depends(permission(Resources.ELECTRICALS, Permission.RETRIEVE)),
+):
+    """
+    Get a list of all predefined load templates.
+
+    Args:
+        service: Injected predefined template service instance.
+        _: Dependency to check retrieve permission.
+
+    Returns:
+        A list of predefined load templates.
+
+    Raises:
+        HTTPException: 400 if an error occurs during retrieval.
+    """
     try:
         body = service.list_all()
-        response = LoadPredefinedTemplateListResponse(items=[LoadPredefinedMasterTemplateResponse(**item) for item in body])
+        response = LoadPredefinedTemplateListResponse(
+            items=[LoadPredefinedMasterTemplateResponse(**item) for item in body]
+        )
         return response
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e

@@ -24,7 +24,7 @@ transformer_router = APIRouter(tags=["Transformers"])
 async def update_transformer(
     transformer_id: UUID4,
     transformer_data: TransformerUpdateRequestModel,
-    user_id: str = Depends(permission(Resources.Transformers, Permission.Update)),
+    user_id: str = Depends(permission(Resources.TRANSFORMERS, Permission.UPDATE)),
     service: INetTopologyService = Depends(get_net_topology_service),
 ) -> TransformerResponseModel:
     """
@@ -59,7 +59,7 @@ async def update_transformer(
 @transformer_router.get("/{transformer_id}", response_model=TransformerResponseModel)
 async def get(
     transformer_id: UUID4,
-    _: str = Depends(permission(Resources.Transformers, Permission.Retrieve)),
+    _: str = Depends(permission(Resources.TRANSFORMERS, Permission.RETRIEVE)),
     service: IService = Depends(get_transformer_service),
 ) -> TransformerResponseModel:
     """

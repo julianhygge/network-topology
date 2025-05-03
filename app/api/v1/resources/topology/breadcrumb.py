@@ -18,7 +18,7 @@ breadcrumb_router = APIRouter(tags=["Breadcrumbs"])
 @breadcrumb_router.get("/nodes/{node_id}/breadcrumb", response_model=BreadcrumbResponseModel)
 async def get_breadcrumb(
     node_id: UUID,
-    _: str = Depends(permission(Resources.Substations, Permission.Retrieve)),
+    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)),
     service: INodeService = Depends(get_node_service)
 ) -> BreadcrumbResponseModel:
     """
@@ -41,10 +41,10 @@ async def get_breadcrumb(
     try:
         breadcrumb = service.get_breadcrumb_navigation_path(node_id)
         if breadcrumb is None: # Assuming service might return None if not found
-             raise NotFoundException(f"Node with ID {node_id} not found.")
+            raise NotFoundException(f"Node with ID {node_id} not found.")
         return breadcrumb
     except NotFoundException as e:
-         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
     except Exception as e:
         logger.exception("Error retrieving breadcrumb for node %s: %s", node_id, e)
         # Use a more generic error for unexpected issues

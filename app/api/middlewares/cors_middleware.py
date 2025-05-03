@@ -1,9 +1,16 @@
+"""Configuration for CORS middleware."""
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from app.api.v1.dependencies.container_instance import get_configuration
 
 
 def add_cors_middleware(app: FastAPI):
+    """
+    Adds CORS middleware to the FastAPI application based on configuration.
+
+    Args:
+        app: The FastAPI application instance.
+    """
     cors_config = get_configuration().cors
 
     app.add_middleware(
