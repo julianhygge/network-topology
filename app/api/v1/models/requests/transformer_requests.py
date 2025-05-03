@@ -56,7 +56,7 @@ class TransformerUpdateRequestModel(BaseModel):
 
     max_capacity_kw: Optional[Decimal] = Field(None, example="28.9")
     allow_export: bool = Field(..., example="True")
-    name: Optional[str] = Field(None, example="Shantipuram")
+    name: Optional[str] = Field(None, example="Shanti")
     backward_efficiency: Optional[Decimal] = Field(None, example="5.4")
     primary_ampacity: Optional[Decimal] = Field(None, example="5.3")
     secondary_ampacity: Optional[Decimal] = Field(None, example="50.7")
