@@ -3,7 +3,7 @@ from uuid import UUID
 
 from peewee import DoesNotExist
 
-from app.data.interfaces.load.i_load_generation_enginer_repository import (
+from app.data.interfaces.load.i_load_generation_engine_repository import (
     ILoadGenerationEngineRepository,
 )
 from app.data.interfaces.load.i_load_load_profile_repository import (

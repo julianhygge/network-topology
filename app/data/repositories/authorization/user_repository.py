@@ -1,7 +1,7 @@
 from peewee import IntegrityError
 
 from app.data.interfaces.i_repository import T
-from app.data.interfaces.iuser_repository import IUserRepository
+from app.data.interfaces.i_user_repository import IUserRepository
 from app.data.repositories.base_repository import BaseRepository
 from app.data.schemas.auth.auth_schema import UserGroupRel
 from app.data.schemas.transactional.user_schema import Account, User

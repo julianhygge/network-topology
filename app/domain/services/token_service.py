@@ -1,5 +1,3 @@
-import datetime
-
 import jwt
 from jwt import ExpiredSignatureError
 
@@ -7,9 +5,8 @@ from app.api.authorization.enums import Permission
 from app.config.i_configuration import IConfiguration
 from app.data.interfaces.i_group_repository import IGroupRepository
 from app.data.interfaces.i_repository import IRepository
-from app.data.interfaces.iuser_repository import IUserRepository
 from app.domain.interfaces.i_token_service import ITokenService
-from app.utils.datetime_util import after_now, current_time_millis, utc_now_iso
+from app.utils.datetime_util import after_now, current_time_millis, utc_now_iso, utc_now
 from app.utils.json_util import UUIDEncoder
 from app.utils.logger import logger
 
@@ -46,7 +43,7 @@ class TokenService(ITokenService):
             )
 
         payload = {
-            "iat": datetime.datetime.utcnow(),  # issued_at
+            "iat": utc_now(),  # issued_at
             "jti": txn_id,  # unique_identifier
             "exp": after_now(hours=self._session_validity_in_hours),  # expiration_time
             "user": str(session_user),
@@ -71,7 +68,7 @@ class TokenService(ITokenService):
     def issue_refresh_token(self, user_id):
         user_record = self._account_repo.read(user_id)
         payload = {
-            "iat": datetime.datetime.utcnow(),  # issued_at
+            "iat": utc_now_iso(),  # issued_at
             "exp": after_now(
                 hours=self._session_validity_in_hours_refresh_token
             ),  # expiration_time

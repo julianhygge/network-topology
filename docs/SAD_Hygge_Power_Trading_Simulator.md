@@ -1,154 +1,133 @@
-# Business Requirements Document (BRD)
+# Software Architecture Document (SAD)
 ## Hygge Power Trading Simulator
 
 **Version:** 0.1
-**Date:** 29/April/2025 *(Note: Date seems inconsistent with SAD date, using as provided)*
+**Date:** 20/July/2024
 
 # 1. Introduction
 
-This document outlines the business requirements for the Hygge Power Trading Simulator. The simulator is designed to model and analyze the behavior of local energy communities (microgrids) comprising consumers, prosumers (with solar, batteries, etc.), and potentially other distributed energy resources like EVs. The primary purpose is to simulate energy generation, consumption, and sharing within these communities over time to understand energy flows, optimize distribution based on configurable priorities, assess the impact of different configurations, and evaluate potential benefits like increased self-consumption or cost savings (in future iterations).
+This document describes the proposed software architecture for the Hygge Power Trading Simulator. It outlines the major components, their interactions, the data model, technology stack, and deployment strategy, guided by the requirements specified in the BRD. The goal is to create a scalable, maintainable, and performant system.
 
-# 2. Business Goals & Objectives
+# 2. Architectural Goals & Constraints
 
-**Goal 1:** Provide a tool to accurately simulate energy flows within defined microgrid topologies.
-*   **Objective 1.1:** Model energy consumption (load profiles) for various node types.
-*   **Objective 1.2:** Model energy generation from solar PV.
-*   **Objective 1.3:** Model energy storage and retrieval from battery systems.
-*   **Objective 1.4:** Model energy demand from EV charging.
+**Goals:** Modularity, Scalability (handle many nodes & long simulations), Maintainability (clear separation of concerns), Testability, Performance (efficient simulation execution), Usability (responsive UI).
 
-**Goal 2:** Enable analysis of different energy allocation and sharing strategies.
-*   **Objective 2.1:** Implement configurable priority-based energy allocation logic for excess energy.
-*   **Objective 2.2:** Simulate energy sharing within the same transformer community and between different communities within a grid.
-*   **Objective 2.3:** Model energy losses during distribution/transformation.
-*   **Objective 2.4:** Model interaction (import/export) with the main utility grid.
+**Constraints:** Must use Angular or React for Frontend, Python/FastAPI for Backend API, Peewee ORM, PostgreSQL database. Must implement a 3-layer backend architecture. Must support deployment across DEV, TEST, INT, PROD environments.
 
-**Goal 3:** Facilitate comparison of different system configurations and scenarios.
-*   **Objective 3.1:** Allow users to define and save complex topologies and node configurations.
-*   **Objective 3.2:** Enable running multiple simulations with varying parameters on the same topology.
-*   **Objective 3.3:** Provide clear visualization and reporting of simulation results.
-*   **Objective 3.4:** Calculate key performance indicators (KPIs) like self-consumption, peak load reduction, and internal energy sharing volumes.
+# 3. Logical Architecture
 
-# 3. Scope
+## 3.1. Layered View (Backend)
 
-**In Scope:**
+### API Layer (FastAPI):
+**Responsibilities:**
+*   Handles HTTP requests (RESTful endpoints),
+*   Authentication & Authorization (using JWT),
+*   Request Validation (using Pydantic models),
+*   Data Serialization/Deserialization (JSON),
+*   Delegates business logic to the Service Layer.
+*   Provides interface for the Frontend.
 
-*   User authentication and role-based access control (Administrator, Modeler, Analyst).
-*   Graphical User Interface (GUI) for topology creation and management (Grids, Transformers, Houses).
-*   Configuration of parameters for Grids (name), Transformers (name, capacity, losses, efficiency, service years, ampacity, export flag), and Houses (type, prioritization flags).
-*   Configuration and management of profiles for Houses: Load, Solar, Battery, EV, Wind (using various methods: CSV upload, Load Builder, Generation Engine, Templates, Parameter input).
-*   Definition and configuration of the energy allocation prioritization list (user-defined flags).
-*   Configuration of simulation parameters (duration - up to 1 year, time step - 15 mins, allocation scope - intra-transformer/intra-grid).
-*   Execution of the simulation engine based on the configured topology, profiles, and parameters.
-*   Modeling of peer-to-peer energy allocation based on priorities, available excess, and demand.
-*   Modeling of battery charging/discharging logic based on configuration (self-consumption priority, community support, programmable schedules).
-*   Modeling of energy import/export with the utility grid.
-*   Storage and retrieval of simulation configurations and results.
-*   Visualization and reporting of key simulation outputs and KPIs.
-*   Export/Import of topology configurations (e.g., via JSON).
-*   Export of simulation results (e.g., via CSV).
+### Service Layer (Python Classes/Modules):
+**Responsibilities:**
+*   Contains the core business logic.
+*   Orchestrates operations like topology management, profile processing, simulation setup, running the simulation engine, applying allocation algorithms, calculating results.
+*   Interacts with the Data Layer to fetch/persist data.
+*   Stateless where possible to aid scalability.
 
-**Out of Scope (for v1 unless specified otherwise):**
+### Data Layer (Python Modules with Peewee/Repository Pattern):
+**Responsibilities:**
+*   Abstracts database interactions.
+*   Implements Repository pattern for data access (TopologyRepository, ProfileRepository, ResultsRepository).
+*   Defines Peewee models mapping to database tables.
+*   Handles all CRUD operations and complex queries.
+*   Ensures data integrity.
 
-*   Real-time simulation or control of physical assets.
-*   Direct financial transactions or billing simulation (focus is on energy flows).
-*   Advanced grid stability analysis (voltage/frequency...).
-*   Automated optimization algorithms to find the best configuration (focus is on simulating user-defined configurations).
-*   Integration with external real-time data sources (like live weather, live market prices).
-*   Detailed modeling of the utility grid beyond simple import/export points and potentially tariffs (for savings calculation if added).
+## 3.2. Component View
 
-# 4. Functional Requirements
+### Frontend Application (React):
+*   UI Components (Topology viewer/editor, Configuration forms, Profile managers, Simulation setup, Results dashboards/charts).
+*   State Management.
+*   API Client Service (Handles communication with Backend API).
+*   Build/Development Tools (React App).
 
-**Authentication & Authorization**
-*   **FR-AUTH-01:** System shall allow users to register and log in.
-*   **FR-AUTH-02:** System shall enforce role-based permissions (Admin, Modeler, Analyst, Integrator, *Shashwat has to define them...*). *(Note: Role definition pending)*
+### Backend Application (FastAPI):
+*   **Web Server (Uvicorn/Gunicorn):** Runs the FastAPI application.
+*   **API Endpoints Module:** Defines routes and request handlers for topology, configuration, profiles, simulation, results, auth.
+*   **Authentication Service:** Handles user login, token generation/validation.
+*   **Topology Service:** Logic for managing grids, transformers, houses.
+*   **Profile Service:** Logic for processing, generating, storing various profiles.
+*   **Simulation Service:** Orchestrates simulation runs, manages state, calls the engine.
+*   **Simulation Engine Module:** Core algorithm performing the 15-minute step-by-step calculation, including allocation logic and battery management. Consider if this should run synchronously within a request or asynchronously as a background task for longer simulations.
+*   **Results Service:** Logic for querying, aggregating, and formatting simulation results.
+*   **Repository Modules (Data Layer):** Handles DB interactions via Peewee models.
 
-**Topology Management**
-*   **FR-TOPO-01:** Modelers shall be able to create, view, edit, and delete Grids.
-*   **FR-TOPO-02:** Modelers shall be able to add, view, edit, delete, and position Transformers within a Grid.
-*   **FR-TOPO-03:** Modelers shall be able to add, view, edit, delete, and position Houses under a Transformer.
-*   **FR-TOPO-04:** The system shall visually represent the hierarchical topology (Grid -> Transformer -> House).
+### Database (PostgreSQL):
+*   Stores all persistent data (topology, config, profiles, results, users).
 
-**Configuration Management**
-*   **FR-CONF-01:** Modelers shall be able to configure parameters for Transformers (Name, Max Capacity (kW), Years of Service, Forward Efficiency (%), Backward Efficiency (%), Primary Ampacity (A), Secondary Ampacity (A), Allow Export flag, Losses - *add field*). (*Digital Twin Model field noted - functionality TBD*).
-*   **FR-CONF-02:** Modelers shall be able to configure parameters for Houses (Name, Type - e.g., Residential, Hospital, School, EV Charger, Configurable Flags for prioritization).
+# 4. Data Architecture
 
-**Profile Management**
-*   **FR-PROF-01:** Modelers shall be able to create/upload Load Profiles for Houses using: CSV upload (15-min data), Load Builder (appliance-based), Generation Engine (Avg kWh/Bill/Demand based), Predefined Templates.
-*   **FR-PROF-02:** System shall convert Load Profile inputs (Builder, Engine, Templates) into a 15-minute interval time-series for the simulation duration.
-*   **FR-PROF-03:** Modelers shall be able to create/upload Solar Profiles using: CSV upload (15-min generation data), parameter input (Capacity, Location, Efficiency - requires internal generation logic/weather data).
-*   **FR-PROF-04:** Modelers shall be able to configure Battery Profiles (Capacity (kWh), Max Charge/Discharge Power (kW), Efficiency (%), DoD (%), Programmable behavior - e.g., prioritize self-consumption, support community, charge from solar only, time-based charging/discharging).
-*   **FR-PROF-05:** Modelers shall be able to configure EV Profiles (using suggested parameters: energy need/schedule, charging power, smart charging flag).
-*   **FR-PROF-06:** Modelers shall be able to configure Wind Profiles (using suggested parameters: turbine specs/location or uploaded generation data).
-*   **FR-PROF-07:** Modelers shall be able to save profile configurations and apply them to multiple houses.
+**Database:** PostgreSQL relational database.
+**ORM:** Peewee.
 
-**Simulation Execution & Logic**
-*   **FR-SIM-01:** Analysts shall be able to select a configured topology for simulation.
-*   **FR-SIM-02:** Analysts shall be able to define simulation parameters: Start Date, Duration (e.g., 1 month, 1 year), Allocation Scope (Intra-transformer only, Intra-grid).
-*   **FR-SIM-03:** Analysts shall be able to configure the ordered Priority List for excess energy allocation based on House flags.
-*   **FR-SIM-04:** The system shall execute the simulation in 15-minute time steps for the specified duration.
-*   **FR-SIM-05:** The simulation engine shall calculate load, generation, battery state, and net balance for each node at each time step.
-*   **FR-SIM-06:** The simulation engine shall allocate excess energy from producing nodes to consuming nodes based on the defined allocation scope and priority list, accounting for transformer/distribution losses.
-*   **FR-SIM-07:** The simulation engine shall manage battery charge/discharge according to configured rules and available energy/capacity.
-*   **FR-SIM-08:** The simulation engine shall calculate energy import/export with the main utility grid based on the net balance after internal allocation.
+**Key Tables (Illustrative):**
+*   `users` (`user_id`, `username`, `password_hash`, `role_id`)
+*   `roles` (`role_id`, `role_name`)
+*   `grids` (`grid_id`, `name`, `created_by`, `created_at`)
+*   `transformers` (`transformer_id`, `grid_id`, `name`, `capacity_kw`, ...)
+*   `houses` (`house_id`, `transformer_id`, `name`, `house_type`, ...)
+*   `house_flags` (`flag_id`, `house_id`, `flag_name`)
+*   `profiles` (`profile_id`, `house_id`, `profile_type` (load/solar/...), `source_type` (upload/builder...), `config_details_json`, `data_storage_ref`) -> Time-series data might be stored efficiently, e.g., in related tables, JSONB, or potentially a dedicated time-series extension/DB if performance dictates.
+*   `simulation_runs` (`run_id`, `topology_snapshot_json`, `parameters_json`, `user_id`, `start_time`, `end_time`, `status`)
+*   `simulation_results` (`result_id`, `run_id`, `node_id`, `timestamp`, `load_kw`, `generation_kw`, `battery_soc`, `net_energy_kwh`, ...) -> This table can become very large. Consider partitioning or aggregation strategies.
+*   `priority_lists` (`list_id`, `name`, `configuration_json`)
 
-**Results & Reporting**
-*   **FR-RSLT-01:** The system shall store the results of each simulation run, linked to the specific topology and parameters used.
-*   **FR-RSLT-02:** Analysts shall be able to view simulation results through tables and charts (displaying suggested KPIs and outputs).
-*   **FR-RSLT-03:** Analysts shall be able to compare results from multiple simulation runs side-by-side.
-*   **FR-RSLT-04:** Analysts shall be able to export simulation results (e.g., summary KPIs, time-series data) in CSV format.
+**Topology Storage:** While stored relationally, provide export/import functionality using JSON representation.
 
-**Import/Export**
-*   **FR-IO-01:** Users shall be able to export the full topology and configuration definition (e.g., JSON format).
-*   **FR-IO-02:** Users shall be able to import a previously exported topology definition to create a new simulation setup.
+**Time-Series Data:** Needs careful consideration for storage and querying performance (indexing, partitioning).
 
-# 5. Non-Functional Requirements
+# 5. Technology Stack
 
-*   **NFR-PERF-01:** Simulation execution time should be reasonable (e.g., a 1-year simulation for a moderately sized topology of ~100 nodes should complete within minutes, not hours - Target to be refined).
-*   **NFR-SCAL-01:** The system should be designed to handle topologies with potentially hundreds or thousands of nodes.
-*   **NFR-USAB-01:** The user interface should be intuitive and provide clear visual feedback for topology creation and results analysis.
-*   **NFR-RELI-01:** Simulation calculations must be accurate and repeatable.
-*   **NFR-SECU-01:** Access to system features must be restricted based on user roles.
-*   **NFR-MAIN-01:** The codebase should follow best practices for maintainability, including clear separation of concerns, comments, and potential documentation.
+*   **Frontend:** React (latest LTS) OR Angular (as per constraints)
+*   **Backend:** Python 3.11+, FastAPI
+*   **ORM:** Peewee
+*   **Database:** PostgreSQL 14+
+*   **API Specification:** OpenAPI (auto-generated by FastAPI)
+*   **Caching (Optional):** Redis (for caching results or session data if needed)
 
-# 6. User Roles & Permissions (Proposed)
+# 6. Deployment View
 
-*   **Administrator:** Full CRUD access to Users, Roles, System Settings. All permissions of Modeler and Analyst.
-*   **Modeler:** CRUD access to Grids, Transformers, Houses, Profiles, Configurations. Read-access to simulation results. Cannot manage users or system settings. Cannot run simulations (unless also given Analyst role).
-*   **Analyst:** Selects topologies (Read-only). Configures and Runs Simulations. CRUD access to Simulation Runs and Results. Views/Exports results. Cannot modify topologies or manage users/settings.
-*(Note: Integrator role mentioned in FR-AUTH-02 needs definition)*
+**Environments:** DEV, TEST, INT, PROD.
 
-# 7. Data Requirements
+**Infrastructure:** Recommend containerization using Docker.
+*   `docker-compose.yml` for local development (Frontend, Backend, DB).
+*   TEST/INT/PROD environments. (Dockers)
+*   PostgreSQL (AWS RDS).
 
-*   Topology Data (Grids, Transformers, Houses, connections).
-*   Configuration Data (Node parameters, Profile settings).
-*   Time-Series Profile Data (Load, Solar, Wind, EV - potentially large).
-*   Simulation Parameters (Duration, priority list, etc.).
-*   Simulation Results Data (Time-series node balances, aggregate KPIs - potentially very large).
-*   User and Role Data.
-*   Need for standard load/generation profile templates.
-*   Potential need for integrated weather data source for solar/wind generation based on location.
+**Deployment:**
+*   CI/CD pipeline (GitLab CI, GitHub Actions) to automate testing, building Docker images, and deploying to respective environments.
+*   Backend API and Frontend served as separate containers/services.
 
-# 8. Assumptions
+# 7. Non-Functional Requirements Implementation
 
-*   The 15-minute interval is sufficient resolution for meaningful simulation.
-*   Peer-to-peer energy transfer within the defined scopes (transformer/grid) is a valid abstraction for the simulation's purpose.
-*   Configurable losses adequately represent real-world distribution inefficiencies.
-*   Standard profile generation methods provide reasonable approximations when actual data is unavailable.
+*   **Performance:** Efficient database queries (indexing, optimized ORM usage), potentially asynchronous simulation execution for long runs, consider CPython extensions or libraries like NumPy/Pandas if numerical computation becomes a bottleneck. Profile generation logic optimized.
+*   **Scalability:** Stateless backend services where possible allow horizontal scaling. Database scalability through managed services. Consider separating simulation engine workers if CPU-intensive.
+*   **Usability:** Clean API design, responsive frontend framework, clear visual components for topology and results.
+*   **Reliability:** Transaction management in DB operations, error handling and logging, repeatable simulation logic. Potential for saving simulation state periodically for long runs.
+*   **Security:** JWT-based authentication, HTTPS enforcement, role-based authorization checks at the API layer, input validation.
+*   **Maintainability:** Strict adherence to layered architecture, use of Repository pattern, code linting/formatting, unit/integration tests, comments/documentation.
 
-# 9. Constraints
+# 8. Design Decisions & Trade-offs
 
-*   **Technology stack:** Frontend (Angular/React), Backend (Python/FastAPI), ORM (Peewee), DB (PostgreSQL).
-*   Development must follow a 3-layer architecture (API, Service, Data/Repository).
-*   The initial version focuses on physical energy flows, not financial aspects.
-*   **Deployment environments:** DEV, TEST, INT, PROD.
+**Synchronous vs. Asynchronous Simulation:**
+*   **Sync:** Simpler implementation initially. Suitable for short simulations. Might lead to long HTTP request timeouts for yearly simulations.
+*   **Async:** More complex (requires task queue like Celery). Better user experience for long simulations (request returns immediately, user notified on completion). Better resource management.
+*   **Recommendation:** Start Sync, but design with Async in mind for future enhancement.
 
-# 10. Glossary
+**Time-Series Data Storage:**
+*   **Relational Table:** Standard, works with Peewee. Can become slow for large datasets/complex queries.
+*   **JSONB:** Flexible, good for unstructured profile config. Querying inside JSON can be less performant.
+*   **Dedicated TSDB (e.g., TimescaleDB extension for PostgreSQL, InfluxDB):** Optimized for time-series, best performance. Adds complexity.
+*   **Recommendation:** Start with relational, optimize with indexing/partitioning. Evaluate TSDB if performance becomes an issue.
 
-*   **Grid:** Top-level container for a distinct energy community simulation.
-*   **Transformer:** Represents a distribution transformer and the sub-community it serves. Can contain Houses or other Transformers (though latter seems less likely based on UI).
-*   **House:** A leaf node representing an energy consumer or prosumer (e.g., residence, hospital, EV station).
-*   **Prosumer:** A node that both consumes and produces energy (e.g., house with solar panels).
-*   **Profile:** Time-series data representing energy consumption or generation (Load, Solar, Wind, EV).
-*   **Allocation:** The process of distributing excess energy from producers to consumers within the simulation.
-*   **Prioritization:** The user-defined order in which loads receive allocated excess energy.
-*   **Self-Consumption:** The percentage of locally generated energy that is consumed locally (within the grid/community).
+**Peewee ORM:**
+*   Lightweight and simple, as requested. Less feature-rich than SQLAlchemy but likely sufficient.

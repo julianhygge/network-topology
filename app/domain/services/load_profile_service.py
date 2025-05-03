@@ -14,8 +14,8 @@ from pandas import (
     to_datetime,
 )
 
-from app.data.interfaces.iuser_repository import IUserRepository
-from app.data.interfaces.load.i_load_generation_enginer_repository import (
+from app.data.interfaces.i_user_repository import IUserRepository
+from app.data.interfaces.load.i_load_generation_engine_repository import (
     ILoadGenerationEngineRepository,
 )
 from app.data.interfaces.load.i_load_load_profile_repository import (
