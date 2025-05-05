@@ -14,6 +14,7 @@ from pandas import (
     to_datetime,
 )
 
+from app.config.i_configuration import IConfiguration
 from app.data.interfaces.i_user_repository import IUserRepository
 from app.data.interfaces.load.i_load_generation_engine_repository import (
     ILoadGenerationEngineRepository,
@@ -49,23 +50,23 @@ class LoadProfileService(BaseService):
         user_repository: IUserRepository,
         load_details_repository: ILoadProfileDetailsRepository,
         load_profile_builder_repository: ILoadProfileBuilderRepository,
-        load_generation_engine_repository: ILoadGenerationEngineRepository,
-        predefined_templates_repository: IPredefinedTemplatesRepository,
+        load_gen_engine_repository: ILoadGenerationEngineRepository,
+        pre_templates_repository: IPredefinedTemplatesRepository,
         load_profile_completer: ILoadProfileFileCompleter,
-        configuration: Dict[str, Any],
+        conf: IConfiguration
     ):
         super().__init__(repository)
-        self._load_profile_repository = repository
+        self._load_profile_repo = repository
         self._load_details_repository = load_details_repository
         self._load_profile_files_repository = load_profile_files_repository
         self._user_repository = user_repository
         self._load_profile_builder_repository = load_profile_builder_repository
-        self._load_generation_engine_repository = load_generation_engine_repository
-        self._load_predefined_templates_repository = predefined_templates_repository
+        self._load_generation_engine_repository = load_gen_engine_repository
+        self._load_pre_templates_repo = pre_templates_repository
         self._load_profile_completer = load_profile_completer
-        self._load_profile_min_days = configuration.min_days
-        self._load_profile_time_formats = configuration.time_formats
-        self._load_profile_max_interval_length = configuration.max_interval_length
+        self._load_profile_min_days = conf.load_profile.min_days
+        self._load_profile_time_formats = conf.load_profile.time_formats
+        self._max_interval_length = conf.load_profile.max_interval_length
 
     def _map_profile_to_dict(self, profile):
         data = {
@@ -90,14 +91,16 @@ class LoadProfileService(BaseService):
     @staticmethod
     def _apply_general_adjustments(consumption_pattern, interval_minutes):
         """
-        Applies general adjustments to the consumption pattern based on common household activities.
-        Reduces consumption from 11 pm to 6 am, and increases consumption between 7 pm and 10 pm,
+        Applies general adjustments to the consumption pattern based on common
+        house hold activities. Reduces consumption from 11 pm to 6 am,
+        and increases consumption between 7 pm and 10 pm,
         as well as between 6 am and 8 am.
         """
         for i in range(len(consumption_pattern)):
             hour = (i * interval_minutes) // 60
             if 23 <= hour or hour < 6:  # From 11 pm to 6 am
-                consumption_pattern[i] *= 0.5  # Significantly reduce consumption
+                # Significantly reduce consumption
+                consumption_pattern[i] *= 0.5
             elif 19 <= hour < 22:  # From 7 pm to 10 pm
                 consumption_pattern[
                     i
@@ -112,7 +115,8 @@ class LoadProfileService(BaseService):
         adjusted_consumptions, original_total_consumption
     ):
         """
-        Normalizes the adjusted consumptions to ensure the total matches the original total consumption.
+        Normalizes the adjusted consumptions to ensure
+        the total matches the original total consumption.
         """
         adjusted_total = sum(adjusted_consumptions)
         if adjusted_total == 0:
@@ -120,12 +124,14 @@ class LoadProfileService(BaseService):
 
         normalization_factor = original_total_consumption / adjusted_total
         normalized_consumptions = [
-            consumption * normalization_factor for consumption in adjusted_consumptions
+            consumption * normalization_factor
+            for consumption in adjusted_consumptions
         ]
         return normalized_consumptions
 
     @staticmethod
-    def _divide_consumption_in_intervals(total_consumption, interval_minutes=15):
+    def _divide_consumption_in_intervals(total_consumption,
+                                         interval_minutes=15):
         intervals_per_day = 1440 // interval_minutes
         consumption_per_interval = total_consumption / intervals_per_day
         return consumption_per_interval
@@ -138,43 +144,52 @@ class LoadProfileService(BaseService):
         self, people_profiles, consumption_pattern, interval_minutes
     ):
         """
-        Applies consumption adjustments based on each person's work profile within the household.
+        Applies consumption adjustments based on each person's
+         work profile within the household.
         """
         for person in people_profiles:
             if person.get("works_at_home"):
-                self._adjust_for_home_workers(consumption_pattern, interval_minutes)
+                self._adjust_for_home_workers(consumption_pattern,
+                                              interval_minutes)
             elif person.get("work_schedule") == "Night":
-                self._adjust_for_night_workers(consumption_pattern, interval_minutes)
+                self._adjust_for_night_workers(consumption_pattern,
+                                               interval_minutes)
             else:
-                # For individuals working outside (daytime workers or variable schedules)
+                # For individuals working outside
+                # (daytime workers or variable schedules)
                 # and for households without specific profile info
-                self._adjust_for_day_workers(consumption_pattern, interval_minutes)
+                self._adjust_for_day_workers(consumption_pattern,
+                                             interval_minutes)
 
     def _adjust_for_home_workers(self, consumption_pattern, interval_minutes):
         """
-        Apply adjustments for individuals working from home during daytime. This includes the general
+        Apply adjustments for individuals working from home during daytime.
+        This includes the general
         adjustments for typical household activity patterns.
         """
         self._apply_general_adjustments(consumption_pattern, interval_minutes)
 
     def _adjust_for_night_workers(self, consumption_pattern, interval_minutes):
         """
-        For night workers, apply adjustments considering they are away at night and likely active
-        at home during the day. This adjusts for lower nighttime consumption.
+        For night workers, apply adjustments considering they are away at
+        night and likely active at home during the day.
+        This adjusts for lower nighttime consumption.
         """
         self._apply_general_adjustments(consumption_pattern, interval_minutes)
 
     def _adjust_for_day_workers(self, consumption_pattern, interval_minutes):
         """
-        Apply adjustments for those working outside during the day. This includes increasing
-        consumption in the early morning and evening to reflect typical patterns of leaving and returning home.
+        Apply adjustments for those working outside during the day.
+        This includes increasing
+        consumption in the early morning and evening
+        to reflect typical patterns of leaving and returning home.
         """
         self._apply_general_adjustments(consumption_pattern, interval_minutes)
 
     def delete_profile(self, profile_id):
         self._load_details_repository.delete_by_profile_id(profile_id)
-        delete_profile_result = self._load_profile_repository.delete(profile_id)
-        return delete_profile_result
+        deleted_profile = self._load_profile_repo.delete(profile_id)
+        return deleted_profile
 
     def list_profiles(self, user_id, house_id):
         get_private_profile_by_user = list(
@@ -182,12 +197,14 @@ class LoadProfileService(BaseService):
         )
         get_public_profiles = list(self._get_public_profiles())
         combined_profiles = get_public_profiles + get_private_profile_by_user
-        return [self._map_profile_to_dict(profile) for profile in combined_profiles]
+        return [self._map_profile_to_dict(profile)
+                for profile in combined_profiles]
 
     @staticmethod
     def _find_time_format(df: DataFrame, formats: list[str]) -> str:
         """
-        Finds the time format used in the data frame, returns it and converts the timestamps to datetime objects.
+        Finds the time format used in the data frame, returns it and converts
+        the timestamps to datetime objects.
         Raises a ValueError if the timestamps do not match any of the formats
         """
         for format in formats:
@@ -205,12 +222,15 @@ class LoadProfileService(BaseService):
         if len(df.columns) < 2:
             raise ValueError("Data frame must have at least 2 columns")
         number_of_columns_to_remove = len(df.columns) - 2
-        # Must check the number of columns to remove is greater than 0 to avoid removing the first two columns
+        # Must check the number of columns to remove is greater than 0
+        # to avoid removing the first two columns
         if number_of_columns_to_remove > 0:
-            df.drop(df.columns[-number_of_columns_to_remove:], axis=1, inplace=True)
+            df.drop(df.columns[-number_of_columns_to_remove:],
+                    axis=1, inplace=True)
 
         df.rename(
-            columns={df.columns[0]: "timestamp", df.columns[1]: "consumption_kwh"},
+            columns={df.columns[0]: "timestamp",
+                     df.columns[1]: "consumption_kwh"},
             inplace=True,
         )
 
@@ -224,7 +244,8 @@ class LoadProfileService(BaseService):
         if diff.days > 366:
             raise ValueError("Data spans more than a year")
         if diff.days < self._load_profile_min_days:
-            raise ValueError(f"Data spans less than {self._load_profile_min_days} days")
+            raise ValueError(
+                f"Data spans less than {self._load_profile_min_days} days")
 
     async def upload_profile_service_file(
         self,
@@ -246,7 +267,7 @@ class LoadProfileService(BaseService):
         if interval_15_minutes:
             self._validate_intervals(df)
         else:
-            hours = 60 * self._load_profile_max_interval_length
+            hours = 60 * self._max_interval_length
             self._validate_intervals(df, hours, False)
 
         with self.repository.database_instance.atomic():
@@ -267,16 +288,18 @@ class LoadProfileService(BaseService):
             }
             return response
 
-    def save_load_profile_items(self, user_id: UUID, house_id: UUID, items: List[dict]):
-        load_profile = self._load_profile_repository.get_or_create_by_house_id(
+    def save_load_profile_items(self, user_id: UUID,
+                                house_id: UUID,
+                                items: List[dict]):
+        load_profile = self._load_profile_repo.get_or_create_by_house_id(
             user_id, house_id, LoadSource.Builder
         )
         profile_id = load_profile.id
 
-        existing_items = self._load_profile_builder_repository.get_items_by_profile_id(
+        items = self._load_profile_builder_repository.get_items_by_profile_id(
             profile_id
         )
-        existing_ids = set(item.id for item in existing_items)
+        existing_ids = set(item.id for item in items)
 
         to_create = []
         to_update = []
@@ -300,21 +323,25 @@ class LoadProfileService(BaseService):
             for item_id in to_delete:
                 self._load_profile_builder_repository.delete(item_id)
         if to_create:
-            self._load_profile_builder_repository.create_items_in_bulk(to_create)
+            self._load_profile_builder_repository.create_items_in_bulk(
+                to_create)
         if to_update:
-            self._load_profile_builder_repository.update_items_in_bulk(to_update)
+            self._load_profile_builder_repository.update_items_in_bulk(
+                to_update)
 
         return (
-            self._load_profile_builder_repository.get_items_by_profile_id(profile_id),
+            self._load_profile_builder_repository.get_items_by_profile_id(
+                profile_id),
             profile_id,
         )
 
     def get_load_profile_builder_items(self, user_id: UUID, house_id: UUID):
-        load_profile = self._load_profile_repository.get_or_create_by_house_id(
+        load_profile = self._load_profile_repo.get_or_create_by_house_id(
             user_id, house_id, LoadSource.Builder.value
         )
         return (
-            self._load_profile_builder_repository.get_items_by_profile_id(load_profile),
+            self._load_profile_builder_repository.get_items_by_profile_id(
+                load_profile),
             load_profile.id,
         )
 
@@ -341,7 +368,8 @@ class LoadProfileService(BaseService):
     def create_interpolation_array(
         self, min_date: Timestamp, max_date: Timestamp
     ) -> DatetimeIndex:
-        """Create the interpolation timestamp array based on the min and max date."""
+        """Create the interpolation timestamp
+        array based on the min and max date."""
         min_value = min_date.floor("15min")
         days = self.days_in_year(min_date)
         min_value_plus_year = min_value + Timedelta(days=days)
@@ -373,7 +401,7 @@ class LoadProfileService(BaseService):
             "house_id": house_id,
         }
 
-        load_profile = self._load_profile_repository.create(**profile_data)
+        load_profile = self._load_profile_repo.create(**profile_data)
         if is_15_mins_interval:
             df.insert(2, "profile_id", load_profile.id)
             details = df.to_dict("records")
@@ -386,7 +414,8 @@ class LoadProfileService(BaseService):
         result = self._load_profile_completer.complete_data(
             timestamps, consumption_kwh, interpolation_array
         )
-        df = DataFrame({"timestamp": interpolation_array, "consumption_kwh": result})
+        df = DataFrame({"timestamp": interpolation_array,
+                       "consumption_kwh": result})
         df.insert(2, "profile_id", load_profile.id)
         logger.info(df.head())
         logger.info(df.tail())
@@ -394,20 +423,23 @@ class LoadProfileService(BaseService):
         return details, load_profile
 
     def _get_load_profiles_by_user_id(self, user_id, house_id):
-        return self._load_profile_repository.get_load_profiles_by_user_id_and_house_id(
-            user_id, house_id
-        )
+        return (
+            self._load_profile_repo.get_load_profiles_by_user_id_and_house_id(
+                user_id, house_id
+            ))
 
     def _get_public_profiles(self):
-        return self._load_profile_repository.get_public_profiles()
+        return self._load_profile_repo.get_public_profiles()
 
     @staticmethod
     def _validate_intervals(
         df: DataFrame, minutes: int = 15, exact: bool = True
     ) -> None:
         """
-        Validates that the data is in the specified interval if exact is True. Otherwise, validates
-        that the data has all intervals smaller than or equal to the specified minutes.
+        Validates that the data is in the specified interval
+        if exact is True. Otherwise, validates
+        that the data has all intervals smaller
+        than or equal to the specified minutes.
         """
         timestamps = df.iloc[:, 0]
         interval_in_seconds = 60 * minutes
@@ -416,10 +448,14 @@ class LoadProfileService(BaseService):
             if exact and diff.total_seconds() != interval_in_seconds:
                 raise ValueError(f"Data is not in {minutes}-minute intervals")
             if not exact and diff.total_seconds() > interval_in_seconds:
-                raise ValueError(f"Data has intervals greater than {minutes} minutes")
+                raise ValueError(
+                    f"Data has intervals greater than {minutes} minutes")
 
-    def save_load_generation_engine(self, user_id: UUID, house_id: UUID, data: dict):
-        load_profile = self._load_profile_repository.get_or_create_by_house_id(
+    def save_load_generation_engine(self,
+                                    user_id: UUID,
+                                    house_id: UUID,
+                                    data: dict):
+        load_profile = self._load_profile_repo.get_or_create_by_house_id(
             user_id, house_id, LoadSource.Engine.value
         )
         profile_id = load_profile.id
@@ -434,14 +470,15 @@ class LoadProfileService(BaseService):
             "created_by": user_id,
             "modified_by": user_id,
         }
-        self._load_generation_engine_repository.delete_by_profile_id(profile_id)
+        self._load_generation_engine_repository.delete_by_profile_id(
+            profile_id)
         return self._load_generation_engine_repository.model.get_or_create(
             profile_id=profile_id, defaults=engine_data
         )[0]
 
     def get_load_generation_engine(self, user_id: UUID, house_id: UUID):
         load_profiles = (
-            self._load_profile_repository.get_load_profiles_by_user_id_and_house_id(
+            self._load_profile_repo.get_load_profiles_by_user_id_and_house_id(
                 user_id, house_id
             )
         )
@@ -459,22 +496,21 @@ class LoadProfileService(BaseService):
             return self._load_generation_engine_repository.model.get_or_none(
                 profile_id=engine_profile.id
             )
-        else:
-            return None
+        return None
 
     def create_or_update_load_predefined_template(
         self, user_id: UUID, house_id: UUID, template_id: int
     ):
-        load_profile = self._load_profile_repository.get_or_create_by_house_id(
+        load_profile = self._load_profile_repo.get_or_create_by_house_id(
             user_id, house_id, LoadSource.Template.value
         )
-        return self._load_predefined_templates_repository.create_or_update(
+        return self._load_pre_templates_repo.create_or_update(
             load_profile.id, template_id
         )
 
     def get_load_predefined_template(self, user_id: UUID, house_id: UUID):
         load_profiles = (
-            self._load_profile_repository.get_load_profiles_by_user_id_and_house_id(
+            self._load_profile_repo.get_load_profiles_by_user_id_and_house_id(
                 user_id, house_id
             )
         )
@@ -488,8 +524,7 @@ class LoadProfileService(BaseService):
             None,
         )
         if template:
-            return self._load_predefined_templates_repository.get_by_profile_id(
+            return self._load_pre_templates_repo.get_by_profile_id(
                 template.id
             )
-        else:
-            return None
+        return None

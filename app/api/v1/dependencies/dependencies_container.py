@@ -195,7 +195,7 @@ class Container(containers.DeclarativeContainer):
         load_generation_engine_repository=_load_generation_engine_repository,
         predefined_templates_repository=_predefined_templates_repository,
         load_profile_completer=_load_profile_completer,
-        configuration=configuration().load_profile,
+        configuration=configuration()
     )
 
     predefined_template_service = providers.Factory(

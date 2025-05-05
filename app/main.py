@@ -17,6 +17,7 @@ from app.api.v1.resources.topology.house import house_router
 from app.api.v1.resources.topology.substation import substation_router
 from app.api.v1.resources.topology.transformer import tr_router
 from app.api.v1.resources.users.group import group_router
+from app.api.v1.resources.solar.solar_profile import solar_router
 from app.api.v1.resources.users.user import user_router
 from app.config.servers import hygge_servers
 from app.exceptions.exception_handlers import add_exception_handlers
@@ -44,6 +45,7 @@ def add_routes(cc_app: FastAPI):
 
     cc_app.include_router(breadcrumb_router, prefix=f"{version_1}breadcrumb")
     cc_app.include_router(appliances_router, prefix=f"{version_1}appliances")
+    cc_app.include_router(solar_router, prefix=f"{version_1}solar")
 
 
 app = FastAPI(title="Network topology", root_path="/net-topology-api")

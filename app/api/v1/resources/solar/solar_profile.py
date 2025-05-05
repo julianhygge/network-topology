@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
-from app.api.v1.dependencies.container_instance import get_solar_profile_service
+from app.api.v1.dependencies.container_instance import (
+    get_solar_profile_service)
 from app.api.v1.models.requests.solar.solar_profile_request import (
     SolarProfileRequestModel,
     SolarProfileUpdateModel,
@@ -14,7 +15,9 @@ from app.api.v1.models.requests.solar.solar_profile_request import (
 from app.api.v1.models.responses.solar.solar_profile_response import (
     SolarProfileResponse,
 )
-from app.domain.interfaces.solar.isolar_profile_service import ISolarProfileService
+from app.domain.interfaces.solar.isolar_profile_service import (
+    ISolarProfileService,
+)
 
 solar_router = APIRouter(tags=["Solar"])
 
@@ -23,7 +26,8 @@ solar_router = APIRouter(tags=["Solar"])
 async def create_solar_profile(
     data: SolarProfileRequestModel,
     service: ISolarProfileService = Depends(get_solar_profile_service),
-    user_id: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
+    user_id: str = Depends(permission(Resources.LOAD_PROFILES, 
+                                      Permission.CREATE)),
 ):
     """
     Create a new solar profile.
@@ -72,7 +76,6 @@ async def get_solar_profile(
         if body:
             response = SolarProfileResponse(**body)
             return response
-        # response = SolarProfileListResponse(items=[SolarProfileResponse(**item) for item in body])
         return None
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -83,7 +86,8 @@ async def update_solar_profile(
     house_id: UUID,
     data: SolarProfileUpdateModel,
     service: ISolarProfileService = Depends(get_solar_profile_service),
-    user_id: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
+    user_id: str = Depends(permission(Resources.LOAD_PROFILES, 
+                                      Permission.CREATE)),
 ):
     """
     Update an existing solar profile for a specific house.
