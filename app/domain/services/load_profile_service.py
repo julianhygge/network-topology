@@ -63,9 +63,9 @@ class LoadProfileService(BaseService):
         self._load_generation_engine_repository = load_generation_engine_repository
         self._load_predefined_templates_repository = predefined_templates_repository
         self._load_profile_completer = load_profile_completer
-        self._load_profile_min_days = configuration["min_days"]
-        self._load_profile_time_formats = configuration["time_formats"]
-        self._load_profile_max_interval_length = configuration["max_interval_length"]
+        self._load_profile_min_days = configuration.min_days
+        self._load_profile_time_formats = configuration.time_formats
+        self._load_profile_max_interval_length = configuration.max_interval_length
 
     def _map_profile_to_dict(self, profile):
         data = {
