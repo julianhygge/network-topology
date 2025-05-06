@@ -56,7 +56,7 @@ from app.domain.services.topology.load_profile_file_completer import (
 )
 from app.domain.services.topology.net_topology_service import NetTopologyService
 from app.domain.services.topology.node_service import NodeService
-from app.domain.services.topology.solar_profile_service import SolarProfileService
+from app.domain.services.solar.solar_profile_service import SolarProfileService
 from app.domain.services.topology.substation_service import SubstationService
 from app.domain.services.topology.topology_simulator import TopologySimulator
 from app.domain.services.topology.transformer_service import TransformerService

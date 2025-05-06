@@ -1,20 +1,64 @@
+"""
+Interface for the Solar Profile Service.
+"""
 from abc import ABC, abstractmethod
+from uuid import UUID
+from typing import Dict, Any
 
 
 class ISolarProfileService(ABC):
+    """
+    Abstract base class for the Solar Profile Service.
+    Defines the interface for managing solar profiles.
+    """
 
     @abstractmethod
-    def create(self, user_id, **data):
-        """Create Solar Profile"""
+    def create(self, user_id: UUID, **kwargs: Any) -> Dict[str, Any]:
+        """
+        Creates a new solar profile.
+
+        Args:
+            user_id: The UUID of the user creating the profile.
+            **kwargs: Keyword arguments containing the solar profile data.
+
+        Returns:
+            A dictionary representation of the created solar profile.
+        """
 
     @abstractmethod
-    def get_solar_profile_by_house_id(self, house_id):
-        """Get Solar Profile"""
+    def get_solar_profile_by_house_id(
+        self, house_id: UUID
+    ) -> Dict[str, Any] | None:
+        """
+        Retrieves a solar profile by its associated house ID.
+
+        Args:
+            house_id: The UUID of the house.
+
+        Returns:
+            A dictionary representation of the solar profile if found,
+            otherwise None.
+        """
 
     @abstractmethod
-    def delete_solar_profile_by_house_id(self, house_id):
-        """Delete solar Profile"""
+    def delete_solar_profile_by_house_id(self, house_id: UUID) -> None:
+        """
+        Deletes a solar profile by its associated house ID.
+
+        Args:
+            house_id: The UUID of the house.
+        """
 
     @abstractmethod
-    def update_solar_profile(self, user_id, house_id, **data):
-        """Update Solar Profile"""
+    def update_solar_profile(
+        self, user_id: UUID, house_id: UUID, **kwargs: Any
+    ) -> None:
+        """
+        Updates an existing solar profile.
+
+        Args:
+            user_id: The UUID of the user updating the profile.
+            house_id: The UUID of the house associated with the profile.
+            **kwargs: Keyword arguments containing the updated solar profile
+                data.
+        """

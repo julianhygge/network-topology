@@ -15,7 +15,7 @@ from app.api.v1.models.requests.solar.solar_profile_request import (
 from app.api.v1.models.responses.solar.solar_profile_response import (
     SolarProfileResponse,
 )
-from app.domain.interfaces.solar.isolar_profile_service import (
+from app.domain.interfaces.solar.i_solar_profile_service import (
     ISolarProfileService,
 )
 
