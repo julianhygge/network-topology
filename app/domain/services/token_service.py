@@ -6,7 +6,12 @@ from app.config.i_configuration import IConfiguration
 from app.data.interfaces.i_group_repository import IGroupRepository
 from app.data.interfaces.i_repository import IRepository
 from app.domain.interfaces.i_token_service import ITokenService
-from app.utils.datetime_util import after_now, current_time_millis, utc_now_iso, utc_now
+from app.utils.datetime_util import (
+    after_now,
+    current_time_millis,
+    utc_now_iso,
+    utc_now,
+)
 from app.utils.json_util import UUIDEncoder
 from app.utils.logger import logger
 
@@ -45,7 +50,9 @@ class TokenService(ITokenService):
         payload = {
             "iat": utc_now(),  # issued_at
             "jti": txn_id,  # unique_identifier
-            "exp": after_now(hours=self._session_validity_in_hours),  # expiration_time
+            "exp": after_now(
+                hours=self._session_validity_in_hours
+            ),  # expiration_time
             "user": str(session_user),
             "role": list(roles),
             "permissions": list(permissions),
@@ -99,15 +106,23 @@ class TokenService(ITokenService):
     def _resolve_permission(permission):
         permissions = []
         if permission.can_create:
-            permissions.append(Permission.CREATE.value + "-" + permission.resource_name)
+            permissions.append(
+                Permission.CREATE.value + "-" + permission.resource_name
+            )
         if permission.can_retrieve:
             permissions.append(
                 Permission.RETRIEVE.value + "-" + permission.resource_name
             )
         if permission.can_update:
-            permissions.append(Permission.UPDATE.value + "-" + permission.resource_name)
+            permissions.append(
+                Permission.UPDATE.value + "-" + permission.resource_name
+            )
         if permission.can_delete:
-            permissions.append(Permission.DELETE.value + "-" + permission.resource_name)
+            permissions.append(
+                Permission.DELETE.value + "-" + permission.resource_name
+            )
         if permission.can_search:
-            permissions.append(Permission.SEARCH.value + "-" + permission.resource_name)
+            permissions.append(
+                Permission.SEARCH.value + "-" + permission.resource_name
+            )
         return permissions

@@ -10,7 +10,7 @@ from app.api.v1.dependencies.dependencies_container import Container
 from app.config.configuration import ApiConfiguration
 from app.data.interfaces.topology.i_topology_simulator import ITopologySimulator
 from app.domain.interfaces.i_auth_service import IAuthService
-from app.domain.interfaces.i_mqtt_service import IMQTTService
+from app.domain.interfaces.i_mqtt_service import IMqttService
 from app.domain.interfaces.i_node_service import INodeService
 from app.domain.interfaces.i_service import IService
 from app.domain.interfaces.i_sms_service import ISmsService
@@ -98,6 +98,6 @@ def get_predefined_template_service() -> IService:
     return c.predefined_template_service()
 
 
-def get_mqtt_service() -> IMQTTService:
+def get_mqtt_service() -> IMqttService:
     """Get the MQTT service instance."""
     return c.mqtt_service()

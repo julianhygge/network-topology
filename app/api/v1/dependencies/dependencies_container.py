@@ -192,10 +192,10 @@ class Container(containers.DeclarativeContainer):
         load_profile_files_repository=_load_profile_files_repository,
         user_repository=_user_repository,
         load_profile_builder_repository=_load_profile_builder_repository,
-        load_generation_engine_repository=_load_generation_engine_repository,
-        predefined_templates_repository=_predefined_templates_repository,
+        load_gen_engine_repository=_load_generation_engine_repository,
+        pre_templates_repository=_predefined_templates_repository,
         load_profile_completer=_load_profile_completer,
-        configuration=configuration()
+        conf=configuration()
     )
 
     predefined_template_service = providers.Factory(

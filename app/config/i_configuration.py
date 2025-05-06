@@ -4,7 +4,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
-from app.domain.interfaces.enums.load_profile_strategy_enum import LoadProfileStrategy
+from app.domain.interfaces.enums.load_profile_strategy_enum import (
+    LoadProfileStrategy,
+)
 
 
 @dataclass(frozen=True)
@@ -65,7 +67,7 @@ class SMSConfig:
 
 
 @dataclass(frozen=True)
-class MQTTConfig:
+class MqttConfig:
     """MQTT configuration settings."""
 
     id: str
@@ -73,8 +75,8 @@ class MQTTConfig:
     application_name: str
     host: str
     port: int
-    username: Optional[str]
-    password: Optional[str]
+    username: str
+    password: str
 
 
 @dataclass(frozen=True)
@@ -156,7 +158,7 @@ class IConfiguration(ABC):
 
     @property
     @abstractmethod
-    def mqtt(self) -> MQTTConfig:
+    def mqtt(self) -> MqttConfig:
         """MQTT configuration"""
 
     @property

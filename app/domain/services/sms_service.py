@@ -1,16 +1,19 @@
-from app.domain.interfaces.i_mqtt_service import IMQTTService
+from app.config.i_configuration import IConfiguration
+from app.domain.interfaces.i_mqtt_service import IMqttService
 from app.domain.interfaces.i_sms_service import ISmsService
 from app.utils.logger import logger
 
 
 class SmsService(ISmsService):
-    def __init__(self, configuration, mqtt_service: IMQTTService):
+    def __init__(
+        self, configuration: IConfiguration, mqtt_service: IMqttService
+    ):
         self._mqtt_service = mqtt_service
         self._default_number = configuration.sms.default_number
         self._application_name = configuration.mqtt.application_name
         self._topic = configuration.sms.topic
 
-    def send_otp_sms(self, phone_number, otp, txn_id):
+    def send_otp_sms(self, phone_number: str, otp: str, txn_id: str):
         try:
             if phone_number != self._default_number:
                 topic_name = self._topic
@@ -23,5 +26,5 @@ class SmsService(ISmsService):
                     txn_id=txn_id,
                 )
         except Exception as e:
-            logger.error("Failed to push sms message in queue", e)
+            logger.error("Failed to push sms message in queue: %s", e)
             # raise

@@ -13,7 +13,7 @@ from app.config.i_configuration import (
     LoadProfileConfig,
     LoadProfileStrategy,
     LoggingConfig,
-    MQTTConfig,
+    MqttConfig,
     OTPConfig,
     SessionConfig,
     SimulationConfig,
@@ -114,9 +114,9 @@ class ApiConfiguration(IConfiguration):
         )
 
     @property
-    def mqtt(self) -> MQTTConfig:
+    def mqtt(self) -> MqttConfig:
         s = self._settings
-        return MQTTConfig(
+        return MqttConfig(
             id=s.get("mqtt_id"),
             broken_url=s.get("mqtt_broken_url"),
             application_name=s.get("mqtt_application_name"),

@@ -1,7 +1,9 @@
 import enum
 import uuid
 
-from app.data.interfaces.i_auth_attempt_repository import IAuthAttemptRepository
+from app.data.interfaces.i_auth_attempt_repository import (
+    IAuthAttemptRepository,
+)
 from app.data.interfaces.i_user_repository import IUserRepository
 from app.data.repositories.authorization.user_group_rel_repository import (
     UserGroupRelRepository,
@@ -10,7 +12,10 @@ from app.domain.interfaces.enums.groups_enum import Groups
 from app.domain.interfaces.i_auth_service import IAuthService
 from app.domain.interfaces.i_sms_service import ISmsService
 from app.domain.interfaces.i_token_service import ITokenService
-from app.exceptions.hygge_exceptions import InvalidAttemptState, UserDoesNotExist
+from app.exceptions.hygge_exceptions import (
+    InvalidAttemptState,
+    UserDoesNotExist,
+)
 from app.utils import string_util
 from app.utils.datetime_util import before_now, utc_now_iso
 from app.utils.logger import logger
@@ -59,7 +64,9 @@ class AuthService(IAuthService):
         self._max_resend_otp_attempt_window_in_min = (
             configuration.otp.max_resend_otp_attempt_window_in_min
         )
-        self._max_resend_otp_attempts = configuration.otp.max_resend_otp_attempts
+        self._max_resend_otp_attempts = (
+            configuration.otp.max_resend_otp_attempts
+        )
         self._max_otp_verification_attempts = (
             configuration.otp.max_otp_verification_attempts
         )
@@ -73,18 +80,22 @@ class AuthService(IAuthService):
         return self._user_repository.fetch_user_by_phone_number(phone_number)
 
     def request_otp(self, user, country_code):
-        attempts = self._auth_attempt_repository.fetch_all_previous_records_for_user(
-            phone_number=user.phone_number,
-            records_after_time=before_now(
-                minutes=self._max_resend_otp_attempt_window_in_min
-            ),
+        attempts = (
+            self._auth_attempt_repository.fetch_all_previous_records_for_user(
+                phone_number=user.phone_number,
+                records_after_time=before_now(
+                    minutes=self._max_resend_otp_attempt_window_in_min
+                ),
+            )
         )
         if len(attempts) >= self._max_resend_otp_attempts:
             # update last attempt
             auth_attempt = attempts[0]
 
             auth_attempt.state = AuthenticationStateEnum.Restricted
-            auth_attempt.state_desc = authentication_state_desc[auth_attempt.state]
+            auth_attempt.state_desc = authentication_state_desc[
+                auth_attempt.state
+            ]
             data_to_update_dict = {
                 "state": AuthenticationStateEnum.Restricted,
                 "state_desc": authentication_state_desc[auth_attempt.state],
@@ -124,7 +135,9 @@ class AuthService(IAuthService):
             "type": "guest",
             "phone_number": user.phone_number,
         }
-        account = self._user_repository.fetch_account_by_phone_number(user.phone_number)
+        account = self._user_repository.fetch_account_by_phone_number(
+            user.phone_number
+        )
         if account is None:
             with self._user_repository.database_instance.atomic():
                 account = self._user_repository.insert_into_account(**data)
@@ -169,10 +182,13 @@ class AuthService(IAuthService):
         if (
             auth_attempt.verification_attempt_count
             >= self._max_otp_verification_attempts
-            or auth_attempt.state.value == AuthenticationStateEnum.OtpRestricted.value
+            or auth_attempt.state.value
+            == AuthenticationStateEnum.OtpRestricted.value
         ):
             auth_attempt.state = AuthenticationStateEnum.OtpRestricted
-            auth_attempt.state_desc = authentication_state_desc[auth_attempt.state]
+            auth_attempt.state_desc = authentication_state_desc[
+                auth_attempt.state
+            ]
 
             data_to_update_dict = {
                 "state": AuthenticationStateEnum.OtpRestricted,
@@ -198,18 +214,26 @@ class AuthService(IAuthService):
         ]:
             raise InvalidAttemptState()
 
-        verification_attempt_count = 1 + auth_attempt.verification_attempt_count
+        verification_attempt_count = (
+            1 + auth_attempt.verification_attempt_count
+        )
         if req_body.otp != auth_attempt.otp:
             auth_attempt.state = AuthenticationStateEnum.OtpFailed
-            auth_attempt.state_desc = authentication_state_desc[auth_attempt.state]
-            auth_attempt.verification_attempt_count = verification_attempt_count
+            auth_attempt.state_desc = authentication_state_desc[
+                auth_attempt.state
+            ]
+            auth_attempt.verification_attempt_count = (
+                verification_attempt_count
+            )
 
             data_to_update = {
                 "state": AuthenticationStateEnum.OtpFailed,
                 "state_desc": authentication_state_desc[auth_attempt.state],
                 "verification_attempt_count": verification_attempt_count,
             }
-            self._auth_attempt_repository.update(auth_attempt.txn_id, **data_to_update)
+            self._auth_attempt_repository.update(
+                auth_attempt.txn_id, **data_to_update
+            )
 
             return {
                 "state_token": str(req_body.state_token),
@@ -227,7 +251,9 @@ class AuthService(IAuthService):
         if not session_user:
             raise UserDoesNotExist()
 
-        session_token = self._token_service.issue_new_token(session_user, txn_id)
+        session_token = self._token_service.issue_new_token(
+            session_user, txn_id
+        )
         refresh_token = self._token_service.issue_refresh_token(session_user)
 
         logger.debug("jwt token: %s" % session_token)
@@ -235,11 +261,15 @@ class AuthService(IAuthService):
         attempts_remaining = 1 + auth_attempt.verification_attempt_count
         auth_attempt_dict = {
             "state": AuthenticationStateEnum.Success,
-            "state_desc": authentication_state_desc[AuthenticationStateEnum.Success],
+            "state_desc": authentication_state_desc[
+                AuthenticationStateEnum.Success
+            ],
             "verification_attempt_count": attempts_remaining,
         }
 
-        self._auth_attempt_repository.update(auth_attempt.txn_id, **auth_attempt_dict)
+        self._auth_attempt_repository.update(
+            auth_attempt.txn_id, **auth_attempt_dict
+        )
 
         auth_attempt = self._auth_attempt_repository.read(auth_attempt.txn_id)
 

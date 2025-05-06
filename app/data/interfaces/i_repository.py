@@ -100,7 +100,9 @@ class IRepository(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def to_dicts(self, obj) -> Union[Dict[str, Any], List[Dict[str, Any]], Any]:
+    def to_dicts(
+        self, obj
+    ) -> Union[Dict[str, Any], List[Dict[str, Any]], Any]:
         """
         Abstract method to convert an object or list of objects to dictionaries.
         """

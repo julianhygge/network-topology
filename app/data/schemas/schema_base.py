@@ -1,7 +1,6 @@
 import datetime
 
-from peewee import DateTimeField
-from playhouse.signals import Model
+from peewee import DateTimeField, Model
 
 
 class BaseModel(Model):
