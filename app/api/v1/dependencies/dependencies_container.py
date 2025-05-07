@@ -4,7 +4,6 @@ from dependency_injector import containers, providers
 
 from app.config.configuration import ApiConfiguration
 from app.config.i_configuration import LoadProfileStrategy
-from app.data.interfaces.i_repository import IRepository
 from app.data.repositories.authorization.auth_attempt_repository import (
     AuthAttemptRepository,
 )
@@ -107,10 +106,10 @@ class Container(containers.DeclarativeContainer):
     _group_repository = providers.Singleton(GroupRepository)
     _user_group_rel_repository = providers.Singleton(UserGroupRelRepository)
     _account_repository = providers.Singleton(AccountRepository)
-    _substation_repo: IRepository = providers.Singleton(SubstationRepository)
-    _transformer_repo: IRepository = providers.Singleton(TransformerRepository)
-    _house_repo: IRepository = providers.Singleton(HouseRepository)
-    _node_repo: IRepository = providers.Singleton(NodeRepository)
+    _substation_repo = providers.Singleton(SubstationRepository)
+    _transformer_repo = providers.Singleton(TransformerRepository)
+    _house_repo = providers.Singleton(HouseRepository)
+    _node_repo = providers.Singleton(NodeRepository)
     _electrical_appliances_repo = providers.Singleton(
         ElectricalAppliancesRepository
     )
