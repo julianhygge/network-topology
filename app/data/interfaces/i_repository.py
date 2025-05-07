@@ -7,7 +7,7 @@ represent the model entity the repository will manage.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generic, List, Type, TypeVar, Union
+from typing import Any, Dict, Generic, List, TypeVar, Union
 from uuid import UUID
 
 from app.data.schemas.schema_base import BaseModel

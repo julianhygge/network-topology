@@ -8,7 +8,9 @@ from app.data.interfaces.i_repository import IRepository
 from app.data.repositories.authorization.auth_attempt_repository import (
     AuthAttemptRepository,
 )
-from app.data.repositories.authorization.group_repository import GroupRepository
+from app.data.repositories.authorization.group_repository import (
+    GroupRepository,
+)
 from app.data.repositories.authorization.user_group_rel_repository import (
     UserGroupRelRepository,
 )
@@ -30,7 +32,9 @@ from app.data.repositories.master.electrical_appliances_repository import (
 from app.data.repositories.master.predefined_template_repository import (
     PredefinedMasterTemplatesRepository,
 )
-from app.data.repositories.solar.solar_profile_repository import SolarProfileRepository
+from app.data.repositories.solar.solar_profile_repository import (
+    SolarProfileRepository,
+)
 from app.data.repositories.topology.topology_repository import (
     HouseRepository,
     NodeRepository,
@@ -54,7 +58,9 @@ from app.domain.services.topology.load_profile_file_completer import (
     LoadProfileFileCompleterPChip,
     LoadProfileFileCompleterSpline,
 )
-from app.domain.services.topology.net_topology_service import NetTopologyService
+from app.domain.services.topology.net_topology_service import (
+    NetTopologyService,
+)
 from app.domain.services.topology.node_service import NodeService
 from app.domain.services.solar.solar_profile_service import SolarProfileService
 from app.domain.services.topology.substation_service import SubstationService
@@ -105,11 +111,17 @@ class Container(containers.DeclarativeContainer):
     _transformer_repo: IRepository = providers.Singleton(TransformerRepository)
     _house_repo: IRepository = providers.Singleton(HouseRepository)
     _node_repo: IRepository = providers.Singleton(NodeRepository)
-    _electrical_appliances_repo = providers.Singleton(ElectricalAppliancesRepository)
+    _electrical_appliances_repo = providers.Singleton(
+        ElectricalAppliancesRepository
+    )
     _solar_profile_repo = providers.Singleton(SolarProfileRepository)
     _load_profiles_repository = providers.Singleton(LoadProfilesRepository)
-    _load_profile_details_repository = providers.Singleton(LoadProfileDetailsRepository)
-    _load_profile_files_repository = providers.Singleton(LoadProfileFilesRepository)
+    _load_profile_details_repository = providers.Singleton(
+        LoadProfileDetailsRepository
+    )
+    _load_profile_files_repository = providers.Singleton(
+        LoadProfileFilesRepository
+    )
     _load_profile_builder_repository = providers.Singleton(
         LoadProfileBuilderItemsRepository
     )
@@ -162,7 +174,9 @@ class Container(containers.DeclarativeContainer):
     )
 
     topology_simulator = providers.Factory(
-        TopologySimulator, transformer_repo=_transformer_repo, house_repo=_house_repo
+        TopologySimulator,
+        transformer_repo=_transformer_repo,
+        house_repo=_house_repo,
     )
 
     electrical_appliances_service = providers.Factory(
