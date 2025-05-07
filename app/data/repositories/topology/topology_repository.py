@@ -54,7 +54,7 @@ class SubstationRepository(BaseRepository[Substation]):
                 data["id"] = obj.id
                 data["node_type"] = "substation"
                 data["substation_id"] = obj.id
-                Node.create(**data)
+                Node.create(data)
                 return obj
         except IntegrityError as e:
             logger.exception(

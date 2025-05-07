@@ -83,7 +83,7 @@ class UserRepository(BaseRepository[User], IUserRepository[User]):
                 user = self.model.create(**user_data)
                 user_id = user_data["id"]  # Assumes user_data contains id
                 # Pass data for UserGroupRel update directly
-                self.update_user_group(user_id, **data)
+                self.update_user_group(user_id, data)
                 return user
         except IntegrityError as e:
             logger.exception(
@@ -91,7 +91,7 @@ class UserRepository(BaseRepository[User], IUserRepository[User]):
             )
             raise
 
-    def create(self, **query: Any) -> User:
+    def create(self, query) -> User:
         """
         Creates a new user, handling logo file if provided.
 
@@ -113,7 +113,7 @@ class UserRepository(BaseRepository[User], IUserRepository[User]):
         obj = self.model.create(**query)
         return obj
 
-    def insert_into_account(self, **data: Any) -> Account:
+    def insert_into_account(self, data: Any) -> Account:
         """
         Inserts a new account.
 
@@ -136,6 +136,6 @@ class UserRepository(BaseRepository[User], IUserRepository[User]):
             data: Dictionary containing data for updating the
                 UserGroupRel record.
         """
-        UserGroupRel.update(**data).where(
+        UserGroupRel.update(data).where(
             UserGroupRel.user_record_id == user_id
         ).execute()

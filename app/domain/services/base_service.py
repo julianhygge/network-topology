@@ -1,7 +1,6 @@
 """
 Base service class providing common CRUD operations.
 """
-import uuid
 from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 from uuid import UUID
 
@@ -40,7 +39,7 @@ class BaseService(IService, Generic[T]):
         kwargs["created_by"] = user_id
         kwargs["modified_by"] = user_id
         kwargs["active"] = True
-        created = self.repository.create(**kwargs)
+        created = self.repository.create(kwargs)
         created_dicts = self.repository.to_dicts(created)
         return created_dicts
 

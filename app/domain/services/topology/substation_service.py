@@ -33,7 +33,7 @@ class SubstationService(BaseService, ISubstationService):
                     "created_by": user_id,
                     "modified_by": user_id,
                 }
-                self.repository.create(**new_substation)
+                self.repository.create(new_substation)
 
         substations = self.list_all()
         substations.sort(key=lambda x: x["created_on"])

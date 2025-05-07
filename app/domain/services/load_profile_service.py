@@ -296,10 +296,10 @@ class LoadProfileService(BaseService):
         )
         profile_id = load_profile.id
 
-        items = self._load_profile_builder_repository.get_items_by_profile_id(
+        existing_items  = self._load_profile_builder_repository.get_items_by_profile_id(
             profile_id
         )
-        existing_ids = set(item.id for item in items)
+        existing_ids = set(item.id for item in existing_items)
 
         to_create = []
         to_update = []
@@ -401,7 +401,7 @@ class LoadProfileService(BaseService):
             "house_id": house_id,
         }
 
-        load_profile = self._load_profile_repo.create(**profile_data)
+        load_profile = self._load_profile_repo.create(profile_data)
         if is_15_mins_interval:
             df.insert(2, "profile_id", load_profile.id)
             details = df.to_dict("records")

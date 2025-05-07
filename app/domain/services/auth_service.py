@@ -162,8 +162,7 @@ class AuthService(IAuthService):
                 AuthenticationStateEnum.OtpRequired
             ],
         }
-        new_attempt = self._auth_attempt_repository.create(**data)
-        # self._sms_service.send_otp_sms(user.phone_number, otp, txn_id=new_attempt.txn_id)
+        new_attempt = self._auth_attempt_repository.create(data)
 
         data_response = {
             "state_token": str(new_attempt.txn_id),
@@ -268,7 +267,7 @@ class AuthService(IAuthService):
         }
 
         self._auth_attempt_repository.update(
-            auth_attempt.txn_id, **auth_attempt_dict
+            auth_attempt.txn_id, auth_attempt_dict
         )
 
         auth_attempt = self._auth_attempt_repository.read(auth_attempt.txn_id)

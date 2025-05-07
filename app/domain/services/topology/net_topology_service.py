@@ -159,7 +159,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
                 user_id, substation_id, parent_node, node_type, nomenclature
             )
 
-            new_node = self.node_repo.create(**new_node_data)
+            new_node = self.node_repo.create(new_node_data)
 
             self._save_new_node(substation_id, new_node.id, node_type)
 
@@ -214,9 +214,9 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         }
 
         if node_type == NodeType.TRANSFORMER.value:
-            self.transformer_repo.create(**new_data)
+            self.transformer_repo.create(new_data)
         elif node_type == NodeType.HOUSE.value:
-            self.house_repo.create(**new_data)
+            self.house_repo.create(new_data)
 
     def _delete_node(self, node_id: UUID):
         """Delete a node from the topology."""
