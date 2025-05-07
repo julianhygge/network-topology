@@ -64,9 +64,11 @@ class BaseRepository(IRepository[T]):
         """
         Initializes the BaseRepository instance.
 
-        This primarily ensures that the necessary class attributes (`_model_cls`,
+        This primarily ensures that the necessary class
+        attributes (`_model_cls`,
         `_id_field_instance`) have been correctly set by `__init_subclass__`
-        by attempting to access the `model` property and `_get_id_field` method.
+        by attempting to access the `model` property and
+        `_get_id_field` method.
         """
         _ = self.model
         _ = self._get_id_field()
