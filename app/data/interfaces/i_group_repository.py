@@ -1,10 +1,10 @@
 """
 Module for the group repository interface.
 """
-
+import datetime
 from abc import abstractmethod
 from enum import Enum
-from typing import List, NamedTuple
+from typing import Any, List, NamedTuple
 
 from app.data.interfaces.i_repository import IRepository, T
 
@@ -72,9 +72,19 @@ class IGroupRepository(IRepository[T]):
 
     @abstractmethod
     def fetch_roles_and_permissions_by_groups(
-        self, session_user, now
+        self,
+        session_user: Any,
+        now: datetime.datetime,
     ) -> List[RolePermission]:
         """
-        Abstract method to fetch roles and permissions by groups.
+        Fetches roles and permissions for groups associated with a session user.
+
+        Args:
+            session_user: The user object or identifier for the current
+                session.
+            now: The current datetime, used for validity checks.
+
+        Returns:
+            A list of RolePermission objects.
         """
-        pass  # pylint: disable=syntax-error
+        pass

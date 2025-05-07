@@ -46,25 +46,7 @@ class TopologySimulator(ITopologySimulator):
         )
 
     def run(self, substation_id: UUID):
-        houses = self._house_repo.get_houses_by_substation_id(substation_id)
-        transformers = self._transformer_repo.get_transformers_by_substation_id(
-            substation_id
-        )
-        total_load = self.calculate_total_load(houses)
-        total_solar = self.calculate_total_solar(houses)
-        excess_solar = self.calculate_excess_solar(total_solar, total_load)
-        battery_capacity = self.calculate_battery_capacity(houses)
-        peak_capacity_rate = self.calculate_peak_capacity_rate(houses)
-
-        self.allocation_algorithm(
-            houses,
-            transformers,
-            total_load,
-            total_solar,
-            excess_solar,
-            battery_capacity,
-            peak_capacity_rate,
-        )
+        """"""
 
     def allocation_algorithm(
         self,

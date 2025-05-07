@@ -6,6 +6,8 @@ from .locality import Locality
 from .node import Node
 from .substation import Substation
 from .transformer import Transformer
+from .solar_profile_entity import SolarProfileEntity
+from .solar_item_profile_entity import SolarItemProfileEntity
 
 __all__ = [
     "Account",
@@ -14,4 +16,6 @@ __all__ = [
     "Node",
     "Substation",
     "Transformer",
+    "SolarProfileEntity",
+    "SolarItemProfileEntity",
 ]

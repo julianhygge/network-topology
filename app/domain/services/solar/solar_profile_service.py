@@ -1,11 +1,11 @@
 """
 Implementation of the Solar Profile Service.
 """
+
 from typing import Any, Dict, cast
 from uuid import UUID
 
-# IRepository import removed
-from app.data.interfaces.solar.i_solar_profile_repository import (  # Added
+from app.data.interfaces.solar.i_solar_profile_repository import (
     ISolarProfileRepository,
 )
 from app.data.schemas.solar.solar_profile_schema import SolarProfile
@@ -28,12 +28,14 @@ class SolarProfileService(BaseService[SolarProfile], ISolarProfileService):
             repository: The ISolarProfileRepository instance.
         """
         super().__init__(repository)
-        # Re-annotate self.repository to its specific type
-        # ISolarProfileRepository. This allows access to specific methods
-        # like get_solar_profile_by_house_id. Pylance might warn about this
-        # override if it's overly strict on variance, but
-        # ISolarProfileRepository is a subtype of IRepository[SolarProfile].
-        self.repository: ISolarProfileRepository = repository
+
+    @property
+    def _repo(self) -> ISolarProfileRepository:
+        """
+        Provides the repository cast to ISolarProfileRepository.
+        """
+        repo = cast(ISolarProfileRepository, self.repository)
+        return repo
 
     def create(self, user_id: UUID, **kwargs: Any) -> Dict[str, Any]:
         """
@@ -55,18 +57,14 @@ class SolarProfileService(BaseService[SolarProfile], ISolarProfileService):
             kwargs["installed_capacity_kw"] = None
             kwargs["years_since_installation"] = None
 
-        if not kwargs.get("solar_available") and not kwargs.get(
-            "simulate_using_different_capacity"
-        ):
+        has_no_solar = not kwargs.get("solar_available")
+        simulate_diff_cap = kwargs.get("simulate_using_different_capacity")
+
+        if has_no_solar and not simulate_diff_cap:
             kwargs["simulated_available_space_sqft"] = None
 
-        created = self.repository.create(**kwargs)
-        # `to_dicts` from BaseRepository should return Dict[str, Any]
-        # when a single model instance is passed.
+        created: SolarProfile = self.repository.create(data=kwargs)
         created_dict = cast(Dict[str, Any], self.repository.to_dicts(created))
-
-        # `created.tilt_type` is a CharField.
-        # Check for existing and truthy (non-empty) tilt_type.
         if hasattr(created, "tilt_type") and created.tilt_type:
             created_dict["tilt_type"] = created.tilt_type
         return created_dict
@@ -84,10 +82,8 @@ class SolarProfileService(BaseService[SolarProfile], ISolarProfileService):
             A dictionary representation of the solar profile if found,
             otherwise None.
         """
-        lst = self.repository.get_solar_profile_by_house_id(house_id)
+        lst = self._repo.get_solar_profile_by_house_id(house_id)
         if lst is not None:
-            # `lst` is a SolarProfile model instance here.
-            # `to_dicts` should return Dict[str, Any].
             solar_data = cast(Dict[str, Any], self.repository.to_dicts(lst))
             return solar_data
         return None
@@ -99,7 +95,7 @@ class SolarProfileService(BaseService[SolarProfile], ISolarProfileService):
         Args:
             house_id: The UUID of the house.
         """
-        self.repository.delete_solar_profile_by_house_id(house_id)
+        self._repo.delete_solar_profile_by_house_id(house_id)
 
     def update_solar_profile(
         self, user_id: UUID, house_id: UUID, **kwargs: Any
@@ -114,4 +110,4 @@ class SolarProfileService(BaseService[SolarProfile], ISolarProfileService):
                 data.
         """
         kwargs["modified_by"] = user_id
-        self.repository.update(house_id, **kwargs)
+        self.repository.update(id_value=house_id, data=kwargs)

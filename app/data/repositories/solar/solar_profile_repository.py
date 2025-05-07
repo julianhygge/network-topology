@@ -1,6 +1,14 @@
+
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
+
 """
 Solar Profile Repository implementation.
+
+This module provides the concrete implementation for managing SolarProfile
+data, extending the generic BaseRepository and implementing the
+ISolarProfileRepository interface.
 """
+
 from typing import Optional
 from uuid import UUID
 
@@ -16,11 +24,11 @@ class SolarProfileRepository(
 ):
     """
     Repository for managing SolarProfile data.
-    It provides specific methods for solar profiles beyond generic CRUD.
-    """
 
-    model = SolarProfile
-    id_field = SolarProfile.id
+    This class extends `BaseRepository` to provide generic CRUD operations
+    for the `SolarProfile` model and implements `ISolarProfileRepository`
+    for specific data access methods related to solar profiles.
+    """
 
     def get_solar_profile_by_house_id(
         self, house_id: UUID
@@ -34,7 +42,11 @@ class SolarProfileRepository(
         Returns:
             A SolarProfile instance if found, otherwise None.
         """
-        return self.model.get_or_none(self.model.house_id == house_id)
+        solar_profile: SolarProfile = self.model.get_or_none(
+            self.model.house_id == house_id
+        )
+
+        return solar_profile
 
     def delete_solar_profile_by_house_id(self, house_id: UUID) -> int:
         """

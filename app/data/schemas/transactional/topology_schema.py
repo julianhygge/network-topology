@@ -36,12 +36,14 @@ class Account(Transactional):
 
 class Locality(Transactional):
     name = CharField(max_length=100)
+    id = UUIDField(primary_key=True, default=uuid.uuid4)
 
     class Meta:
         table_name = "localities"
 
 
 class Substation(Transactional):
+    id = UUIDField(primary_key=True, default=uuid.uuid4)
     locality = ForeignKeyField(Locality, backref="substations")
     name = CharField(max_length=100)
 
