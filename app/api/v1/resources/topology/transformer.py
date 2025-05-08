@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import UUID4
 
 from app.api.authorization.authorization import permission
-from app.api.authorization.enums import Permission as p, Resources as r
+from app.api.authorization.enums import Permission as p
+from app.api.authorization.enums import Resources as r
 from app.api.v1.dependencies.container_instance import (
     get_net_topology_service,
     get_transformer_service,
@@ -54,7 +55,9 @@ async def update_transformer(
         )
         return updated_transformer
     except NotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
+        ) from e
 
 
 @tr_router.get("/{transformer_id}", response_model=TransformerResponseModel)
@@ -83,4 +86,6 @@ async def get(
         data = service.read(transformer_id)
         return data
     except NotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
+        ) from e

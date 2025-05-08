@@ -47,7 +47,9 @@ class Roles(AuthBase):
     id = BigAutoField(primary_key=True)
     name = EnumField(unique=True, enum_class=UserRoles)
     description = CharField(null=True, max_length=100)
-    permissions = ManyToManyField(Permissions, through_model=RolePermissionRelDeferred)
+    permissions = ManyToManyField(
+        Permissions, through_model=RolePermissionRelDeferred
+    )
 
     class Meta:
         table_name = "roles"
@@ -139,8 +141,12 @@ class AuthAttempts(AuthBase):
     gateway_send_otp_res_status = CharField(
         max_length=10, null=True
     )  # status code of sms gateway api call
-    gateway_send_otp_res_body = BinaryJSONField()  # response of sms gateway api call
-    claims_issued = CharField(null=True, max_length=100)  # todo: not sure what to put
+    gateway_send_otp_res_body = (
+        BinaryJSONField()
+    )  # response of sms gateway api call
+    claims_issued = CharField(
+        null=True, max_length=100
+    )  # todo: not sure what to put
     backing_txn_id = UUIDField(null=True)
     created_on = DateTimeField(default=datetime.datetime.utcnow)
     modified_on = DateTimeField(default=datetime.datetime.utcnow)
@@ -148,7 +154,10 @@ class AuthAttempts(AuthBase):
         User, backref="created", on_delete="SET NULL", column_name="created_by"
     )
     modified_by = ForeignKeyField(
-        User, backref="modified", on_delete="SET NULL", column_name="modified_by"
+        User,
+        backref="modified",
+        on_delete="SET NULL",
+        column_name="modified_by",
     )
 
     class Meta:
@@ -157,7 +166,9 @@ class AuthAttempts(AuthBase):
 
 class AuthenticatedSessions(AuthBase):
     id = UUIDField(primary_key=True)
-    record_id = ForeignKeyField("self", column_name="record_id", lazy_load=False)
+    record_id = ForeignKeyField(
+        "self", column_name="record_id", lazy_load=False
+    )
     user = ForeignKeyField(User, column_name="user_record_id", lazy_load=False)
     group_id = ForeignKeyField(Groups, column_name="group_id", lazy_load=False)
     relative_auth_attempt = ForeignKeyField(

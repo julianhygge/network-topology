@@ -17,7 +17,9 @@ class DatabaseMiddleware(BaseHTTPMiddleware):
         # Catching a broad exception to ensure the database session is closed
         # even if unexpected errors occur during request processing.
         except Exception as e:  # pylint: disable=broad-exception-caught
-            response = JSONResponse(status_code=400, content={"detail": str(e)})
+            response = JSONResponse(
+                status_code=400, content={"detail": str(e)}
+            )
         finally:
             if not HyggeDatabase.get_instance().is_closed():
                 HyggeDatabase.get_instance().close()

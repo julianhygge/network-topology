@@ -1,4 +1,5 @@
 """Module for the load profile details repository interface."""
+
 from abc import abstractmethod
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -13,9 +14,7 @@ class ILoadProfileDetailsRepository(IRepository[T]):  # T is LoadProfileDetails
     """
 
     @abstractmethod
-    def create_details_in_bulk(
-        self, details: List[Dict[str, Any]]
-    ) -> None:
+    def create_details_in_bulk(self, details: List[Dict[str, Any]]) -> None:
         """
         Creates multiple load profile detail records in bulk.
 

@@ -9,8 +9,8 @@ from app.domain.interfaces.i_token_service import ITokenService
 from app.utils.datetime_util import (
     after_now,
     current_time_millis,
-    utc_now_iso,
     utc_now,
+    utc_now_iso,
 )
 from app.utils.json_util import UUIDEncoder
 from app.utils.logger import logger

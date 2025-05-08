@@ -1,4 +1,3 @@
-
 # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 
 """

@@ -1,4 +1,5 @@
 """Module for the predefined templates repository interface."""
+
 from abc import abstractmethod
 from typing import Optional
 from uuid import UUID
@@ -27,9 +28,7 @@ class IPredefinedTemplatesRepository(IRepository[T]):
         pass
 
     @abstractmethod
-    def create_or_update(
-        self, profile_id: UUID, template_id: UUID
-    ) -> T:
+    def create_or_update(self, profile_id: UUID, template_id: UUID) -> T:
         """
         Creates a new predefined template association or updates an existing one.
 

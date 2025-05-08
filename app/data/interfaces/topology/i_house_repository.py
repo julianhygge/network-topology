@@ -1,4 +1,5 @@
 """Module for the house repository interface."""
+
 from abc import abstractmethod
 from uuid import UUID
 

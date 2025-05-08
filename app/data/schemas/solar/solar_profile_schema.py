@@ -1,14 +1,14 @@
 """Solar profile schema."""
 
 from peewee import (
+    AutoField,
     BooleanField,
     CharField,
+    DateTimeField,
     DecimalField,
+    DoubleField,
     ForeignKeyField,
     UUIDField,
-    AutoField,
-    DateTimeField,
-    DoubleField,
 )
 
 from app.data.schemas.auth.auditable_base import AuditableBase

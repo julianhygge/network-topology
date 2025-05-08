@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from app.api.v1.models.responses.breadcrumb import (
@@ -24,7 +24,9 @@ class NodeService(INodeService):
             }
         return None
 
-    def get_breadcrumb_navigation_path(self, node_id: UUID) -> BreadcrumbResponseModel:
+    def get_breadcrumb_navigation_path(
+        self, node_id: UUID
+    ) -> BreadcrumbResponseModel:
         path = []
         current_node = self.node_repo.read(node_id)
 
@@ -51,7 +53,9 @@ class NodeService(INodeService):
         )
 
         locality_node = self.node_repo.get_locality(node_id)
-        locality_name = locality_node.name if locality_node else "Unknown Locality"
+        locality_name = (
+            locality_node.name if locality_node else "Unknown Locality"
+        )
 
         return BreadcrumbResponseModel(
             locality=locality_name,

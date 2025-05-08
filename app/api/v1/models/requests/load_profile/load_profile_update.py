@@ -53,7 +53,12 @@ class LoadProfileBuilderItemsRequest(BaseModel):
                 "quantity": 5,
                 "hours": 4,
             },
-            {"electrical_device_id": 2, "rating_watts": 75, "quantity": 3, "hours": 8},
+            {
+                "electrical_device_id": 2,
+                "rating_watts": 75,
+                "quantity": 3,
+                "hours": 8,
+            },
         ],
     )
 
@@ -89,7 +94,10 @@ class LoadGenerationEngineResponse(BaseModel):
     modified_on: datetime = Field(..., example="2024-05-07 12:40")
     links: Dict[str, str] = Field(
         default={"self": "/v1/load_profiles/"},
-        example={"self": "/v1/load_profiles/", "next": "/v1/load_profiles/?page=2"},
+        example={
+            "self": "/v1/load_profiles/",
+            "next": "/v1/load_profiles/?page=2",
+        },
     )
 
 

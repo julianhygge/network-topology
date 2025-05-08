@@ -12,12 +12,17 @@ from app.data.interfaces.topology.i_node_repository import INodeRepository
 from app.data.repositories.base_repository import BaseRepository
 from app.data.schemas.transactional.topology_schema import (
     House,
+    HouseFlag,
     Locality,
     Node,
     Substation,
     Transformer,
 )
 from app.utils.logger import logger
+
+
+class FlagRepository(BaseRepository[HouseFlag]):
+    """"""
 
 
 class LocalityRepository(BaseRepository[Locality]):

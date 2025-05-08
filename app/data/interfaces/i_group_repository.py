@@ -1,6 +1,7 @@
 """
 Module for the group repository interface.
 """
+
 import datetime
 from abc import abstractmethod
 from enum import Enum

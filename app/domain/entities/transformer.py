@@ -32,4 +32,4 @@ class Transformer:
     created_date: Optional[datetime] = None
     updated_by: Optional[uuid.UUID] = None
     updated_date: Optional[datetime] = None
-    node: Optional['Node'] = None
+    node: Optional["Node"] = None

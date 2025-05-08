@@ -88,20 +88,3 @@ async def get(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
         ) from e
-
-@house_router.get("/{house_id}/flags", response_model=HouseResponseModel)
-async def get(
-    house_id: UUID4,
-    _: str = Depends(
-        permission(Resources.HOUSES, Permission.RETRIEVE)
-    ),  
-    service: IService = Depends(get_house_service),
-) -> HouseResponseModel:
-
-    try:
-        data = service.read(house_id)
-        return data
-    except NotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e

@@ -25,7 +25,9 @@ from app.domain.interfaces.i_service import IService
 from app.domain.interfaces.net_topology.i_net_topology_service import (
     INetTopologyService,
 )
-from app.domain.interfaces.net_topology.i_substation_service import ISubstationService
+from app.domain.interfaces.net_topology.i_substation_service import (
+    ISubstationService,
+)
 from app.utils.logger import logger
 
 substation_router = APIRouter(tags=["Substations"])
@@ -58,7 +60,8 @@ async def get_substation_topology(
     topology = service.get_topology_by_substation_id(str(substation_id))
     if not topology:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Substation not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Substation not found",
         )
     return topology
 
@@ -67,7 +70,9 @@ async def get_substation_topology(
 async def update_substation_topology(
     substation_id: UUID4,
     topology_data: SubstationTopologyRequestModel,
-    user_id: str = Depends(permission(Resources.SUBSTATIONS, Permission.UPDATE)),
+    user_id: str = Depends(
+        permission(Resources.SUBSTATIONS, Permission.UPDATE)
+    ),
     service: INetTopologyService = Depends(get_net_topology_service),
 ) -> SubstationTopology:
     """
@@ -94,7 +99,9 @@ async def update_substation_topology(
     if not topology:
         # This case might indicate an issue if the update succeeded
         # but the subsequent fetch failed.
-        logger.error("Failed to fetch topology after update for %s", substation_id)
+        logger.error(
+            "Failed to fetch topology after update for %s", substation_id
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Substation not found after update attempt.",
@@ -105,7 +112,9 @@ async def update_substation_topology(
 @substation_router.post("/", response_model=SubstationResponseModel)
 async def create(
     data: SubstationRequestModel,
-    user_id: UUID = Depends(permission(Resources.SUBSTATIONS, Permission.CREATE)),
+    user_id: UUID = Depends(
+        permission(Resources.SUBSTATIONS, Permission.CREATE)
+    ),
     service: IService = Depends(get_substation_service),
 ) -> SubstationResponseModel:
     """
@@ -125,10 +134,14 @@ async def create(
     return SubstationResponseModel(**body)
 
 
-@substation_router.post("/generate", response_model=SubstationResponseModelList)
+@substation_router.post(
+    "/generate", response_model=SubstationResponseModelList
+)
 async def generate_substations(
     data: SubstationsRequestModel,
-    user_id: UUID = Depends(permission(Resources.SUBSTATIONS, Permission.CREATE)),
+    user_id: UUID = Depends(
+        permission(Resources.SUBSTATIONS, Permission.CREATE)
+    ),
     service: ISubstationService = Depends(get_substation_service),
 ) -> SubstationResponseModelList:
     """

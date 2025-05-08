@@ -25,7 +25,7 @@ class BaseModel(Model):
 
         Args:
             db_instance: The Peewee database instance to use.
-        """  
+        """
         # pylint: disable=no-member
         cls._meta.database = db_instance  # type: ignore[assignment, no-member]
         for subclass in cls.__subclasses__():

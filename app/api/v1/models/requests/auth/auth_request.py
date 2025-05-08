@@ -35,7 +35,9 @@ class UploadFileSchema(BaseModel):
 class OtpRequestModelResponse(BaseModel):
     """Response model after requesting an OTP."""
 
-    state_token: UUID = Field(..., example="824960c0-974c-4c57-8803-85f5f407b304")
+    state_token: UUID = Field(
+        ..., example="824960c0-974c-4c57-8803-85f5f407b304"
+    )
     attempts_remaining: int = Field(..., example=3)
     modified_on: Optional[datetime] = None
     status: str = Field(..., example="OTP_REQUIRED")
@@ -46,7 +48,9 @@ class OtpVerificationRequest(BaseModel):
     """Request model for verifying an OTP."""
 
     otp: str = Field(..., example="654321")
-    state_token: UUID = Field(..., example="824960c0-974c-4c57-8803-85f5f407b304")
+    state_token: UUID = Field(
+        ..., example="824960c0-974c-4c57-8803-85f5f407b304"
+    )
 
 
 class OtpRequest(BaseModel):

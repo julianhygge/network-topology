@@ -9,8 +9,6 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    # This import is still useful for IDEs and some type checkers
-    # but 'Node' below will be treated as a string due to the __future__ import
     from app.domain.entities.node import Node
 
 

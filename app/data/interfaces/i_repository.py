@@ -10,8 +10,9 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, List, TypeVar, Union
 from uuid import UUID
 
-from app.data.schemas.schema_base import BaseModel
+from peewee import Expression
 
+from app.data.schemas.schema_base import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -210,4 +211,23 @@ class IRepository(ABC, Generic[T]):
 
         Returns:
             List[T]: A list of model instances created by the user and active.
+        """
+
+    @abstractmethod
+    def filter(
+        self, *expressions: Expression, filters: Dict[str, Any]
+    ) -> List[T]:
+        """
+        Filters records based on a combination of Peewee expressions and
+        simple equality filters.
+
+        Args:
+            *expressions: Variable number of Peewee Expression objects
+                          (Model.field > value).
+            filters: A dictionary where keys are field names (strings)
+                     and values are the values to filter by
+                     ({"name": "John"}).
+
+        Returns:
+            List[T]: A list of model instances matching the filter criteria.
         """

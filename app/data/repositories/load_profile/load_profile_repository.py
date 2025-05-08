@@ -1,26 +1,39 @@
 """Module for various load profile related repositories."""
+
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from peewee import DoesNotExist
 
-from app.data.interfaces.load.i_load_generation_engine_repository import \
-    ILoadGenerationEngineRepository
-from app.data.interfaces.load.i_load_load_profile_repository import \
-    ILoadProfileRepository
-from app.data.interfaces.load.i_load_profile_builder_repository import \
-    ILoadProfileBuilderRepository
-from app.data.interfaces.load.i_load_profile_details_repository import \
-    ILoadProfileDetailsRepository
-from app.data.interfaces.load.i_load_profile_files_repository import \
-    ILoadProfileFilesRepository
-from app.data.interfaces.load.i_predefined_templates_repository import \
-    IPredefinedTemplatesRepository
+from app.data.interfaces.load.i_load_generation_engine_repository import (
+    ILoadGenerationEngineRepository,
+)
+from app.data.interfaces.load.i_load_load_profile_repository import (
+    ILoadProfileRepository,
+)
+from app.data.interfaces.load.i_load_profile_builder_repository import (
+    ILoadProfileBuilderRepository,
+)
+from app.data.interfaces.load.i_load_profile_details_repository import (
+    ILoadProfileDetailsRepository,
+)
+from app.data.interfaces.load.i_load_profile_files_repository import (
+    ILoadProfileFilesRepository,
+)
+from app.data.interfaces.load.i_predefined_templates_repository import (
+    IPredefinedTemplatesRepository,
+)
 from app.data.repositories.base_repository import BaseRepository
+
 # Schemas used by these repositories
 from app.data.schemas.load_profile.load_profile_schema import (
-    LoadGenerationEngine, LoadPredefinedTemplates, LoadProfileBuilderItems,
-    LoadProfileDetails, LoadProfileFiles, LoadProfiles)
+    LoadGenerationEngine,
+    LoadPredefinedTemplates,
+    LoadProfileBuilderItems,
+    LoadProfileDetails,
+    LoadProfileFiles,
+    LoadProfiles,
+)
 
 
 class LoadProfilesRepository(
@@ -119,9 +132,7 @@ class LoadProfileDetailsRepository(
             .execute()
         )
 
-    def create_details_in_bulk(
-        self, details: List[Dict[str, Any]]
-    ) -> None:
+    def create_details_in_bulk(self, details: List[Dict[str, Any]]) -> None:
         """Creates multiple load profile detail records in bulk."""
         self.model.insert_many(details).execute()
 
@@ -132,9 +143,7 @@ class LoadProfileDetailsRepository(
         Retrieves load profile details (timestamp, consumption) by load ID.
         """
         load_details_dicts = (
-            self.model.select(
-                self.model.timestamp, self.model.consumption_kwh
-            )
+            self.model.select(self.model.timestamp, self.model.consumption_kwh)
             .where(self.model.profile_id == load_id)
             .order_by(self.model.timestamp.asc())
             .dicts()
@@ -187,9 +196,7 @@ class LoadProfileBuilderItemsRepository(
             self.model.select().where(self.model.profile_id == profile_id)
         )
 
-    def create_items_in_bulk(
-        self, items: List[Dict[str, Any]]
-    ) -> None:
+    def create_items_in_bulk(self, items: List[Dict[str, Any]]) -> None:
         """Creates multiple load profile builder items in bulk."""
         self.model.insert_many(items).execute()
 
@@ -203,9 +210,7 @@ class LoadProfileBuilderItemsRepository(
             .execute()
         )
 
-    def update_items_in_bulk(
-        self, items: List[Dict[str, Any]]
-    ) -> None:
+    def update_items_in_bulk(self, items: List[Dict[str, Any]]) -> None:
         """
         Updates multiple load profile builder items in bulk.
         Each dictionary in items should include an 'id' field.

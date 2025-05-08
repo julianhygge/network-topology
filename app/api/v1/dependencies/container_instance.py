@@ -8,7 +8,10 @@ service instances into route handlers.
 
 from app.api.v1.dependencies.dependencies_container import Container
 from app.config.configuration import ApiConfiguration
-from app.data.interfaces.topology.i_topology_simulator import ITopologySimulator
+from app.data.interfaces.topology.i_topology_simulator import (
+    ITopologySimulator,
+)
+from app.data.schemas.transactional.topology_schema import HouseFlag
 from app.domain.interfaces.i_auth_service import IAuthService
 from app.domain.interfaces.i_mqtt_service import IMqttService
 from app.domain.interfaces.i_node_service import INodeService
@@ -18,6 +21,7 @@ from app.domain.interfaces.i_token_service import ITokenService
 from app.domain.interfaces.net_topology.i_net_topology_service import (
     INetTopologyService,
 )
+from app.domain.services.base_service import BaseService
 from app.domain.services.load_profile_service import LoadProfileService
 
 c = Container()
@@ -101,3 +105,8 @@ def get_predefined_template_service() -> IService:
 def get_mqtt_service() -> IMqttService:
     """Get the MQTT service instance."""
     return c.mqtt_service()
+
+
+def get_flag_service() -> BaseService[HouseFlag]:
+    """Get the flag service instance."""
+    return c.flag_service()

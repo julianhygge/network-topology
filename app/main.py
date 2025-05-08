@@ -10,14 +10,14 @@ from app.api.v1.resources.auth.auth import auth_router
 from app.api.v1.resources.electrical_devices.electrical_appliances import (
     appliances_router,
 )
-
 from app.api.v1.resources.load_profile.load_profile import load_router
+from app.api.v1.resources.solar.solar_profile import solar_router
 from app.api.v1.resources.topology.breadcrumb import breadcrumb_router
+from app.api.v1.resources.topology.flags import flag_router
 from app.api.v1.resources.topology.house import house_router
 from app.api.v1.resources.topology.substation import substation_router
 from app.api.v1.resources.topology.transformer import tr_router
 from app.api.v1.resources.users.group import group_router
-from app.api.v1.resources.solar.solar_profile import solar_router
 from app.api.v1.resources.users.user import user_router
 from app.config.servers import hygge_servers
 from app.exceptions.exception_handlers import add_exception_handlers
@@ -46,9 +46,19 @@ def add_routes(cc_app: FastAPI):
     cc_app.include_router(breadcrumb_router, prefix=f"{version_1}breadcrumb")
     cc_app.include_router(appliances_router, prefix=f"{version_1}appliances")
     cc_app.include_router(solar_router, prefix=f"{version_1}solar")
+    cc_app.include_router(flag_router, prefix=f"{version_1}flags")
 
 
-app = FastAPI(title="Network topology", root_path="/net-topology-api")
+app = FastAPI(
+    title="Network topology",
+    openapi_version="3.1.0",
+    root_path="/net-topology-api",
+    swagger_ui_parameters={
+        "persistAuthorization": True,
+        "tryItOutEnabled": True,
+    },
+    servers=hygge_servers,
+)
 
 app.servers = hygge_servers
 add_app_middleware(app)

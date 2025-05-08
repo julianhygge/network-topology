@@ -7,7 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
-    get_solar_profile_service)
+    get_solar_profile_service,
+)
 from app.api.v1.models.requests.solar.solar_profile_request import (
     SolarProfileRequestModel,
     SolarProfileUpdateModel,
@@ -26,8 +27,9 @@ solar_router = APIRouter(tags=["Solar"])
 async def create_solar_profile(
     data: SolarProfileRequestModel,
     service: ISolarProfileService = Depends(get_solar_profile_service),
-    user_id: str = Depends(permission(Resources.LOAD_PROFILES, 
-                                      Permission.CREATE)),
+    user_id: str = Depends(
+        permission(Resources.LOAD_PROFILES, Permission.CREATE)
+    ),
 ):
     """
     Create a new solar profile.
@@ -86,8 +88,9 @@ async def update_solar_profile(
     house_id: UUID,
     data: SolarProfileUpdateModel,
     service: ISolarProfileService = Depends(get_solar_profile_service),
-    user_id: str = Depends(permission(Resources.LOAD_PROFILES, 
-                                      Permission.CREATE)),
+    user_id: str = Depends(
+        permission(Resources.LOAD_PROFILES, Permission.CREATE)
+    ),
 ):
     """
     Update an existing solar profile for a specific house.

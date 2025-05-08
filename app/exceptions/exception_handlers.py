@@ -70,7 +70,9 @@ async def handle_unexpected_error(_, exc):
 
 async def handle_http_errors(_, exc):
     logger.exception(exc)
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    return JSONResponse(
+        status_code=exc.status_code, content={"detail": exc.detail}
+    )
 
 
 async def handle_invalid_attempt_state(_, exc):
@@ -91,7 +93,8 @@ async def handle_user_already_exist(_, exc):
 async def handle_database_error(_, exc: DatabaseException):
     logger.exception(exc)
     return JSONResponse(
-        status_code=500, content={"detail": exc.message, "details": exc.details}
+        status_code=500,
+        content={"detail": exc.message, "details": exc.details},
     )
 
 
@@ -109,4 +112,6 @@ async def handle_item_not_found(request: Request, exc: NotFoundException):
         "type": "NOT_FOUND",
         "suggestions": "Check the request and try again.",
     }
-    return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=response_content)
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND, content=response_content
+    )

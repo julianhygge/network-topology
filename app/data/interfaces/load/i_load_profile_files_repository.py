@@ -1,4 +1,5 @@
 """Module for the load profile files repository interface."""
+
 from abc import abstractmethod
 from typing import Optional
 from uuid import UUID
@@ -14,9 +15,7 @@ class ILoadProfileFilesRepository(IRepository[T]):  # T is LoadProfileFiles
     """
 
     @abstractmethod
-    def save_file(
-        self, profile_id: UUID, filename: str, content: bytes
-    ) -> T:
+    def save_file(self, profile_id: UUID, filename: str, content: bytes) -> T:
         """
         Saves a file associated with a load profile.
 

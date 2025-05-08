@@ -1,4 +1,5 @@
 """Module for the UserGroupRelRepository."""
+
 import datetime
 from datetime import timezone
 
@@ -100,5 +101,7 @@ class UserGroupRelRepository(BaseRepository[UserGroupRel]):
             )
             num_deleted = query.execute()
             return num_deleted > 0
-        except DoesNotExist:  # Should not happen with delete, but good practice
+        except (
+            DoesNotExist
+        ):  # Should not happen with delete, but good practice
             return False

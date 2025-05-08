@@ -23,7 +23,10 @@ class HouseholdInformation(BaseModel):
     """Represents information about the household."""
 
     number_of_people: int = Field(
-        ..., example=1, ge=1, description="The number of people living in the house."
+        ...,
+        example=1,
+        ge=1,
+        description="The number of people living in the house.",
     )
     people_profiles: List[PersonProfile] = Field(
         ..., description="List of profiles for each person in the household."
@@ -65,5 +68,6 @@ class LoadProfileCreateRequest(BaseModel):
         description="Information about the household and its occupants. Optional.",
     )
     public: bool = Field(
-        example=True, description="Indicates whether the load profile is public or not."
+        example=True,
+        description="Indicates whether the load profile is public or not.",
     )

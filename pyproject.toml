@@ -4,6 +4,13 @@ line-length = 79
 [tool.isort]
 profile = "black"
 
+[tool.poetry.group.dev.dependencies]
+peewee-stubs = "^x.y.z" # Or similar depending on your Peewee version
+
 [tool.ruff]
 line-length = 79
+select = ["E", "F", "I", "C", "B"]
 fix = true
+
+[tool.ruff.format]
+quote-style = "double"

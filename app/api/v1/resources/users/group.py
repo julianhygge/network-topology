@@ -24,7 +24,9 @@ class UserGroupRelation(BaseModel):
 @group_router.post(path="/user/", status_code=status.HTTP_200_OK)
 async def add_user(
     relation: UserGroupRelation,
-    logged_user_id: str = Depends(permission(Resources.USERS, Permission.UPDATE)),
+    logged_user_id: str = Depends(
+        permission(Resources.USERS, Permission.UPDATE)
+    ),
     service: IService = Depends(get_user_service),
 ):
     """
@@ -47,7 +49,10 @@ async def add_user(
         logged_user_id, relation.user_id, relation.group_id
     )
     if result:
-        return {"status": "success", "message": "User added to group successfully."}
+        return {
+            "status": "success",
+            "message": "User added to group successfully.",
+        }
 
     raise HTTPException(
         status_code=400,
@@ -78,9 +83,14 @@ async def remove_user(
     Raises:
         HTTPException: If removal fails (e.g., user not in group).
     """
-    result = service.remove_user_from_group(relation.user_id, relation.group_id)
+    result = service.remove_user_from_group(
+        relation.user_id, relation.group_id
+    )
     if result:
-        return {"status": "success", "message": "User removed from group successfully."}
+        return {
+            "status": "success",
+            "message": "User removed from group successfully.",
+        }
 
     raise HTTPException(
         status_code=404, detail="User or group not found or user not in group."

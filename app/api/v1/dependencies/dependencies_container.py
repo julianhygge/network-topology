@@ -35,6 +35,7 @@ from app.data.repositories.solar.solar_profile_repository import (
     SolarProfileRepository,
 )
 from app.data.repositories.topology.topology_repository import (
+    FlagRepository,
     HouseRepository,
     NodeRepository,
     SubstationRepository,
@@ -49,6 +50,7 @@ from app.domain.services.base_service import BaseService
 from app.domain.services.load_profile_service import LoadProfileService
 from app.domain.services.mqtt_service import MQTTService
 from app.domain.services.sms_service import SmsService
+from app.domain.services.solar.solar_profile_service import SolarProfileService
 from app.domain.services.token_service import TokenService
 from app.domain.services.topology.house_service import HouseService
 from app.domain.services.topology.load_profile_file_completer import (
@@ -61,7 +63,6 @@ from app.domain.services.topology.net_topology_service import (
     NetTopologyService,
 )
 from app.domain.services.topology.node_service import NodeService
-from app.domain.services.solar.solar_profile_service import SolarProfileService
 from app.domain.services.topology.substation_service import SubstationService
 from app.domain.services.topology.topology_simulator import TopologySimulator
 from app.domain.services.topology.transformer_service import TransformerService
@@ -208,9 +209,13 @@ class Container(containers.DeclarativeContainer):
         load_gen_engine_repository=_load_generation_engine_repository,
         pre_templates_repository=_predefined_templates_repository,
         load_profile_completer=_load_profile_completer,
-        conf=configuration()
+        conf=configuration(),
     )
 
     predefined_template_service = providers.Factory(
         BaseService, repository=_predefined_master_templates_repository
+    )
+
+    flag_service = providers.Singleton(
+        BaseService, providers.Singleton(FlagRepository)
     )

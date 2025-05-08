@@ -49,10 +49,15 @@ class UserService(BaseService, IUserService):
             "group_id": Groups.User.value,
             "active": True,
         }
-        account_data = {"type": str(Groups.User), "alias_name": user_data["name"]}
+        account_data = {
+            "type": str(Groups.User),
+            "alias_name": user_data["name"],
+        }
 
         with self._user_repository.database_instance.atomic():
-            user = self._user_repository.insert_into_user_and_group(user_data, data)
+            user = self._user_repository.insert_into_user_and_group(
+                user_data, data
+            )
             self._account_repository.update(account.id, **account_data)
         updated_account = self._account_repository.read(account.id)
         session_token = self._token_service.issue_new_token(account, txn_id)
@@ -75,7 +80,9 @@ class UserService(BaseService, IUserService):
         groups_info = {group["id"]: group for group in all_groups_dicts}
 
         for item in list_dicts:
-            user_groups = self._user_group_repository.get_groups_by_user_id(item["id"])
+            user_groups = self._user_group_repository.get_groups_by_user_id(
+                item["id"]
+            )
             user_groups_dicts = self.repository.to_dicts(user_groups)
             user_group_ids = set(group["id"] for group in user_groups_dicts)
 
@@ -102,7 +109,9 @@ class UserService(BaseService, IUserService):
         return result
 
     def remove_user_from_group(self, user_id, group_id):
-        result = self._user_group_repository.remove_user_from_group(user_id, group_id)
+        result = self._user_group_repository.remove_user_from_group(
+            user_id, group_id
+        )
         return result
 
     def update_user_logo(self, session_user, user_id, file_logo):

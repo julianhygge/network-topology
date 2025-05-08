@@ -9,7 +9,9 @@ from pydantic import UUID4, BaseModel, EmailStr, Field
 class OtpVerificationModelResponse(BaseModel):
     """Response model for OTP verification attempts."""
 
-    state_token: UUID4 = Field(..., example="74f5596d-1df2-45ff-834c-a0511674c57f")
+    state_token: UUID4 = Field(
+        ..., example="74f5596d-1df2-45ff-834c-a0511674c57f"
+    )
     attempts_remaining: int = Field(..., example=2)
     modified_on: datetime = Field(..., example="2023-07-18T19:41:27.442363")
     status: str = Field(..., example="SUCCESS")

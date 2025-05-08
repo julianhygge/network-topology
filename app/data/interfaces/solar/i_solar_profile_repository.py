@@ -1,6 +1,7 @@
 """
 Interface for the Solar Profile Repository.
 """
+
 from abc import abstractmethod
 from typing import Optional
 from uuid import UUID

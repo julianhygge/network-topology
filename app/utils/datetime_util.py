@@ -70,7 +70,9 @@ def get_ist_time() -> tuple[str, str]:
     ist_time = datetime.datetime.now(ist)
 
     ist_date = ist_time.strftime("%B %d %Y")  # Format date as "Month day year"
-    ist_time_str = ist_time.strftime("%I:%M %p")  # Format time as "hour:minute AM/PM"
+    ist_time_str = ist_time.strftime(
+        "%I:%M %p"
+    )  # Format time as "hour:minute AM/PM"
 
     return ist_date, ist_time_str
 
@@ -128,7 +130,9 @@ def end_of_month(dt: datetime.datetime) -> datetime.datetime:
 def start_of_year(dt: datetime.datetime) -> datetime.datetime:
     """Returns the start of the year (Jan 1, 00:00:00) for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
-    return aware_dt.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    return aware_dt.replace(
+        month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+    )
 
 
 def end_of_year(dt: datetime.datetime) -> datetime.datetime:
@@ -139,7 +143,9 @@ def end_of_year(dt: datetime.datetime) -> datetime.datetime:
     )
 
 
-def get_end_of_period(dt: datetime.datetime, period: Period) -> datetime.datetime:
+def get_end_of_period(
+    dt: datetime.datetime, period: Period
+) -> datetime.datetime:
     """Calculates the end of the specified period for the given UTC datetime."""
     periods = {
         Period.DAILY: end_of_day,
@@ -172,11 +178,15 @@ def get_start_of_period(period: Period, offset: int = 0) -> datetime.datetime:
         start_dt = now_aware - datetime.timedelta(days=offset)
         start_dt = start_dt.replace(hour=0, minute=0, second=0, microsecond=0)
     elif period == Period.WEEKLY:
-        start_dt = now_aware - datetime.timedelta(days=now_aware.weekday() + 7 * offset)
+        start_dt = now_aware - datetime.timedelta(
+            days=now_aware.weekday() + 7 * offset
+        )
         start_dt = start_dt.replace(hour=0, minute=0, second=0, microsecond=0)
     elif period == Period.MONTHLY:
         start_dt = now_aware - relativedelta(months=offset)
-        start_dt = start_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_dt = start_dt.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
     elif period == Period.YEARLY:
         start_dt = now_aware - relativedelta(years=offset)
         start_dt = start_dt.replace(

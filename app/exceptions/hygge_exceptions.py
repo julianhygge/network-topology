@@ -16,7 +16,9 @@ class HyggeException(Exception):
 class DatabaseException(HyggeException):
     """Exception raised for database-related errors."""
 
-    def __init__(self, message="Database operation failed", details: str = None):
+    def __init__(
+        self, message="Database operation failed", details: str = None
+    ):
         self.details = details
         super().__init__(message)
 
@@ -25,7 +27,9 @@ class ServiceException(HyggeException):
     """Base exception for service layer"""
 
     def __init__(
-        self, message: str = "Service layer exception", code: ErrorCodeEnum = ""
+        self,
+        message: str = "Service layer exception",
+        code: ErrorCodeEnum = "",
     ):
         self.message = message
         self.code = code

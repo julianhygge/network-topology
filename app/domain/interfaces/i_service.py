@@ -5,6 +5,10 @@ Base interface for services.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
+from peewee import Expression
+
+from app.data.interfaces.i_repository import T
+
 UserIdGeneric = TypeVar("UserIdGeneric")
 ItemIdGeneric = TypeVar("ItemIdGeneric")
 
@@ -51,3 +55,7 @@ class IService(ABC, Generic[UserIdGeneric, ItemIdGeneric]):
         """
         Abstract method to delete a record by its ID.
         """
+
+    @abstractmethod
+    def filter(self, *expressions: Expression, **filters) -> List[T]:
+        """"""

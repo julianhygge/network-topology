@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
-from app.api.v1.dependencies.container_instance import get_electrical_appliances_service
+from app.api.v1.dependencies.container_instance import (
+    get_electrical_appliances_service,
+)
 from app.api.v1.models.requests.electrical_appliances import AppliancesRequest
 from app.api.v1.models.responses.electrical_appliances import (
     AppliancesListResponse,
@@ -47,7 +49,9 @@ async def get_appliances(
 async def create_appliances(
     data: AppliancesRequest,
     service: IService = Depends(get_electrical_appliances_service),
-    user_id: str = Depends(permission(Resources.ELECTRICALS, Permission.CREATE)),
+    user_id: str = Depends(
+        permission(Resources.ELECTRICALS, Permission.CREATE)
+    ),
 ):
     """
     Create a new electrical appliance.
@@ -76,7 +80,9 @@ async def update_appliances(
     data: AppliancesRequest,
     appliance_id: int,
     service: IService = Depends(get_electrical_appliances_service),
-    user_id: str = Depends(permission(Resources.ELECTRICALS, Permission.UPDATE)),
+    user_id: str = Depends(
+        permission(Resources.ELECTRICALS, Permission.UPDATE)
+    ),
 ):
     """
     Update an existing electrical appliance.

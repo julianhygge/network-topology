@@ -21,7 +21,8 @@ auth_router = APIRouter(tags=["Authorization"])
 
 @auth_router.post("/user", response_model=OtpRequestModelResponse)
 async def request_otp(
-    req_body: OtpRequest, auth_service: IAuthService = Depends(get_auth_service)
+    req_body: OtpRequest,
+    auth_service: IAuthService = Depends(get_auth_service),
 ) -> OtpRequestModelResponse:
     """
     Request an OTP (One-Time Password) for phone number verification.

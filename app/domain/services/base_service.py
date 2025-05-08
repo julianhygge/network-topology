@@ -3,13 +3,12 @@
 from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 from uuid import UUID
 
+from peewee import Expression
+
 from app.data.interfaces.i_repository import IRepository
+from app.data.schemas.schema_base import BaseModel
 from app.domain.interfaces.i_service import IService
 from app.utils.datetime_util import utc_now
-
-
-from app.data.schemas.schema_base import BaseModel
-
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -94,8 +93,6 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
         updated_item = self.repository.update(item_id, kwargs)
 
         if updated_item:
-            # If repository.update already returns the updated model,
-            # no need to re-read. Just convert to dict.
             return self.repository.to_dicts(updated_item)
         return None
 
@@ -151,3 +148,25 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
         if dict_list is None:
             return []
         return dict_list
+
+    def filter(self, *expressions: Expression, **filters) -> List[T]:
+        """
+        Filters records based on a combination of Peewee expressions and
+        simple equality filters.
+
+        Args:
+            *expressions: Variable number of Peewee Expression objects
+                          (Model.field > value).
+            **filters: Field names and values for filtering (name="John", age=30).
+
+        Returns:
+            List[T]: A list of model instances matching the filter criteria.
+        """
+        list_items = self.repository.filter(
+            house_id="7ecae55e-92dd-427e-a2d6-4f3bed16b0d2"
+        )
+
+        dict_list = self.repository.to_dicts(list_items)
+        if dict_list is None:
+            return []
+        return list_items

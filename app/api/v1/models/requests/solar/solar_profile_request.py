@@ -18,14 +18,24 @@ class SolarProfileRequestModel(BaseModel):
     """Request model for creating a new solar profile."""
 
     solar_available: bool = Field(..., example=False)
-    house_id: UUID4 = Field(..., example="824960c0-974c-4c57-8803-85f5f407b304")
-    installed_capacity_kw: Optional[Decimal] = Field(None, example="65.0", ge=0)
+    house_id: UUID4 = Field(
+        ..., example="824960c0-974c-4c57-8803-85f5f407b304"
+    )
+    installed_capacity_kw: Optional[Decimal] = Field(
+        None, example="65.0", ge=0
+    )
     tilt_type: TiltType = Field(..., example="fixed")
-    years_since_installation: Optional[Decimal] = Field(None, example="10", ge=0)
+    years_since_installation: Optional[Decimal] = Field(
+        None, example="10", ge=0
+    )
     available_space_sqft: Optional[Decimal] = Field(None, example="10", ge=0)
-    simulated_available_space_sqft: Optional[Decimal] = Field(None, example="10", ge=0)
+    simulated_available_space_sqft: Optional[Decimal] = Field(
+        None, example="10", ge=0
+    )
     simulate_using_different_capacity: bool
-    capacity_for_simulation_kw: Optional[Decimal] = Field(None, example="65.0", ge=0)
+    capacity_for_simulation_kw: Optional[Decimal] = Field(
+        None, example="65.0", ge=0
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -86,16 +96,24 @@ class SolarProfileUpdateModel(BaseModel):
     """Request model for updating an existing solar profile."""
 
     solar_available: Optional[bool] = None
-    installed_capacity_kw: Optional[Decimal] = Field(None, example="65.0", ge=0)
+    installed_capacity_kw: Optional[Decimal] = Field(
+        None, example="65.0", ge=0
+    )
     tilt_type: Optional[TiltType] = Field(None, example="fixed")
-    years_since_installation: Optional[Decimal] = Field(None, example="10", ge=0)
+    years_since_installation: Optional[Decimal] = Field(
+        None, example="10", ge=0
+    )
     available_space_sqft: Optional[Decimal] = Field(None, example="10", ge=0)
     simulate_using_different_capacity: Optional[bool] = None
-    capacity_for_simulation_kw: Optional[Decimal] = Field(None, example="65.0", ge=0)
+    capacity_for_simulation_kw: Optional[Decimal] = Field(
+        None, example="65.0", ge=0
+    )
 
     @model_validator(mode="before")
     @classmethod
-    def validate_update_solar_profile(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_update_solar_profile(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Validate solar profile update data consistency."""
         solar_available = values.get("solar_available")
         if solar_available:

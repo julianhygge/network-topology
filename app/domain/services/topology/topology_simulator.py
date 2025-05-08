@@ -4,8 +4,12 @@ from uuid import UUID
 
 from app.data.interfaces.dtos.topology_dtos import HouseDTO, TransformerDTO
 from app.data.interfaces.topology.i_house_repository import IHouseRepository
-from app.data.interfaces.topology.i_topology_simulator import ITopologySimulator
-from app.data.interfaces.topology.i_transformer_repository import ITransformerRepository
+from app.data.interfaces.topology.i_topology_simulator import (
+    ITopologySimulator,
+)
+from app.data.interfaces.topology.i_transformer_repository import (
+    ITransformerRepository,
+)
 
 
 class TopologySimulator(ITopologySimulator):
@@ -19,11 +23,15 @@ class TopologySimulator(ITopologySimulator):
         self._transformer_repo = transformer_repo
 
     def calculate_total_load(self, houses):
-        return sum(house.connection_kw for house in houses if house.connection_kw)
+        return sum(
+            house.connection_kw for house in houses if house.connection_kw
+        )
 
     def calculate_total_solar(self, houses):
         return sum(
-            house.solar_kw for house in houses if house.has_solar and house.solar_kw
+            house.solar_kw
+            for house in houses
+            if house.has_solar and house.solar_kw
         )
 
     def calculate_excess_solar(
@@ -60,12 +68,16 @@ class TopologySimulator(ITopologySimulator):
     ) -> None:
         for transformer in transformers:
             houses_under_transformer = [
-                house for house in houses if house.transformer_id == transformer.id
+                house
+                for house in houses
+                if house.transformer_id == transformer.id
             ]
 
             for house in houses_under_transformer:
                 if house.has_solar:
-                    house.load_profile = f"Allocated solar: {house.solar_kw} kW"
+                    house.load_profile = (
+                        f"Allocated solar: {house.solar_kw} kW"
+                    )
 
             for house in houses_under_transformer:
                 if house.has_battery:

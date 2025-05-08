@@ -1,15 +1,14 @@
-# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 """
 Module for the base repository implementation.
 """
 
-from typing import Any, Dict, List, Type, Union, get_args, cast, Iterable
+from typing import Any, Dict, Iterable, List, Type, Union, cast, get_args
 from uuid import UUID
 
-from peewee import Model, Field, ModelSelect
+from peewee import Expression, Field, Model, ModelSelect
 from playhouse.pool import PooledPostgresqlDatabase  # type: ignore[import]
 
-from app.data.interfaces.i_repository import T, IRepository
+from app.data.interfaces.i_repository import IRepository, T
 from app.data.schemas.hygge_database import HyggeDatabase
 
 
@@ -45,7 +44,7 @@ class BaseRepository(IRepository[T]):
                         and isinstance(type_args[0], type)
                         and issubclass(type_args[0], Model)
                     ):
-                        inferred_model_type = type_args[0]
+                        inferred_model_type = cast(Type[T], type_args[0])
                         break
 
             if inferred_model_type:
@@ -138,16 +137,16 @@ class BaseRepository(IRepository[T]):
         return query.execute()
 
     def list(self) -> List[T]:
-        return list(self.model.select())
+        return list(cast(Iterable[T], self.model.select()))
 
     def list_actives(self) -> List[T]:
         if not hasattr(self.model, "active"):
             raise AttributeError(
                 f"Model {self.model.__name__} has no 'active' property."
             )
-        active_field = getattr(self.model, "active")
+        active_field = self.model.active
         # Use implicit boolean check for 'active_field'
-        return list(self.model.select().where(active_field))
+        return list(cast(Iterable[T], self.model.select().where(active_field)))
 
     def upsert(
         self,
@@ -175,7 +174,7 @@ class BaseRepository(IRepository[T]):
             conflict_target=conflict_target, defaults=defaults, data=data
         )
         retrieval_query: ModelSelect = self.model.select()
-        where_conditions = []
+        where_conditions: List[Expression] = []
         for field_name in conflict_target:
             model_field = getattr(self.model, field_name)
             if field_name in data:
@@ -194,8 +193,8 @@ class BaseRepository(IRepository[T]):
         Assumes the model has 'public' and 'active' boolean fields.
         """
         try:
-            public_field = getattr(self.model, "public")
-            active_field = getattr(self.model, "active")
+            public_field = self.model.public
+            active_field = self.model.active
         except AttributeError as e:
             # Fix duplicated f-string content
             raise AttributeError(
@@ -215,9 +214,9 @@ class BaseRepository(IRepository[T]):
                     f"'{field}' property for list_no_public_by_user_id."
                 )
 
-        created_by_field = getattr(self.model, "created_by")
-        active_field = getattr(self.model, "active")
-        public_field = getattr(self.model, "public")
+        created_by_field = self.model.created_by
+        active_field = self.model.active
+        public_field = self.model.public
 
         query: ModelSelect = self.model.select().where(
             (created_by_field == user_id) & active_field & (~public_field)
@@ -256,6 +255,32 @@ class BaseRepository(IRepository[T]):
             }
         return obj
 
+    def filter(self, *expressions: Expression, **filters):
+        """
+        Filters records based on a combination of Peewee expressions and
+        simple equality filters.
+
+        Args:
+            *expressions: Variable number of Peewee Expression objects
+                          (Model.field > value).
+            filters: A dictionary where keys are field names (strings)
+                     and values are the values to filter by
+                     ({"name": "John"}).
+
+        Returns:
+            List[T]: A list of model instances matching the filter criteria.
+        """
+        query = self.model.select()
+
+        for expression in expressions:
+            query = query.where(expression)
+
+        for field, value in filters.items():
+            if hasattr(self.model, field):
+                query = query.where(getattr(self.model, field) == value)
+
+        return list(query)
+
     def list_by_user_id(self, user_id: Union[int, UUID]) -> List[T]:
         """
         Lists records filtered by a specific user ID and active status.
@@ -278,8 +303,8 @@ class BaseRepository(IRepository[T]):
         """
         try:
             # Attempt to get the Peewee field descriptors from the model class
-            created_by_field = getattr(self.model, "created_by")
-            active_field = getattr(self.model, "active")
+            created_by_field = self.model.created_by
+            active_field = self.model.active
         except AttributeError as e:
             # Re-raise with a more specific and informative message
             # Fix duplicated f-string content

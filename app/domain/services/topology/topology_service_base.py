@@ -1,13 +1,21 @@
-from typing import Any, Tuple, Union
+from typing import Any, Generic, Tuple, TypeVar, Union
 
 from app.data.interfaces.i_repository import IRepository
 from app.data.schemas.enums.enums import NodeStatusEnum
+from app.data.schemas.schema_base import BaseModel  # For constraining TypeVar
 from app.data.schemas.transactional.topology_schema import House, Transformer
 from app.domain.services.base_service import BaseService
 
+# Define a TypeVar for the specific topology model (e.g., HouseSchema, TransformerSchema)
+TopoModelType = TypeVar("TopoModelType", bound=BaseModel)
 
-class TopologyServiceBase(BaseService):
-    def __init__(self, repository: IRepository):
+
+class TopologyServiceBase(BaseService[TopoModelType], Generic[TopoModelType]):
+    repository: IRepository[
+        TopoModelType
+    ]  # Add type hint for the instance variable
+
+    def __init__(self, repository: IRepository[TopoModelType]):
         super().__init__(repository)
         self.repository = repository
 
@@ -36,7 +44,9 @@ class TopologyServiceBase(BaseService):
         return NodeStatusEnum.Complete
 
     @staticmethod
-    def _to_status_enum(at_least_one_filled: bool, all_filled: bool) -> NodeStatusEnum:
+    def _to_status_enum(
+        at_least_one_filled: bool, all_filled: bool
+    ) -> NodeStatusEnum:
         if not at_least_one_filled:
             return NodeStatusEnum.Empty
         if not all_filled:
@@ -54,12 +64,15 @@ class TopologyServiceBase(BaseService):
         If no field is filled, the status is Empty.
         """
         check_properties = [
-            (got_field := getattr(node, field)) is not None and got_field != empty_value
+            (got_field := getattr(node, field)) is not None
+            and got_field != empty_value
             for field, empty_value in required_fields
         ]
         at_least_one_filled = any(check_properties)
         all_filled = all(check_properties)
-        return TopologyServiceBase._to_status_enum(at_least_one_filled, all_filled)
+        return TopologyServiceBase._to_status_enum(
+            at_least_one_filled, all_filled
+        )
 
     @staticmethod
     def _get_transformer_status(transformer: Transformer) -> NodeStatusEnum:

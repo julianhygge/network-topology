@@ -53,7 +53,7 @@ class LoadProfileService(BaseService):
         load_gen_engine_repository: ILoadGenerationEngineRepository,
         pre_templates_repository: IPredefinedTemplatesRepository,
         load_profile_completer: ILoadProfileFileCompleter,
-        conf: IConfiguration
+        conf: IConfiguration,
     ):
         super().__init__(repository)
         self._load_profile_repo = repository
@@ -130,8 +130,9 @@ class LoadProfileService(BaseService):
         return normalized_consumptions
 
     @staticmethod
-    def _divide_consumption_in_intervals(total_consumption,
-                                         interval_minutes=15):
+    def _divide_consumption_in_intervals(
+        total_consumption, interval_minutes=15
+    ):
         intervals_per_day = 1440 // interval_minutes
         consumption_per_interval = total_consumption / intervals_per_day
         return consumption_per_interval
@@ -149,17 +150,20 @@ class LoadProfileService(BaseService):
         """
         for person in people_profiles:
             if person.get("works_at_home"):
-                self._adjust_for_home_workers(consumption_pattern,
-                                              interval_minutes)
+                self._adjust_for_home_workers(
+                    consumption_pattern, interval_minutes
+                )
             elif person.get("work_schedule") == "Night":
-                self._adjust_for_night_workers(consumption_pattern,
-                                               interval_minutes)
+                self._adjust_for_night_workers(
+                    consumption_pattern, interval_minutes
+                )
             else:
                 # For individuals working outside
                 # (daytime workers or variable schedules)
                 # and for households without specific profile info
-                self._adjust_for_day_workers(consumption_pattern,
-                                             interval_minutes)
+                self._adjust_for_day_workers(
+                    consumption_pattern, interval_minutes
+                )
 
     def _adjust_for_home_workers(self, consumption_pattern, interval_minutes):
         """
@@ -197,8 +201,9 @@ class LoadProfileService(BaseService):
         )
         get_public_profiles = list(self._get_public_profiles())
         combined_profiles = get_public_profiles + get_private_profile_by_user
-        return [self._map_profile_to_dict(profile)
-                for profile in combined_profiles]
+        return [
+            self._map_profile_to_dict(profile) for profile in combined_profiles
+        ]
 
     @staticmethod
     def _find_time_format(df: DataFrame, formats: list[str]) -> str:
@@ -225,12 +230,15 @@ class LoadProfileService(BaseService):
         # Must check the number of columns to remove is greater than 0
         # to avoid removing the first two columns
         if number_of_columns_to_remove > 0:
-            df.drop(df.columns[-number_of_columns_to_remove:],
-                    axis=1, inplace=True)
+            df.drop(
+                df.columns[-number_of_columns_to_remove:], axis=1, inplace=True
+            )
 
         df.rename(
-            columns={df.columns[0]: "timestamp",
-                     df.columns[1]: "consumption_kwh"},
+            columns={
+                df.columns[0]: "timestamp",
+                df.columns[1]: "consumption_kwh",
+            },
             inplace=True,
         )
 
@@ -245,7 +253,8 @@ class LoadProfileService(BaseService):
             raise ValueError("Data spans more than a year")
         if diff.days < self._load_profile_min_days:
             raise ValueError(
-                f"Data spans less than {self._load_profile_min_days} days")
+                f"Data spans less than {self._load_profile_min_days} days"
+            )
 
     async def upload_profile_service_file(
         self,
@@ -288,16 +297,18 @@ class LoadProfileService(BaseService):
             }
             return response
 
-    def save_load_profile_items(self, user_id: UUID,
-                                house_id: UUID,
-                                items: List[dict]):
+    def save_load_profile_items(
+        self, user_id: UUID, house_id: UUID, items: List[dict]
+    ):
         load_profile = self._load_profile_repo.get_or_create_by_house_id(
             user_id, house_id, LoadSource.Builder
         )
         profile_id = load_profile.id
 
-        existing_items  = self._load_profile_builder_repository.get_items_by_profile_id(
-            profile_id
+        existing_items = (
+            self._load_profile_builder_repository.get_items_by_profile_id(
+                profile_id
+            )
         )
         existing_ids = set(item.id for item in existing_items)
 
@@ -324,14 +335,17 @@ class LoadProfileService(BaseService):
                 self._load_profile_builder_repository.delete(item_id)
         if to_create:
             self._load_profile_builder_repository.create_items_in_bulk(
-                to_create)
+                to_create
+            )
         if to_update:
             self._load_profile_builder_repository.update_items_in_bulk(
-                to_update)
+                to_update
+            )
 
         return (
             self._load_profile_builder_repository.get_items_by_profile_id(
-                profile_id),
+                profile_id
+            ),
             profile_id,
         )
 
@@ -341,7 +355,8 @@ class LoadProfileService(BaseService):
         )
         return (
             self._load_profile_builder_repository.get_items_by_profile_id(
-                load_profile),
+                load_profile
+            ),
             load_profile.id,
         )
 
@@ -414,8 +429,9 @@ class LoadProfileService(BaseService):
         result = self._load_profile_completer.complete_data(
             timestamps, consumption_kwh, interpolation_array
         )
-        df = DataFrame({"timestamp": interpolation_array,
-                       "consumption_kwh": result})
+        df = DataFrame(
+            {"timestamp": interpolation_array, "consumption_kwh": result}
+        )
         df.insert(2, "profile_id", load_profile.id)
         logger.info(df.head())
         logger.info(df.tail())
@@ -426,7 +442,8 @@ class LoadProfileService(BaseService):
         return (
             self._load_profile_repo.get_load_profiles_by_user_id_and_house_id(
                 user_id, house_id
-            ))
+            )
+        )
 
     def _get_public_profiles(self):
         return self._load_profile_repo.get_public_profiles()
@@ -449,12 +466,12 @@ class LoadProfileService(BaseService):
                 raise ValueError(f"Data is not in {minutes}-minute intervals")
             if not exact and diff.total_seconds() > interval_in_seconds:
                 raise ValueError(
-                    f"Data has intervals greater than {minutes} minutes")
+                    f"Data has intervals greater than {minutes} minutes"
+                )
 
-    def save_load_generation_engine(self,
-                                    user_id: UUID,
-                                    house_id: UUID,
-                                    data: dict):
+    def save_load_generation_engine(
+        self, user_id: UUID, house_id: UUID, data: dict
+    ):
         load_profile = self._load_profile_repo.get_or_create_by_house_id(
             user_id, house_id, LoadSource.Engine.value
         )
@@ -471,7 +488,8 @@ class LoadProfileService(BaseService):
             "modified_by": user_id,
         }
         self._load_generation_engine_repository.delete_by_profile_id(
-            profile_id)
+            profile_id
+        )
         return self._load_generation_engine_repository.model.get_or_create(
             profile_id=profile_id, defaults=engine_data
         )[0]
@@ -524,7 +542,5 @@ class LoadProfileService(BaseService):
             None,
         )
         if template:
-            return self._load_pre_templates_repo.get_by_profile_id(
-                template.id
-            )
+            return self._load_pre_templates_repo.get_by_profile_id(template.id)
         return None

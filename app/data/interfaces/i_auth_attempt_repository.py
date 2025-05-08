@@ -1,6 +1,7 @@
 """
 Module for the authentication attempt repository interface.
 """
+
 import datetime
 from abc import abstractmethod
 from typing import List

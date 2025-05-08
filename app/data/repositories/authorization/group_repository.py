@@ -1,18 +1,24 @@
 """Module for the GroupRepository."""
+
 import datetime
 from typing import Any, List
 
-from app.data.interfaces.i_group_repository import (IGroupRepository,
-                                                    RolePermission)
+from app.data.interfaces.i_group_repository import (
+    IGroupRepository,
+    RolePermission,
+)
 from app.data.repositories.base_repository import BaseRepository
-from app.data.schemas.auth.auth_schema import (GroupRoleRel, Groups,
-                                               Permissions, RolePermissionRel,
-                                               Roles, UserGroupRel)
+from app.data.schemas.auth.auth_schema import (
+    GroupRoleRel,
+    Groups,
+    Permissions,
+    RolePermissionRel,
+    Roles,
+    UserGroupRel,
+)
 
 
-class GroupRepository(
-    BaseRepository[Groups], IGroupRepository[Groups]
-):
+class GroupRepository(BaseRepository[Groups], IGroupRepository[Groups]):
     """
     Repository for managing user groups and their associated roles and permissions.
 

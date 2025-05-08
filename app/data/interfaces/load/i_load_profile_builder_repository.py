@@ -1,4 +1,5 @@
 """Module for the load profile builder repository interface."""
+
 from abc import abstractmethod
 from typing import Any, Dict, List
 from uuid import UUID

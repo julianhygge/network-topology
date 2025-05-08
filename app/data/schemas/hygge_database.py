@@ -8,7 +8,7 @@ and accessing the PostgresSQL database instance using Peewee ORM with
 connection pooling.
 """
 
-from typing import Optional, Any
+from typing import Any, Optional
 
 from peewee import OperationalError
 from playhouse.pool import PooledPostgresqlDatabase  # type: ignore[import]

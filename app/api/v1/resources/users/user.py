@@ -70,7 +70,8 @@ async def get_users(
         response = UserListResponse(
             items=[
                 UserLinkResponseModel(
-                    **item, links={"self": f"{request.url.path}{str(item['id'])}"}
+                    **item,
+                    links={"self": f"{request.url.path}{str(item['id'])}"},
                 )
                 for item in data_list
             ]
@@ -86,7 +87,9 @@ async def update(
     request: Request,
     user_data: UserRequestModel,
     user_id: UUID,
-    logged_user_id: str = Depends(permission(Resources.USERS, Permission.UPDATE)),
+    logged_user_id: str = Depends(
+        permission(Resources.USERS, Permission.UPDATE)
+    ),
     service: IService = Depends(get_user_service),
 ) -> UserResponseModel:
     """
@@ -146,5 +149,7 @@ async def delete(
     """
     delete_result = service.delete(user_id)
     if not delete_result:
-        raise NotFoundException(f"User with ID {user_id} not found for deletion.")
+        raise NotFoundException(
+            f"User with ID {user_id} not found for deletion."
+        )
     return None  # Return None for 204 No Content

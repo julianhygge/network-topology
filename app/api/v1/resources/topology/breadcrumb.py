@@ -42,13 +42,19 @@ async def get_breadcrumb(
     """
     try:
         breadcrumb = service.get_breadcrumb_navigation_path(node_id)
-        if breadcrumb is None:  # Assuming service might return None if not found
+        if (
+            breadcrumb is None
+        ):  # Assuming service might return None if not found
             raise NotFoundException(f"Node with ID {node_id} not found.")
         return breadcrumb
     except NotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
+        ) from e
     except Exception as e:
-        logger.exception("Error retrieving breadcrumb for node %s: %s", node_id, e)
+        logger.exception(
+            "Error retrieving breadcrumb for node %s: %s", node_id, e
+        )
         # Use a more generic error for unexpected issues
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

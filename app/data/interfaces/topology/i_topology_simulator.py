@@ -27,7 +27,9 @@ class ITopologySimulator(ABC):
         pass
 
     @abstractmethod
-    def calculate_peak_capacity_rate(self, houses: List["HouseDTO"]) -> Decimal:
+    def calculate_peak_capacity_rate(
+        self, houses: List["HouseDTO"]
+    ) -> Decimal:
         pass
 
     @abstractmethod

@@ -8,6 +8,7 @@ from uuid import UUID
 @dataclass
 class SolarItemProfileEntity:
     """Represents a solar item profile entity."""
+
     id: int
     user_id: UUID
     solar_profile_id: UUID

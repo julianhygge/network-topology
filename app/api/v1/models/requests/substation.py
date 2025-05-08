@@ -24,11 +24,15 @@ class NodeType(str, Enum):
 class NodeDetailRequestModel(BaseModel):
     """Request model for details of a single node in the topology."""
 
-    id: Optional[UUID4] = Field(None, example="824960c0-974c-4c57-8803-85f5f407b304")
+    id: Optional[UUID4] = Field(
+        None, example="824960c0-974c-4c57-8803-85f5f407b304"
+    )
     action: Optional[ActionEnum] = Field(ActionEnum.UPDATE, example="update")
     type: Optional[NodeType] = Field(None, example="transformer")
     name: Optional[constr(max_length=12)] = Field(None, example="John's house")
-    children: Optional[List["NodeDetailRequestModel"]] = Field(None, example=[])
+    children: Optional[List["NodeDetailRequestModel"]] = Field(
+        None, example=[]
+    )
 
 
 class SubstationTopologyRequestModel(BaseModel):
@@ -40,12 +44,16 @@ class SubstationTopologyRequestModel(BaseModel):
 class SubstationRequestModel(BaseModel):
     """Request model for creating or updating a single substation."""
 
-    locality_id: UUID4 = Field(..., example="94522a0a-c8f1-40f8-a2e5-9aed2dc55555")
+    locality_id: UUID4 = Field(
+        ..., example="94522a0a-c8f1-40f8-a2e5-9aed2dc55555"
+    )
     name: str = Field(..., example="Substation number 1")
 
 
 class SubstationsRequestModel(BaseModel):
     """Request model for creating multiple substations within a locality."""
 
-    locality_id: UUID4 = Field(..., example="94522a0a-c8f1-40f8-a2e5-9aed2dc55555")
+    locality_id: UUID4 = Field(
+        ..., example="94522a0a-c8f1-40f8-a2e5-9aed2dc55555"
+    )
     number_of_substations: int = Field(..., example="2")

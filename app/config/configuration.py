@@ -75,7 +75,9 @@ class ApiConfiguration(IConfiguration):
     @property
     def session(self) -> SessionConfig:
         s = self._settings
-        secret = s.get("session_token_secret") or s.get("session.session_token_secret")
+        secret = s.get("session_token_secret") or s.get(
+            "session.session_token_secret"
+        )
         return SessionConfig(
             session_token_secret=secret,
             session_validity_in_hours=int(s.get("session_validity_in_hours")),
@@ -146,7 +148,9 @@ class ApiConfiguration(IConfiguration):
             discharge_battery_efficiency=float(
                 s.get("simulation_discharge_battery_efficiency")
             ),
-            default_panel_capacity=float(s.get("simulation_default_panel_capacity")),
+            default_panel_capacity=float(
+                s.get("simulation_default_panel_capacity")
+            ),
             default_battery_capacity_required=float(
                 s.get("simulation_default_battery_capacity_required")
             ),

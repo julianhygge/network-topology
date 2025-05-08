@@ -1,9 +1,10 @@
 """
 Interface for the Solar Profile Service.
 """
+
 from abc import ABC, abstractmethod
+from typing import Any, Dict
 from uuid import UUID
-from typing import Dict, Any
 
 
 class ISolarProfileService(ABC):

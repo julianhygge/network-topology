@@ -13,7 +13,10 @@ class LoadProfileResponse(BaseModel):
 
     links: Dict[str, str] = Field(
         default={"self": "/v1/load_profiles/"},
-        example={"self": "/v1/load_profiles/", "next": "/v1/load_profiles/?page=2"},
+        example={
+            "self": "/v1/load_profiles/",
+            "next": "/v1/load_profiles/?page=2",
+        },
     )
     house_id: UUID = Field(
         ...,
@@ -29,7 +32,9 @@ class LoadProfileResponse(BaseModel):
         description="Indicates whether the load profile is active or not.",
     )
     profile_name: str = Field(
-        ..., example="Residential Solar Profile", description="The profile name."
+        ...,
+        example="Residential Solar Profile",
+        description="The profile name.",
     )
     user_id: UUID4 = Field(
         ...,
@@ -38,7 +43,9 @@ class LoadProfileResponse(BaseModel):
     )
     user: str = Field(..., example="User 12", description="User name")
     file_name: Optional[str] = Field(
-        None, example="load_profile_user.csv", description="Profile user load file name"
+        None,
+        example="load_profile_user.csv",
+        description="Profile user load file name",
     )
     created_on: datetime = Field(
         ...,
@@ -91,7 +98,9 @@ class LoadProfileBuilderItemResponse(BaseModel):
     id: int = Field(..., example=2)
     created_on: datetime = Field(..., example="2024-07-31T14:51:46.964639")
     modified_on: datetime = Field(..., example="2024-07-31T14:51:46.964639")
-    created_by: UUID = Field(..., example="94522a0a-c8f1-40f8-a2e5-9aed2dc00001")
+    created_by: UUID = Field(
+        ..., example="94522a0a-c8f1-40f8-a2e5-9aed2dc00001"
+    )
     profile_id: int = Field(..., example=88)
     electrical_device_id: int = Field(..., example=1)
     rating_watts: int = Field(..., example=50)
@@ -105,7 +114,10 @@ class LoadProfileBuilderItemsResponse(BaseModel):
     message: str = Field(..., example="Items saved successfully")
     links: Dict[str, str] = Field(
         default={"self": "/v1/load_profiles/"},
-        example={"self": "/v1/load_profiles/", "next": "/v1/load_profiles/?page=2"},
+        example={
+            "self": "/v1/load_profiles/",
+            "next": "/v1/load_profiles/?page=2",
+        },
     )
     profile_id: int
     items: List[LoadProfileBuilderItemResponse] = Field(
@@ -148,7 +160,10 @@ class LoadPredefinedTemplateResponse(BaseModel):
     profile_source: str
     links: Dict[str, str] = Field(
         default={"self": "/v1/load_profiles/"},
-        example={"self": "/v1/load_profiles/", "next": "/v1/load_profiles/?page=2"},
+        example={
+            "self": "/v1/load_profiles/",
+            "next": "/v1/load_profiles/?page=2",
+        },
     )
 
 

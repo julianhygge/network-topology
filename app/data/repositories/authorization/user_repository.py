@@ -1,4 +1,5 @@
 """Module for Account and User repositories."""
+
 from typing import Any, Dict, Optional
 
 from peewee import IntegrityError
@@ -31,9 +32,7 @@ class UserRepository(BaseRepository[User], IUserRepository[User]):
     model_user_group = UserGroupRel
     model_account = Account
 
-    def fetch_user_by_phone_number(
-        self, phone_number: str
-    ) -> Optional[User]:
+    def fetch_user_by_phone_number(self, phone_number: str) -> Optional[User]:
         """
         Retrieves a user by their phone number.
 

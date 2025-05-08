@@ -1,6 +1,10 @@
 from numpy import interp
 from pandas import DataFrame
-from scipy.interpolate import Akima1DInterpolator, CubicSpline, PchipInterpolator
+from scipy.interpolate import (
+    Akima1DInterpolator,
+    CubicSpline,
+    PchipInterpolator,
+)
 
 from app.domain.interfaces.net_topology.i_load_profile_file_completer import (
     ILoadProfileFileCompleter,
@@ -41,7 +45,9 @@ class LoadProfileFileCompleterSpline(ILoadProfileFileCompleter):
 
 
 class LoadProfileFileCompleterPChip(ILoadProfileFileCompleter):
-    def complete_data(self, timestamps, consumption_kwh, interpolation_timestamps):
+    def complete_data(
+        self, timestamps, consumption_kwh, interpolation_timestamps
+    ):
         logger.info("Completing data with pchip interpolation")
         pchip = PchipInterpolator(timestamps, consumption_kwh)
         result = pchip(interpolation_timestamps)
@@ -49,7 +55,9 @@ class LoadProfileFileCompleterPChip(ILoadProfileFileCompleter):
 
 
 class LoadProfileFileCompleterAkima1D(ILoadProfileFileCompleter):
-    def complete_data(self, timestamps, consumption_kwh, interpolation_timestamps):
+    def complete_data(
+        self, timestamps, consumption_kwh, interpolation_timestamps
+    ):
         logger.info("Completing data with akima 1d interpolation")
         akima1D = Akima1DInterpolator(timestamps, consumption_kwh)
         result = akima1D(interpolation_timestamps)

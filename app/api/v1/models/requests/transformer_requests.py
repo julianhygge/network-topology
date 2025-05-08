@@ -29,7 +29,9 @@ class HouseUpdateRequestModel(BaseModel):
     has_battery: Optional[bool] = Field(None, example="True")
     voluntary_storage: Optional[bool] = Field(None, example="False")
     battery_peak_charging_rate: Optional[Decimal] = Field(None, example="5.9")
-    battery_peak_discharging_rate: Optional[Decimal] = Field(None, example="3.8")
+    battery_peak_discharging_rate: Optional[Decimal] = Field(
+        None, example="3.8"
+    )
     battery_total_kwh: Optional[Decimal] = Field(None, example="5.6")
 
 
@@ -47,7 +49,9 @@ class HouseResponseModel(BaseModel):
     has_battery: Optional[bool] = Field(None, example="True")
     voluntary_storage: Optional[bool] = Field(None, example="True")
     battery_peak_charging_rate: Optional[Decimal] = Field(None, example="2.0")
-    battery_peak_discharging_rate: Optional[Decimal] = Field(None, example="2.0")
+    battery_peak_discharging_rate: Optional[Decimal] = Field(
+        None, example="2.0"
+    )
     battery_total_kwh: Optional[Decimal] = Field(None, example="130.5")
 
 

@@ -1,11 +1,13 @@
 """Module for the AuthAttemptRepository."""
+
 import datetime
 from typing import List
 
 from peewee import OperationalError
 
-from app.data.interfaces.i_auth_attempt_repository import \
-    IAuthAttemptRepository
+from app.data.interfaces.i_auth_attempt_repository import (
+    IAuthAttemptRepository,
+)
 from app.data.repositories.base_repository import BaseRepository
 from app.data.schemas.auth.auth_schema import AuthAttempts
 from app.exceptions.hygge_exceptions import DatabaseException
@@ -22,6 +24,7 @@ class AuthAttemptRepository(
     `IAuthAttemptRepository[AuthAttempts]` for specific authentication
     attempt-related queries.
     """
+
     def fetch_all_previous_records_for_user(
         self, phone_number: str, records_after_time: datetime.datetime
     ) -> List[AuthAttempts]:

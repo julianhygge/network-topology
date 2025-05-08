@@ -8,8 +8,13 @@ from app.domain.interfaces.enums.node_type import NodeType
 from app.domain.interfaces.net_topology.i_net_topology_service import (
     INetTopologyService,
 )
-from app.domain.services.topology.topology_service_base import TopologyServiceBase
-from app.exceptions.hygge_exceptions import InvalidDataException, NotFoundException
+from app.domain.services.topology.topology_service_base import (
+    TopologyServiceBase,
+)
+from app.exceptions.hygge_exceptions import (
+    InvalidDataException,
+    NotFoundException,
+)
 from app.utils.datetime_util import utc_now_iso
 
 
@@ -29,7 +34,9 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
 
     INITIALS = {NodeType.TRANSFORMER.value: "T", NodeType.HOUSE.value: "H"}
 
-    def get_topology_by_substation_id(self, substation_id: UUID) -> Dict[str, Any]:
+    def get_topology_by_substation_id(
+        self, substation_id: UUID
+    ) -> Dict[str, Any]:
         """
         Get the topology for a given substation ID.
 
@@ -39,7 +46,9 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         """
         substation = self.substation_repo.read(substation_id)
         if not substation:
-            raise NotFoundException(f"Substation with id {substation_id} not found")
+            raise NotFoundException(
+                f"Substation with id {substation_id} not found"
+            )
 
         root_node = self.node_repo.read(substation_id)
 
@@ -84,7 +93,9 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
 
         return details
 
-    def _get_transformer_details(self, node_id: UUID) -> Dict[str, NodeStatusEnum]:
+    def _get_transformer_details(
+        self, node_id: UUID
+    ) -> Dict[str, NodeStatusEnum]:
         """Get transformer-specific details."""
         transformer = self.transformer_repo.read(node_id)
         return {"status": self._get_transformer_status(transformer)}
@@ -94,7 +105,9 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         house = self.house_repo.read(node_id)
         return {"status": self._get_house_status(house)}
 
-    def update_topology(self, user_id: UUID, substation_id: UUID, data: Dict[str, Any]):
+    def update_topology(
+        self, user_id: UUID, substation_id: UUID, data: Dict[str, Any]
+    ):
         """
         Update the topology for a given substation.
 
@@ -106,13 +119,17 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         """
         substation = self.substation_repo.read(substation_id)
         if not substation:
-            raise NotFoundException(f"Substation with id {substation_id} not found")
+            raise NotFoundException(
+                f"Substation with id {substation_id} not found"
+            )
 
         if "nodes" not in data or not isinstance(data["nodes"], list):
             raise InvalidDataException("Invalid topology update data")
 
         root_node = self.node_repo.read(substation_id)
-        self._update_node_topology(user_id, substation_id, root_node, data["nodes"])
+        self._update_node_topology(
+            user_id, substation_id, root_node, data["nodes"]
+        )
 
     def _update_node_topology(
         self,
@@ -205,7 +222,9 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             "nomenclature": nomenclature,
         }
 
-    def _save_new_node(self, substation_id: UUID, new_node_id: UUID, node_type: str):
+    def _save_new_node(
+        self, substation_id: UUID, new_node_id: UUID, node_type: str
+    ):
         """Save the new node in the appropriate repository."""
         new_data = {
             "substation_id": substation_id,
@@ -236,7 +255,9 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         """
         transformer = self.transformer_repo.read(transformer_id)
         if not transformer:
-            raise NotFoundException(f"Transformer with id {transformer_id} not found")
+            raise NotFoundException(
+                f"Transformer with id {transformer_id} not found"
+            )
 
         data["modified_on"] = utc_now_iso()
         data["modified_by"] = user_id

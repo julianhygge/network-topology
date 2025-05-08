@@ -36,7 +36,9 @@ class LoadProfileBase(BaseModel):
 class LoadProfiles(LoadProfileAuditableBase):
     id = IntegerField(primary_key=True)
     user_id = ForeignKeyField(User, backref="load_profiles")
-    house_id = ForeignKeyField(Node, backref="load_profiles", on_delete="CASCADE")
+    house_id = ForeignKeyField(
+        Node, backref="load_profiles", on_delete="CASCADE"
+    )
     profile_name = CharField(max_length=50)
     source = CharField(max_length=50)
     public = BooleanField()
@@ -57,7 +59,9 @@ class LoadProfileDetails(LoadProfileBase):
 
 class LoadProfileFiles(LoadProfileBase):
     id = IntegerField(primary_key=True)
-    profile_id = ForeignKeyField(LoadProfiles, backref="files", on_delete="CASCADE")
+    profile_id = ForeignKeyField(
+        LoadProfiles, backref="files", on_delete="CASCADE"
+    )
     filename = CharField(max_length=255)
     content = BlobField()
 
@@ -84,7 +88,9 @@ class LoadProfileBuilderItems(LoadProfileAuditableBase):
 class LoadGenerationEngine(AuditableBase):
     id = IntegerField(primary_key=True)
     user_id = ForeignKeyField(User, backref="load_generation_engines")
-    profile_id = ForeignKeyField(LoadProfiles, backref="load_generation_engines")
+    profile_id = ForeignKeyField(
+        LoadProfiles, backref="load_generation_engines"
+    )
     type = CharField(max_length=7)
     average_kwh = DecimalField()
     average_monthly_bill = DecimalField()
@@ -98,7 +104,9 @@ class LoadGenerationEngine(AuditableBase):
 class LoadPredefinedTemplates(LoadProfileBase):
     id = IntegerField(primary_key=True)
     profile_id = ForeignKeyField(LoadProfiles, backref="predefined_templates")
-    template_id = ForeignKeyField(PredefinedTemplates, backref="load_templates")
+    template_id = ForeignKeyField(
+        PredefinedTemplates, backref="load_templates"
+    )
 
     class Meta:
         table_name = "load_predefined_templates"

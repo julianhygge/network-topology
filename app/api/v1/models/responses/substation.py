@@ -27,9 +27,13 @@ class Node(BaseModel):
 class SubstationTopology(BaseModel):
     """Represents the topology structure starting from a substation."""
 
-    substation_id: UUID4 = Field(..., example="74f5596d-1df2-45ff-834c-a0511674c57f")
+    substation_id: UUID4 = Field(
+        ..., example="74f5596d-1df2-45ff-834c-a0511674c57f"
+    )
     substation_name: str = Field(..., example="Substation1")
-    locality_id: UUID4 = Field(..., example="74f5596d-1df2-45ff-834c-a0511674c57f")
+    locality_id: UUID4 = Field(
+        ..., example="74f5596d-1df2-45ff-834c-a0511674c57f"
+    )
     locality_name: str = Field(..., example="Shantipuram")
     nodes: List[Node]
 
@@ -43,7 +47,9 @@ class SubstationResponseModel(BaseModel):
     """Response model for a single substation."""
 
     id: UUID4 = Field(..., example="74f5596d-1df2-45ff-834c-a0511674c57f")
-    locality: UUID4 = Field(..., example="74f5596d-1df2-45ff-834c-a0511674c57f")
+    locality: UUID4 = Field(
+        ..., example="74f5596d-1df2-45ff-834c-a0511674c57f"
+    )
     name: str = Field(..., example="Grid2")
     active: bool = Field(..., example="True")
     created_on: datetime = Field(..., example="2024-05-07 12:40")

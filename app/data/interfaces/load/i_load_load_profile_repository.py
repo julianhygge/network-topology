@@ -1,4 +1,5 @@
 """Module for the load profile repository interface."""
+
 from abc import abstractmethod
 from typing import List, Optional
 from uuid import UUID
