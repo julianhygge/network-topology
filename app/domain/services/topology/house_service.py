@@ -43,7 +43,7 @@ class HouseService(TopologyServiceBase):
             filters={"id": house_id}
         )
 
-        if not items:  # Check if the list is empty
+        if not items:
             return None
 
         item_dict = cast(Dict[str, Any], self.repository.to_dicts(items))

@@ -44,6 +44,9 @@ class LoadProfilesRepository(
     Implements ILoadProfileRepository for load profile specific operations.
     """
 
+    def __init__(self):
+        super().__init__(model=LoadProfiles)
+
     def get_load_profiles_by_user_id(
         self, user_id: UUID
     ) -> List[LoadProfiles]:
@@ -92,24 +95,22 @@ class LoadProfilesRepository(
         Retrieves an existing load profile by house_id or creates a new one.
         """
         try:
-            # Assuming house_id is unique for profiles for this get
             profile = self.model.get(self.model.house_id == house_id)
         except DoesNotExist:
             profile = self.model.create(
                 user_id=user_id,
                 house_id=house_id,
-                created_by=user_id,  # Assuming user_id is also the creator
-                modified_by=user_id,  # Assuming user_id is also the modifier
-                profile_name=load_source,  # Or generate a name
+                created_by=user_id,
+                modified_by=user_id,
+                profile_name=load_source,
                 source=load_source,
                 public=False,
-                active=True,  # Defaulting to active
+                active=True,
             )
         return profile
 
     def get_by_house_id(self, house_id: UUID) -> Optional[LoadProfiles]:
         """Retrieves a load profile by its associated house_id."""
-        # .get() raises DoesNotExist if not found, get_or_none is safer
         return self.model.get_or_none(self.model.house_id == house_id)
 
 
@@ -121,6 +122,9 @@ class LoadProfileDetailsRepository(
     Repository for managing LoadProfileDetails data.
     Implements ILoadProfileDetailsRepository for detail-specific operations.
     """
+
+    def __init__(self):
+        super().__init__(model=LoadProfileDetails)
 
     def delete_by_profile_id(self, profile_id: UUID) -> int:
         """
@@ -160,6 +164,9 @@ class LoadProfileFilesRepository(
     Implements ILoadProfileFilesRepository for file-specific operations.
     """
 
+    def __init__(self):
+        super().__init__(model=LoadProfileFiles)
+
     def save_file(
         self, profile_id: UUID, filename: str, content: bytes
     ) -> LoadProfileFiles:
@@ -185,6 +192,9 @@ class LoadProfileBuilderItemsRepository(
     Repository for managing items used in building LoadProfiles.
     Implements ILoadProfileBuilderRepository for builder item operations.
     """
+
+    def __init__(self):
+        super().__init__(model=LoadProfileBuilderItems)
 
     def get_items_by_profile_id(
         self, profile_id: UUID
@@ -235,6 +245,9 @@ class LoadGenerationEngineRepository(
     Implements ILoadGenerationEngineRepository.
     """
 
+    def __init__(self):
+        super().__init__(model=LoadGenerationEngine)
+
     def delete_by_profile_id(self, profile_id: UUID) -> int:
         """
         Deletes load generation engine settings for a profile ID.
@@ -255,6 +268,9 @@ class PredefinedTemplatesRepository(
     Implements IPredefinedTemplatesRepository.
     """
 
+    def __init__(self):
+        super().__init__(model=LoadPredefinedTemplates)
+
     def get_by_profile_id(
         self, profile_id: UUID
     ) -> Optional[LoadPredefinedTemplates]:
@@ -267,7 +283,7 @@ class PredefinedTemplatesRepository(
         self, profile_id: UUID, template_id: UUID
     ) -> LoadPredefinedTemplates:
         """
-        Creates or updates a predefined template association for a load profile.
+        Creates or updates a predefined template linked to a load profile.
         """
         # Ensure defaults is a dictionary
         defaults_data = {"template_id": template_id}

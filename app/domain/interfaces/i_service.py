@@ -5,9 +5,6 @@ Base interface for services.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
-from peewee import Expression
-
-from app.data.interfaces.i_repository import T
 
 UserIdGeneric = TypeVar("UserIdGeneric")
 ItemIdGeneric = TypeVar("ItemIdGeneric")
@@ -57,5 +54,13 @@ class IService(ABC, Generic[UserIdGeneric, ItemIdGeneric]):
         """
 
     @abstractmethod
-    def filter(self, *expressions: Expression, **filters) -> List[T]:
-        """"""
+    def filter(self, **filters: Any) -> List[Dict[str, Any]]:
+        """
+        Filters records based on Peewee expressions and equality filters.
+
+        Args:
+            **filters: Field names and values for equality filtering.
+
+        Returns:
+            A list of dictionaries representing matching model instances.
+        """

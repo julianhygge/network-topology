@@ -19,6 +19,9 @@ class AccountRepository(BaseRepository[Account]):
     for the `Account` model.
     """
 
+    def __init__(self):
+        super().__init__(model=Account)
+
 
 class UserRepository(BaseRepository[User], IUserRepository[User]):
     """
@@ -28,6 +31,9 @@ class UserRepository(BaseRepository[User], IUserRepository[User]):
     Extends `BaseRepository` for `User` model CRUD and implements
     `IUserRepository` for user-specific operations.
     """
+
+    def __init__(self):
+        super().__init__(model=User)
 
     model_user_group = UserGroupRel
     model_account = Account

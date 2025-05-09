@@ -29,6 +29,9 @@ class SolarProfileRepository(
     for specific data access methods related to solar profiles.
     """
 
+    def __init__(self):
+        super().__init__(model=SolarProfile)
+
     def get_solar_profile_by_house_id(
         self, house_id: UUID
     ) -> Optional[SolarProfile]:
@@ -41,8 +44,8 @@ class SolarProfileRepository(
         Returns:
             A SolarProfile instance if found, otherwise None.
         """
-        solar_profile: SolarProfile = self.model.get_or_none(
-            self.model.house_id == house_id
+        solar_profile: SolarProfile = self._model.get_or_none(
+            self._model.house_id == house_id
         )
 
         return solar_profile
@@ -57,5 +60,23 @@ class SolarProfileRepository(
         Returns:
             The number of rows deleted.
         """
-        query = self.model.delete().where(self.model.house_id == house_id)
+        query = self._model.delete().where(self._model.house_id == house_id)
         return query.execute()
+
+    def filter_solar_profiles_by_house_id(
+        self, house_id: UUID
+    ) -> list[SolarProfile]:
+        """
+        Filters solar profiles by house ID.
+
+        This method is a more specific alternative to the generic filter method
+        from the base repository.
+
+        Args:
+            house_id: The UUID of the house.
+
+        Returns:
+            A list of SolarProfile instances matching the house ID.
+        """
+        query = self._model.select().where(self._model.house_id == house_id)
+        return list(query)

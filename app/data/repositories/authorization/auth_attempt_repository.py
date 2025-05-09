@@ -24,6 +24,8 @@ class AuthAttemptRepository(
     `IAuthAttemptRepository[AuthAttempts]` for specific authentication
     attempt-related queries.
     """
+    def __init__(self):
+        super().__init__(model=AuthAttempts)
 
     def fetch_all_previous_records_for_user(
         self, phone_number: str, records_after_time: datetime.datetime

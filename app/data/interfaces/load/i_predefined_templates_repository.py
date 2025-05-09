@@ -30,7 +30,8 @@ class IPredefinedTemplatesRepository(IRepository[T]):
     @abstractmethod
     def create_or_update(self, profile_id: UUID, template_id: UUID) -> T:
         """
-        Creates a new predefined template association or updates an existing one.
+        Creates a new predefined template association
+        or updates an existing one.
 
         Args:
             profile_id: The UUID of the load profile.

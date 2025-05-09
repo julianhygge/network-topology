@@ -7,10 +7,9 @@ represent the model entity the repository will manage.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generic, List, TypeVar, Union
+from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 from uuid import UUID
 
-from peewee import Expression
 
 from app.data.schemas.schema_base import BaseModel
 
@@ -215,19 +214,15 @@ class IRepository(ABC, Generic[T]):
 
     @abstractmethod
     def filter(
-        self, *expressions: Expression, filters: Dict[str, Any]
+        self,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        **kwargs: Any,
     ) -> List[T]:
         """
-        Filters records based on a combination of Peewee expressions and
-        simple equality filters.
-
-        Args:
-            *expressions: Variable number of Peewee Expression objects
-                          (Model.field > value).
-            filters: A dictionary where keys are field names (strings)
-                     and values are the values to filter by
-                     ({"name": "John"}).
-
-        Returns:
-            List[T]: A list of model instances matching the filter criteria.
+        Filters records based on provided criteria, with optional pagination.
+        :param limit: Maximum number of records to return.
+        :param offset: Number of records to skip.
+        :param kwargs: Field-value pairs to filter by.
+        :return: A list of matching model instances.
         """

@@ -20,6 +20,8 @@ class SolarProfileService(BaseService[SolarProfile], ISolarProfileService):
     Service class for managing solar profiles.
     """
 
+    repository: ISolarProfileRepository
+
     def __init__(self, repository: ISolarProfileRepository):
         """
         Initializes the SolarProfileService with a repository.
@@ -28,14 +30,6 @@ class SolarProfileService(BaseService[SolarProfile], ISolarProfileService):
             repository: The ISolarProfileRepository instance.
         """
         super().__init__(repository)
-
-    @property
-    def _repo(self) -> ISolarProfileRepository:
-        """
-        Provides the repository cast to ISolarProfileRepository.
-        """
-        repo = cast(ISolarProfileRepository, self.repository)
-        return repo
 
     def create(self, user_id: UUID, **kwargs: Any) -> Dict[str, Any]:
         """
@@ -63,7 +57,7 @@ class SolarProfileService(BaseService[SolarProfile], ISolarProfileService):
         if has_no_solar and not simulate_diff_cap:
             kwargs["simulated_available_space_sqft"] = None
 
-        created: SolarProfile = self.repository.create(data=kwargs)
+        created = self.repository.create(data=kwargs)
         created_dict = cast(Dict[str, Any], self.repository.to_dicts(created))
         if hasattr(created, "tilt_type") and created.tilt_type:
             created_dict["tilt_type"] = created.tilt_type
@@ -82,7 +76,7 @@ class SolarProfileService(BaseService[SolarProfile], ISolarProfileService):
             A dictionary representation of the solar profile if found,
             otherwise None.
         """
-        lst = self._repo.get_solar_profile_by_house_id(house_id)
+        lst = self.repository.get_solar_profile_by_house_id(house_id)
         if lst is not None:
             solar_data = cast(Dict[str, Any], self.repository.to_dicts(lst))
             return solar_data
@@ -95,7 +89,7 @@ class SolarProfileService(BaseService[SolarProfile], ISolarProfileService):
         Args:
             house_id: The UUID of the house.
         """
-        self._repo.delete_solar_profile_by_house_id(house_id)
+        self.repository.delete_solar_profile_by_house_id(house_id)
 
     def update_solar_profile(
         self, user_id: UUID, house_id: UUID, **kwargs: Any

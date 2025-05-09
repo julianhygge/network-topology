@@ -1,9 +1,7 @@
 """Base service class providing common CRUD operations."""
 
-from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
+from typing import Any, Dict, Generic, List, Optional, TypeVar, Union, cast
 from uuid import UUID
-
-from peewee import Expression
 
 from app.data.interfaces.i_repository import IRepository
 from app.data.schemas.schema_base import BaseModel
@@ -16,6 +14,7 @@ T = TypeVar("T", bound=BaseModel)
 class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
     """
     Base service class providing common CRUD operations.
+
     Implements IService with UUID for user IDs and Union[int, UUID] for IDs.
     Generic over T, which is the type of the model handled by the repository.
     """
@@ -43,19 +42,19 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
         kwargs["created_by"] = user_id
         kwargs["modified_by"] = user_id
         kwargs["active"] = True
-        # Ensure created_on and modified_on are set if not provided
         kwargs.setdefault("created_on", utc_now())
         kwargs.setdefault("modified_on", utc_now())
 
         created_item: T = self.repository.create(kwargs)
-        # Assuming to_dicts can handle a single item and returns a Dict
-        created_dict = self.repository.to_dicts(created_item)
-        if created_dict is None:  # Should not happen if create is successful
-            raise ValueError(
-                "Repository create method returned an item that "
-                "resulted in None when converted to dict."
-            )
-        return created_dict
+        result = self.repository.to_dicts(created_item)
+
+        if isinstance(result, dict):
+            return cast(Dict[str, Any], result)
+        # This case should ideally not be reached if create is successful
+        # and to_dicts works as expected for a single model.
+        raise ValueError(
+            "Failed to convert created item to dictionary."
+        )
 
     def read(self, item_id: Union[int, UUID]) -> Optional[Dict[str, Any]]:
         """
@@ -68,8 +67,12 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
             A dictionary representation of the record if found, otherwise None.
         """
         item: Optional[T] = self.repository.read(item_id)
-        # to_dicts should handle None input and return None
-        return self.repository.to_dicts(item)
+        if item is None:
+            return None
+        result = self.repository.to_dicts(item)
+        if isinstance(result, dict):
+            return cast(Dict[str, Any], result)
+        return None  # Should not happen if item was a model
 
     def update(
         self, user_id: UUID, item_id: Union[int, UUID], **kwargs: Any
@@ -89,84 +92,88 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
         kwargs["modified_on"] = utc_now()
         kwargs["modified_by"] = user_id
 
-        # Assuming repository.update returns the updated model or None
-        updated_item = self.repository.update(item_id, kwargs)
+        updated_count = self.repository.update(item_id, kwargs)
 
-        if updated_item:
-            return self.repository.to_dicts(updated_item)
+        if updated_count > 0:
+            # Re-fetch the item to return its latest state as a dict
+            updated_item = self.repository.read(item_id)
+            if updated_item:
+                result = self.repository.to_dicts(updated_item)
+                if isinstance(result, dict):
+                    return cast(Dict[str, Any], result)
         return None
 
     def delete(self, item_id: Union[int, UUID]) -> int:
         """
         Deletes a record by its ID.
-        In a soft-delete scenario, this might mean setting 'active = False'.
-        The current IRepository.delete suggests hard delete.
 
         Args:
             item_id: The ID of the record.
 
         Returns:
-            True if the record was deleted, False otherwise.
+            The number of records deleted (0 or 1).
         """
         return self.repository.delete(item_id)
 
     def list(self, user_id: UUID) -> List[Dict[str, Any]]:
         """
         Lists active records.
-        WARNING: This implementation currently lists ALL active records
-        and IGNORES the user_id. If you need to filter by user_id,
-        the IRepository.list_actives() method (or a new one like list_by_user)
-        needs to support filtering by user_id.
 
         Args:
-            user_id: The UUID of the user. (Currently ignored )
+            user_id: The UUID of the user. (Currently ignored by list_actives)
 
         Returns:
             A list of dictionary representations of the records.
         """
-        # TODO: filtering by user_id is required, modify repository call:
-
+        # TODO: Implement user_id filtering if IRepository.list_actives changes
+        # or a new method like list_by_user is used.
         list_items: List[T] = self.repository.list_actives()
+        result = self.repository.to_dicts(list_items)
 
-        dict_list = self.repository.to_dicts(list_items)
-        if dict_list is None:
-            return []
-        return dict_list
+        if isinstance(result, list):
+            # Ensure all items in the list are dictionaries
+            return [
+                item for item in result if isinstance(item, dict)
+            ]
+        return []
 
     def list_all(self) -> List[Dict[str, Any]]:
         """
         Lists all active records.
-        If "list_all" means truly all (active and inactive), then
-        repository should have a method like `list_all_repo()`.
 
         Returns:
             A list of dictionary representations of the records.
         """
         list_items: List[T] = self.repository.list_actives()
+        result = self.repository.to_dicts(list_items)
 
-        dict_list = self.repository.to_dicts(list_items)
-        if dict_list is None:
-            return []
-        return dict_list
+        if isinstance(result, list):
+            return [
+                item for item in result if isinstance(item, dict)
+            ]
+        return []
 
-    def filter(self, *expressions: Expression, **filters) -> List[T]:
+    def filter(  
+        self, **filters: Any
+    ) -> List[Dict[str, Any]]:
         """
-        Filters records based on a combination of Peewee expressions and
-        simple equality filters.
+        Filters records based on Peewee expressions and equality filters.
 
         Args:
-            *expressions: Variable number of Peewee Expression objects
-                          (Model.field > value).
-            **filters: Field names and values for filtering (name="John", age=30).
+            **filters: Field names and values for equality filtering.
 
         Returns:
-            List[T]: A list of model instances matching the filter criteria.
+            A list of dictionaries representing matching model instances.
         """
-        list_items = self.repository.filter(
-            house_id="7ecae55e-92dd-427e-a2d6-4f3bed16b0d2"
+        list_items: List[T] = self.repository.filter(
+            **filters
         )
+        result = self.repository.to_dicts(list_items)
 
-        dict_list = self.repository.to_dicts(list_items)
-        if dict_list is None:
-            return []
-        return list_items
+        if isinstance(result, list):
+            return [
+                item for item in result if isinstance(item, dict)
+            ]
+        if isinstance(result, dict):
+            return [cast(Dict[str, Any], result)]
+        return []

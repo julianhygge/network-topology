@@ -25,6 +25,8 @@ class GroupRepository(BaseRepository[Groups], IGroupRepository[Groups]):
     This class extends `BaseRepository` for generic CRUD operations on `Groups`
     and implements `IGroupRepository` for group-specific queries.
     """
+    def __init__(self):
+        super().__init__(model=Groups)
 
     def fetch_roles_and_permissions_by_groups(
         self, session_user: Any, now: datetime.datetime

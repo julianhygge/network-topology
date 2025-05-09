@@ -7,7 +7,7 @@ from uuid import UUID
 from app.data.interfaces.i_repository import IRepository, T
 
 
-class ILoadProfileRepository(IRepository[T]):  # T is LoadProfiles
+class ILoadProfileRepository(IRepository[T]):
     """
     Interface for repositories managing load profile data.
     Extends the generic IRepository with load profile specific operations.

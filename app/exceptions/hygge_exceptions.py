@@ -1,23 +1,36 @@
+"""Module defining custom exceptions for the Hygge Power application."""
+
+from typing import Optional
+
 from app.exceptions.error_code_enums import ErrorCodeEnum
 
 
 class HyggeException(Exception):
     """Base exception class for the application."""
 
-    def __init__(self, message: str, code: ErrorCodeEnum = ""):
+    def __init__(self, message: str, code: Optional[ErrorCodeEnum] = None):
         self.message = message
         self.code = code
-        super().__init__(f"{self.code}: {self.message}")
+        if self.code:
+            display_message = f"{self.code}: {self.message}"
+        else:
+            display_message = self.message
+        super().__init__(display_message)
 
     def to_dict(self):
-        return {"message": self.message, "code": str(self.code.value)}
+        return {
+            "message": self.message,
+            "code": str(self.code.value) if self.code else None,
+        }
 
 
 class DatabaseException(HyggeException):
     """Exception raised for database-related errors."""
 
     def __init__(
-        self, message="Database operation failed", details: str = None
+        self,
+        message="Database operation failed",
+        details: Optional[str] = None,
     ):
         self.details = details
         super().__init__(message)
@@ -29,7 +42,7 @@ class ServiceException(HyggeException):
     def __init__(
         self,
         message: str = "Service layer exception",
-        code: ErrorCodeEnum = "",
+        code: Optional[ErrorCodeEnum] = None,
     ):
         self.message = message
         self.code = code
@@ -56,6 +69,14 @@ class UserAlreadyExistException(ServiceException):
 
 class NotFoundException(ServiceException):
     def __init__(self, message="Item not found"):
+        self.message = message
+        super().__init__(self.message)
+
+
+class AlreadyExistsException(ServiceException):
+    """Exception raised when an item that should be unique already exists."""
+
+    def __init__(self, message="Item already exists"):
         self.message = message
         super().__init__(self.message)
 

@@ -27,7 +27,7 @@ solar_router = APIRouter(tags=["Solar"])
 async def create_solar_profile(
     data: SolarProfileRequestModel,
     service: ISolarProfileService = Depends(get_solar_profile_service),
-    user_id: str = Depends(
+    user_id: UUID = Depends(
         permission(Resources.LOAD_PROFILES, Permission.CREATE)
     ),
 ):
@@ -46,8 +46,8 @@ async def create_solar_profile(
         HTTPException: If an error occurs during creation.
     """
     try:
-        data = data.model_dump()
-        body = service.create(user_id, **data)
+        data_dicts = data.model_dump()
+        body = service.create(user_id, **data_dicts)
         return SolarProfileResponse(**body)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -74,10 +74,9 @@ async def get_solar_profile(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        body = service.get_solar_profile_by_house_id(house_id)
+        body = service.filter(house_id=house_id)
         if body:
-            response = SolarProfileResponse(**body)
-            return response
+            return body[0]
         return None
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

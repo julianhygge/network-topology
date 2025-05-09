@@ -16,6 +16,8 @@ class UserGroupRelRepository(BaseRepository[UserGroupRel]):
     This class extends `BaseRepository` to provide generic CRUD operations
     for the `UserGroupRel` model, which links users to groups.
     """
+    def __init__(self):
+        super().__init__(model=UserGroupRel)
 
     def delete_by_user_id(self, user_id: int) -> int:
         """

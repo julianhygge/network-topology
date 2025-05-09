@@ -11,26 +11,11 @@ from peewee import DoesNotExist, IntegrityError, fn
 from app.data.interfaces.topology.i_node_repository import INodeRepository
 from app.data.repositories.base_repository import BaseRepository
 from app.data.schemas.transactional.topology_schema import (
-    House,
-    HouseFlag,
     Locality,
     Node,
     Substation,
-    Transformer,
 )
 from app.utils.logger import logger
-
-
-class FlagRepository(BaseRepository[HouseFlag]):
-    """"""
-
-
-class LocalityRepository(BaseRepository[Locality]):
-    """
-    Repository for managing Locality data.
-    This class extends `BaseRepository` to provide generic CRUD operations
-    for the `Locality` model.
-    """
 
 
 class SubstationRepository(BaseRepository[Substation]):
@@ -38,6 +23,9 @@ class SubstationRepository(BaseRepository[Substation]):
     Repository for managing Substation data.
     Extends BaseRepository and includes logic to create a corresponding Node.
     """
+
+    def __init__(self):
+        super().__init__(model=Substation)
 
     def create(self, data: Dict[str, Any]) -> Substation:
         """
@@ -68,25 +56,14 @@ class SubstationRepository(BaseRepository[Substation]):
             raise
 
 
-class TransformerRepository(BaseRepository[Transformer]):
-    """
-    Repository for managing Transformer data.
-    Extends BaseRepository for generic CRUD operations.
-    """
-
-
-class HouseRepository(BaseRepository[House]):
-    """
-    Repository for managing House data.
-    Extends BaseRepository for generic CRUD operations.
-    """
-
-
 class NodeRepository(BaseRepository[Node], INodeRepository[Node]):
     """
     Repository for managing Node data and topology traversal.
     Extends BaseRepository for Node CRUD and implements INodeRepository.
     """
+
+    def __init__(self):
+        super().__init__(model=Node)
 
     def read(self, id_value: Union[int, UUID]) -> Optional[Node]:
         """

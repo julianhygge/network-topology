@@ -2,12 +2,14 @@
 Interface for the Solar Profile Service.
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Any, Dict
 from uuid import UUID
 
+from app.domain.interfaces.i_service import IService
 
-class ISolarProfileService(ABC):
+
+class ISolarProfileService(IService[UUID, UUID]):
     """
     Abstract base class for the Solar Profile Service.
     Defines the interface for managing solar profiles.

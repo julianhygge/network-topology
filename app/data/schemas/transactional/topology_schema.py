@@ -3,6 +3,7 @@
 import uuid
 
 from peewee import (
+    AutoField,
     BooleanField,
     CharField,
     DecimalField,
@@ -155,6 +156,7 @@ class HouseFlag(Transactional):
     Each flag has a type and a value.
     """
 
+    id = AutoField()
     house = ForeignKeyField(
         House, backref="flags", null=True, on_delete="CASCADE"
     )
