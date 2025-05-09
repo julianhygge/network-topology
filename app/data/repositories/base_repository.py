@@ -41,7 +41,6 @@ class BaseRepository(IRepository[T]):
     def __init__(self, model: Type[T]):
         self._model = model
 
-
     @property
     def database_instance(self) -> PooledPostgresqlDatabase:
         return HyggeDatabase.get_instance()

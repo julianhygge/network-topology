@@ -63,25 +63,6 @@ class SolarProfileService(BaseService[SolarProfile], ISolarProfileService):
             created_dict["tilt_type"] = created.tilt_type
         return created_dict
 
-    def get_solar_profile_by_house_id(
-        self, house_id: UUID
-    ) -> Dict[str, Any] | None:
-        """
-        Retrieves a solar profile by its associated house ID.
-
-        Args:
-            house_id: The UUID of the house.
-
-        Returns:
-            A dictionary representation of the solar profile if found,
-            otherwise None.
-        """
-        lst = self.repository.get_solar_profile_by_house_id(house_id)
-        if lst is not None:
-            solar_data = cast(Dict[str, Any], self.repository.to_dicts(lst))
-            return solar_data
-        return None
-
     def delete_solar_profile_by_house_id(self, house_id: UUID) -> None:
         """
         Deletes a solar profile by its associated house ID.

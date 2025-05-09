@@ -8,7 +8,6 @@ data, extending the generic BaseRepository and implementing the
 ISolarProfileRepository interface.
 """
 
-from typing import Optional
 from uuid import UUID
 
 from app.data.interfaces.solar.i_solar_profile_repository import (
@@ -32,24 +31,6 @@ class SolarProfileRepository(
     def __init__(self):
         super().__init__(model=SolarProfile)
 
-    def get_solar_profile_by_house_id(
-        self, house_id: UUID
-    ) -> Optional[SolarProfile]:
-        """
-        Retrieves a solar profile by its associated house ID.
-
-        Args:
-            house_id: The UUID of the house.
-
-        Returns:
-            A SolarProfile instance if found, otherwise None.
-        """
-        solar_profile: SolarProfile = self._model.get_or_none(
-            self._model.house_id == house_id
-        )
-
-        return solar_profile
-
     def delete_solar_profile_by_house_id(self, house_id: UUID) -> int:
         """
         Deletes a solar profile by its associated house ID.
@@ -62,21 +43,3 @@ class SolarProfileRepository(
         """
         query = self._model.delete().where(self._model.house_id == house_id)
         return query.execute()
-
-    def filter_solar_profiles_by_house_id(
-        self, house_id: UUID
-    ) -> list[SolarProfile]:
-        """
-        Filters solar profiles by house ID.
-
-        This method is a more specific alternative to the generic filter method
-        from the base repository.
-
-        Args:
-            house_id: The UUID of the house.
-
-        Returns:
-            A list of SolarProfile instances matching the house ID.
-        """
-        query = self._model.select().where(self._model.house_id == house_id)
-        return list(query)

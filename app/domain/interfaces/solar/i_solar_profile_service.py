@@ -9,7 +9,7 @@ from uuid import UUID
 from app.domain.interfaces.i_service import IService
 
 
-class ISolarProfileService(IService[UUID, UUID]):
+class ISolarProfileService(IService):
     """
     Abstract base class for the Solar Profile Service.
     Defines the interface for managing solar profiles.
@@ -26,21 +26,6 @@ class ISolarProfileService(IService[UUID, UUID]):
 
         Returns:
             A dictionary representation of the created solar profile.
-        """
-
-    @abstractmethod
-    def get_solar_profile_by_house_id(
-        self, house_id: UUID
-    ) -> Dict[str, Any] | None:
-        """
-        Retrieves a solar profile by its associated house ID.
-
-        Args:
-            house_id: The UUID of the house.
-
-        Returns:
-            A dictionary representation of the solar profile if found,
-            otherwise None.
         """
 
     @abstractmethod

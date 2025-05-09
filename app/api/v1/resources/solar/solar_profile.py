@@ -1,5 +1,6 @@
 """API endpoints for managing Solar Profiles."""
 
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -53,12 +54,12 @@ async def create_solar_profile(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@solar_router.get("/{house_id}")
+@solar_router.get("/{house_id}", response_model=Optional[SolarProfileResponse])
 async def get_solar_profile(
     house_id: UUID,
     service: ISolarProfileService = Depends(get_solar_profile_service),
     _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
-):
+) -> Optional[SolarProfileResponse]:
     """
     Retrieve the solar profile for a specific house.
 
@@ -74,9 +75,9 @@ async def get_solar_profile(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        body = service.filter(house_id=house_id)
-        if body:
-            return body[0]
+        solar_profile_data_list = service.filter(house_id=house_id)
+        if solar_profile_data_list:
+            return SolarProfileResponse(**solar_profile_data_list[0])
         return None
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -87,7 +88,7 @@ async def update_solar_profile(
     house_id: UUID,
     data: SolarProfileUpdateModel,
     service: ISolarProfileService = Depends(get_solar_profile_service),
-    user_id: str = Depends(
+    user_id: UUID = Depends(
         permission(Resources.LOAD_PROFILES, Permission.CREATE)
     ),
 ):
@@ -104,8 +105,8 @@ async def update_solar_profile(
         HTTPException: If an error occurs during the update.
     """
     try:
-        data = data.model_dump(exclude_unset=True)
-        service.update_solar_profile(user_id, house_id, **data)
+        update_data_dict = data.model_dump(exclude_unset=True)
+        service.update_solar_profile(user_id, house_id, **update_data_dict)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
