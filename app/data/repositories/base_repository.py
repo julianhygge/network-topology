@@ -76,8 +76,7 @@ class BaseRepository(IRepository[T]):
         return None
 
     def delete(self, id_value: Union[int, UUID]) -> int:
-        query = self._model.delete_by_id(id_value)
-        return query.execute()
+        return self._model.delete_by_id(id_value)
 
     def list(self) -> List[T]:
         return list(cast(Iterable[T], self._model.select()))

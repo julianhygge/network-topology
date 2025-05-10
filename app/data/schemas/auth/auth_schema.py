@@ -18,6 +18,7 @@ from playhouse.postgres_ext import BinaryJSONField
 from app.data.schemas.enums.enums import EnumField, UserRoles
 from app.data.schemas.schema_base import BaseModel, InfDateTimeField
 from app.data.schemas.transactional.user_schema import User
+from app.utils.datetime_util import utc_now_iso
 
 
 class AuthBase(BaseModel):
@@ -98,19 +99,14 @@ RoleGroupRelDeferred.set_model(GroupRoleRel)
 
 class UserGroupRel(AuthBase):
     id = BigAutoField(primary_key=True)
-    # record_id = ForeignKeyField('self', column_name='record_id', lazy_load=True)
     record_id = UUIDField()
     active = BooleanField(default=True)
-    # user = ForeignKeyField(User, column_name='user_record_id', lazy_load=False)
     user_record_id = UUIDField()
-    # group_id = ForeignKeyField(Groups, column_name='group_id', lazy_load=False)
     group_id = IntegerField()
-    validity_start = DateTimeField(default=datetime.datetime.utcnow)
-    validity_end = InfDateTimeField(default=datetime.datetime.max)
-    created_on = DateTimeField(default=datetime.datetime.utcnow)
-    modified_on = DateTimeField(default=datetime.datetime.utcnow)
-    # created_by = ForeignKeyField(User, backref='created', on_delete='SET NULL', column_name='created_by')
-    # modified_by = ForeignKeyField(User, backref='modified', on_delete='SET NULL', column_name='modified_by')
+    validity_start = DateTimeField(default=utc_now_iso())
+    validity_end = InfDateTimeField(default=utc_now_iso())
+    created_on = DateTimeField(default=utc_now_iso())
+    modified_on = DateTimeField(default=utc_now_iso())
     created_by = UUIDField()
     modified_by = UUIDField()
 
