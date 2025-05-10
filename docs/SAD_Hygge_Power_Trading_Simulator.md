@@ -60,7 +60,8 @@ The backend application follows a 3-layer architecture (API, Domain/Service, Dat
 *   **Domain Layer (Service Layer):**
     *   **Authorization Service:** Contains business logic related to user roles and permissions.
     *   **Topology Service:** Implements business logic for managing the network topology (e.g., creating, updating, deleting grids, transformers, houses).
-    *   **Profile Service:** Handles business logic for processing, generating, and storing various profiles (e.g., load profiles, solar generation profiles).
+    *   **Profile Service:** Handles business logic for managing raw load and solar profiles (loading, storing).
+    *   **Profile Data Preparation Service:** Implements the logic to transform raw profile data into simulation-ready time-series data (e.g., 15-minute intervals for a full year).
     *   **Allocation Service:** Contains the business logic for the energy allocation algorithm.
     *   **Communication Service:** Manages any communication-related business logic (if applicable, e.g., notifications).
     *   **Simulation Module:** Encapsulates the orchestration of simulation runs (setup, state management) and the core simulation engine logic (step-by-step calculations, battery management, applying allocation).
@@ -75,90 +76,7 @@ The backend application follows a 3-layer architecture (API, Domain/Service, Dat
 
 #### 3.2.1. Backend Component Diagram
 
-```mermaid
-graph TD
-    subgraph "Backend Application (FastAPI)"
-        subgraph "API Layer"
-            AEM[API Endpoints Module]
-            AuthAPI["Authentication Module (API)"]
-            MW[Middleware]
-        end
-
-        subgraph "Domain Layer (Service Layer)"
-            AuthSvc[Authorization Service]
-            TopoExplSvc[Topology Service]
-            ProfileSvc[Profile Service]
-            AllocSvc[Allocation Service]
-            CommSvc[Communication Service]
-            SimMod[Simulation Module]
-            ResultsSvc[Results Service]
-        end
-
-        subgraph "Data Layer"
-            RepoMod[Repository Modules]
-            DbModels[Database Models/Schemas]
-        end
-
-        subgraph "Supporting Modules"
-            ConfigMod[Configuration Module]
-            UtilMod[Utility Module]
-            ExcepMod[Exception Handling Module]
-        end
-
-        AEM --> AuthSvc
-        AEM --> TopoExplSvc
-        AEM --> ProfileSvc
-        AEM --> SimMod
-        AEM --> ResultsSvc
-        AEM --> AuthAPI
-
-        AuthAPI --> AuthSvc
-
-        AuthSvc --> RepoMod
-        TopoExplSvc --> RepoMod
-        ProfileSvc --> RepoMod
-        AllocSvc --> RepoMod
-        SimMod --> RepoMod
-        SimMod --> AllocSvc 
-        SimMod --> ProfileSvc
-        SimMod --> TopoExplSvc
-        ResultsSvc --> RepoMod
-        
-        RepoMod --> DbModels
-
-        %% Connections to Supporting Modules (illustrative)
-        AEM --> ConfigMod
-        AEM --> UtilMod
-        AEM --> ExcepMod
-        AuthSvc --> ConfigMod
-        TopoExplSvc --> UtilMod
-        SimMod --> ConfigMod
-    end
-
-    %% External Interactions
-    FrontendApp([Frontend Application]) --> AEM
-    DbModels --> PostgreSQLDatabase[(PostgreSQL Database)]
-
-    %% Styling (optional, for clarity)
-    style AEM fill:#f9f,stroke:#333,stroke-width:2px
-    style AuthAPI["Authentication Module (API)"] fill:#f9f,stroke:#333,stroke-width:2px
-    style MW fill:#f9f,stroke:#333,stroke-width:2px
-
-    style AuthSvc fill:#9cf,stroke:#333,stroke-width:2px
-    style TopoExplSvc fill:#9cf,stroke:#333,stroke-width:2px
-    style ProfileSvc fill:#9cf,stroke:#333,stroke-width:2px
-    style AllocSvc fill:#9cf,stroke:#333,stroke-width:2px
-    style CommSvc fill:#9cf,stroke:#333,stroke-width:2px
-    style SimMod fill:#9cf,stroke:#333,stroke-width:2px
-    style ResultsSvc fill:#9cf,stroke:#333,stroke-width:2px
-
-    style RepoMod fill:#cf9,stroke:#333,stroke-width:2px
-    style DbModels fill:#cf9,stroke:#333,stroke-width:2px
-
-    style ConfigMod fill:#fcc,stroke:#333,stroke-width:2px
-    style UtilMod fill:#fcc,stroke:#333,stroke-width:2px
-    style ExcepMod fill:#fcc,stroke:#333,stroke-width:2px
-```
+A component diagram illustrating the backend components is available in the image file `components.png` in this directory.
 
 ### Database (PostgreSQL):
 *   Stores all persistent data (topology, config, profiles, results, users).
