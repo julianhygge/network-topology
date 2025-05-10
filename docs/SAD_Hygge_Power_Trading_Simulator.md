@@ -51,15 +51,114 @@ This document describes the proposed software architecture for the Hygge Power T
 *   Build/Development Tools (React App).
 
 ### Backend Application (FastAPI):
-*   **Web Server (Uvicorn/Gunicorn):** Runs the FastAPI application.
-*   **API Endpoints Module:** Defines routes and request handlers for topology, configuration, profiles, simulation, results, auth.
-*   **Authentication Service:** Handles user login, token generation/validation.
-*   **Topology Service:** Logic for managing grids, transformers, houses.
-*   **Profile Service:** Logic for processing, generating, storing various profiles.
-*   **Simulation Service:** Orchestrates simulation runs, manages state, calls the engine.
-*   **Simulation Engine Module:** Core algorithm performing the 15-minute step-by-step calculation, including allocation logic and battery management. Consider if this should run synchronously within a request or asynchronously as a background task for longer simulations.
-*   **Results Service:** Logic for querying, aggregating, and formatting simulation results.
-*   **Repository Modules (Data Layer):** Handles DB interactions via Peewee models.
+The backend application follows a 3-layer architecture (API, Domain/Service, Data) and includes the following key components:
+
+*   **API Layer:**
+    *   **API Endpoints Module:** Defines routes and request handlers for various functionalities like topology, configuration, profiles, simulation, results, and authentication.
+    *   **Authentication Module:** Handles user authentication (e.g., token validation) and authorization logic at the API level.
+    *   **Middleware:** Manages cross-cutting concerns such as CORS, request/response logging, and database session management.
+*   **Domain Layer (Service Layer):**
+    *   **Authorization Service:** Contains business logic related to user roles and permissions.
+    *   **Topology Service:** Implements business logic for managing the network topology (e.g., creating, updating, deleting grids, transformers, houses).
+    *   **Profile Service:** Handles business logic for processing, generating, and storing various profiles (e.g., load profiles, solar generation profiles).
+    *   **Allocation Service:** Contains the business logic for the energy allocation algorithm.
+    *   **Communication Service:** Manages any communication-related business logic (if applicable, e.g., notifications).
+    *   **Simulation Module:** Encapsulates the orchestration of simulation runs (setup, state management) and the core simulation engine logic (step-by-step calculations, battery management, applying allocation).
+    *   **Results Service:** Implements business logic for querying, aggregating, and formatting simulation results for presentation.
+*   **Data Layer:**
+    *   **Repository Modules:** Abstract database interactions using the Repository pattern for different entities (e.g., User, Grid, Profile, SimulationRun).
+    *   **Database Models/Schemas:** Defines the structure of the data (e.g., Peewee models) that maps to database tables.
+*   **Cross-Cutting Concerns / Supporting Modules:**
+    *   **Configuration Module:** Manages application configuration from various sources (e.g., environment variables, .toml files).
+    *   **Utility Module:** Provides common utility functions used across the application (e.g., date/time helpers, string manipulation).
+    *   **Exception Handling Module:** Defines custom exceptions and manages how exceptions are handled and reported.
+
+#### 3.2.1. Backend Component Diagram
+
+```mermaid
+graph TD
+    subgraph "Backend Application (FastAPI)"
+        subgraph "API Layer"
+            AEM[API Endpoints Module]
+            AuthAPI[Authentication Module (API)]
+            MW[Middleware]
+        end
+
+        subgraph "Domain Layer (Service Layer)"
+            AuthSvc[Authorization Service]
+            TopoExplSvc[Topology Service]
+            ProfileSvc[Profile Service]
+            AllocSvc[Allocation Service]
+            CommSvc[Communication Service]
+            SimMod[Simulation Module]
+            ResultsSvc[Results Service]
+        end
+
+        subgraph "Data Layer"
+            RepoMod[Repository Modules]
+            DbModels[Database Models/Schemas]
+        end
+
+        subgraph "Supporting Modules"
+            ConfigMod[Configuration Module]
+            UtilMod[Utility Module]
+            ExcepMod[Exception Handling Module]
+        end
+
+        AEM --> AuthSvc
+        AEM --> TopoExplSvc
+        AEM --> ProfileSvc
+        AEM --> SimMod
+        AEM --> ResultsSvc
+        AEM --> AuthAPI
+
+        AuthAPI --> AuthSvc
+
+        AuthSvc --> RepoMod
+        TopoExplSvc --> RepoMod
+        ProfileSvc --> RepoMod
+        AllocSvc --> RepoMod
+        SimMod --> RepoMod
+        SimMod --> AllocSvc 
+        SimMod --> ProfileSvc
+        SimMod --> TopoExplSvc
+        ResultsSvc --> RepoMod
+        
+        RepoMod --> DbModels
+
+        %% Connections to Supporting Modules (illustrative)
+        AEM --> ConfigMod
+        AEM --> UtilMod
+        AEM --> ExcepMod
+        AuthSvc --> ConfigMod
+        TopoExplSvc --> UtilMod
+        SimMod --> ConfigMod
+    end
+
+    %% External Interactions
+    FrontendApp([Frontend Application]) --> AEM
+    DbModels --> PostgreSQLDatabase[(PostgreSQL Database)]
+
+    %% Styling (optional, for clarity)
+    style AEM fill:#f9f,stroke:#333,stroke-width:2px
+    style AuthAPI fill:#f9f,stroke:#333,stroke-width:2px
+    style MW fill:#f9f,stroke:#333,stroke-width:2px
+
+    style AuthSvc fill:#9cf,stroke:#333,stroke-width:2px
+    style TopoExplSvc fill:#9cf,stroke:#333,stroke-width:2px
+    style ProfileSvc fill:#9cf,stroke:#333,stroke-width:2px
+    style AllocSvc fill:#9cf,stroke:#333,stroke-width:2px
+    style CommSvc fill:#9cf,stroke:#333,stroke-width:2px
+    style SimMod fill:#9cf,stroke:#333,stroke-width:2px
+    style ResultsSvc fill:#9cf,stroke:#333,stroke-width:2px
+
+    style RepoMod fill:#cf9,stroke:#333,stroke-width:2px
+    style DbModels fill:#cf9,stroke:#333,stroke-width:2px
+
+    style ConfigMod fill:#fcc,stroke:#333,stroke-width:2px
+    style UtilMod fill:#fcc,stroke:#333,stroke-width:2px
+    style ExcepMod fill:#fcc,stroke:#333,stroke-width:2px
+```
 
 ### Database (PostgreSQL):
 *   Stores all persistent data (topology, config, profiles, results, users).
