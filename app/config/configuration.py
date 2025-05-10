@@ -197,7 +197,7 @@ class ApiConfiguration(IConfiguration):
             interpolation_strategy=strategy_enum,
             max_interval_length=int(s.get("load_profile_max_interval_length")),
             min_days=int(s.get("load_profile_min_days")),
-            time_formats=s.get("load_profile_time_formats"),
+            time_formats=s.get("load_profile_time_formats").split(","),
         )
 
     @property

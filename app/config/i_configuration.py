@@ -113,7 +113,7 @@ class LoadProfileConfig:
     interpolation_strategy: LoadProfileStrategy
     max_interval_length: int
     min_days: int
-    time_formats: Optional[str]
+    time_formats: List[str]
 
 
 @dataclass(frozen=True)

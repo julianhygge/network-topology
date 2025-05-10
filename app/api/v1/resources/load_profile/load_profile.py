@@ -112,16 +112,18 @@ async def _get_load_profiles(load_profile_service, user_id, house_id, request):
     profiles = load_profile_service.list_profiles(user_id, house_id)
     items = []
     for profile in profiles:
-        self = str(request.url.path)
-        download = self.replace("/upload/", "")
+        base_url = "load/"
         download = (
-            f"{download}download/file?profile_id={profile['profile_id']}"
+            f"{base_url}download/file?profile_id={profile['profile_id']}"
         )
-        delete = self.replace("/upload/", "/")
-        delete = f"{delete}{profile['profile_id']}/"
+        delete = f"{base_url}{profile['profile_id']}/"
         profile_data = {
             **profile,
-            "links": {"self": self, "delete": delete, "download": download},
+            "links": {
+                "self": base_url,
+                "delete": delete,
+                "download": download,
+            },
         }
         profile_response = LoadProfileResponse(**profile_data)
         items.append(profile_response)
