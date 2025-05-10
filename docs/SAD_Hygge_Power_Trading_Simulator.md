@@ -12,7 +12,7 @@ This document describes the proposed software architecture for the Hygge Power T
 
 **Goals:** Modularity, Scalability (handle many nodes & long simulations), Maintainability (clear separation of concerns), Testability, Performance (efficient simulation execution), Usability (responsive UI).
 
-**Constraints:** Must use Angular or React for Frontend, Python/FastAPI for Backend API, Peewee ORM, PostgreSQL database. Must implement a 3-layer backend architecture. Must support deployment across DEV, TEST, INT, PROD environments.
+**Constraints:** Must use React for Frontend, Python/FastAPI for Backend API, Peewee ORM, PostgreSQL database. Must implement a 3-layer backend architecture. Must support deployment across DEV, TEST, INT, PROD environments.
 
 # 3. Logical Architecture
 
@@ -104,7 +104,7 @@ A component diagram illustrating the backend components is available in the imag
 
 # 5. Technology Stack
 
-*   **Frontend:** React (latest LTS) OR Angular (as per constraints)
+*   **Frontend:** React (latest LTS)
 *   **Backend:** Python 3.11+, FastAPI
 *   **ORM:** Peewee
 *   **Database:** PostgreSQL 14+
