@@ -80,7 +80,7 @@ graph TD
     subgraph "Backend Application (FastAPI)"
         subgraph "API Layer"
             AEM[API Endpoints Module]
-            AuthAPI[Authentication Module (API)]
+            AuthAPI["Authentication Module (API)"]
             MW[Middleware]
         end
 
@@ -141,7 +141,7 @@ graph TD
 
     %% Styling (optional, for clarity)
     style AEM fill:#f9f,stroke:#333,stroke-width:2px
-    style AuthAPI fill:#f9f,stroke:#333,stroke-width:2px
+    style AuthAPI["Authentication Module (API)"] fill:#f9f,stroke:#333,stroke-width:2px
     style MW fill:#f9f,stroke:#333,stroke-width:2px
 
     style AuthSvc fill:#9cf,stroke:#333,stroke-width:2px
