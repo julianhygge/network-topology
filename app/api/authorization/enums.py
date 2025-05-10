@@ -1,10 +1,10 @@
-"""Enums for authorization resources and permissions."""
+"""Enums for auth resources and permissions."""
 
 import enum
 
 
 class Resources(enum.Enum):
-    """Enum representing available resources for authorization."""
+    """Enum representing available resources for auth."""
 
     USERS = "users"
     GROUPS = "groups"
@@ -20,7 +20,7 @@ class Resources(enum.Enum):
 
 
 class Permission(enum.Enum):
-    """Enum representing available permissions for authorization."""
+    """Enum representing available permissions for auth."""
 
     CREATE = "create"
     RETRIEVE = "retrieve"

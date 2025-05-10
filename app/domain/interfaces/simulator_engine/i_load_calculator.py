@@ -1,6 +1,5 @@
-import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
+from typing import List
 from uuid import UUID
 
 from app.domain.entities.energy_interval import EnergyInterval

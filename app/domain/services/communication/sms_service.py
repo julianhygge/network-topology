@@ -1,6 +1,6 @@
 from app.config.i_configuration import IConfiguration
-from app.domain.interfaces.i_mqtt_service import IMqttService
-from app.domain.interfaces.i_sms_service import ISmsService
+from app.domain.interfaces.communication.i_mqtt_service import IMqttService
+from app.domain.interfaces.communication.i_sms_service import ISmsService
 from app.utils.logger import logger
 
 

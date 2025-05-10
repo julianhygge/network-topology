@@ -490,7 +490,7 @@ class LoadProfileService(BaseService):
         self._load_generation_engine_repository.delete_by_profile_id(
             profile_id
         )
-        return self._load_generation_engine_repository.model.get_or_create(
+        return self._load_generation_engine_repository._model.get_or_create(
             profile_id=profile_id, defaults=engine_data
         )[0]
 
@@ -511,7 +511,7 @@ class LoadProfileService(BaseService):
         )
 
         if engine_profile:
-            return self._load_generation_engine_repository.model.get_or_none(
+            return self._load_generation_engine_repository._model.get_or_none(
                 profile_id=engine_profile.id
             )
         return None

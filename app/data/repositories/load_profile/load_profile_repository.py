@@ -37,7 +37,7 @@ from app.data.schemas.load_profile.load_profile_schema import (
 
 
 class LoadProfilesRepository(
-    BaseRepository[LoadProfiles], ILoadProfileRepository[LoadProfiles]
+    BaseRepository[LoadProfiles], ILoadProfileRepository
 ):
     """
     Repository for managing LoadProfiles data.
@@ -53,9 +53,11 @@ class LoadProfilesRepository(
         """Retrieves all load profiles for a specific user."""
         try:
             return list(
-                self.model.select()
-                .where((self.model.user_id == user_id) & (~self.model.public))
-                .order_by(self.model.id.asc())
+                self._model.select()
+                .where(
+                    (self._model.user_id == user_id) & (~self._model.public)
+                )
+                .order_by(self._model.id.asc())
             )
         except DoesNotExist:
             return []
@@ -64,9 +66,9 @@ class LoadProfilesRepository(
         """Retrieves all public load profiles."""
         try:
             return list(
-                self.model.select()
-                .where(self.model.public)
-                .order_by(self.model.id.asc())
+                self._model.select()
+                .where(self._model.public)
+                .order_by(self._model.id.asc())
             )
         except DoesNotExist:
             return []
@@ -77,13 +79,13 @@ class LoadProfilesRepository(
         """Retrieves load profiles for a specific user and house."""
         try:
             return list(
-                self.model.select()
+                self._model.select()
                 .where(
-                    (self.model.user_id == user_id)
-                    & (~self.model.public)
-                    & (self.model.house_id == house_id)
+                    (self._model.user_id == user_id)
+                    & (~self._model.public)
+                    & (self._model.house_id == house_id)
                 )
-                .order_by(self.model.id.asc())
+                .order_by(self._model.id.asc())
             )
         except DoesNotExist:
             return []
@@ -95,9 +97,9 @@ class LoadProfilesRepository(
         Retrieves an existing load profile by house_id or creates a new one.
         """
         try:
-            profile = self.model.get(self.model.house_id == house_id)
+            profile = self._model.get(self._model.house_id == house_id)
         except DoesNotExist:
-            profile = self.model.create(
+            profile = self._model.create(
                 user_id=user_id,
                 house_id=house_id,
                 created_by=user_id,
@@ -111,7 +113,7 @@ class LoadProfilesRepository(
 
     def get_by_house_id(self, house_id: UUID) -> Optional[LoadProfiles]:
         """Retrieves a load profile by its associated house_id."""
-        return self.model.get_or_none(self.model.house_id == house_id)
+        return self._model.get_or_none(self._model.house_id == house_id)
 
 
 class LoadProfileDetailsRepository(
@@ -131,14 +133,14 @@ class LoadProfileDetailsRepository(
         Deletes all load profile details associated with a given profile ID.
         """
         return (
-            self.model.delete()
-            .where(self.model.profile_id == profile_id)
+            self._model.delete()
+            .where(self._model.profile_id == profile_id)
             .execute()
         )
 
     def create_details_in_bulk(self, details: List[Dict[str, Any]]) -> None:
         """Creates multiple load profile detail records in bulk."""
-        self.model.insert_many(details).execute()
+        self._model.insert_many(details).execute()
 
     def get_load_details_by_load_id(
         self, load_id: UUID
@@ -147,9 +149,11 @@ class LoadProfileDetailsRepository(
         Retrieves load profile details (timestamp, consumption) by load ID.
         """
         load_details_dicts = (
-            self.model.select(self.model.timestamp, self.model.consumption_kwh)
-            .where(self.model.profile_id == load_id)
-            .order_by(self.model.timestamp.asc())
+            self._model.select(
+                self._model.timestamp, self._model.consumption_kwh
+            )
+            .where(self._model.profile_id == load_id)
+            .order_by(self._model.timestamp.asc())
             .dicts()
         )
         return list(load_details_dicts) if load_details_dicts else None
@@ -171,7 +175,7 @@ class LoadProfileFilesRepository(
         self, profile_id: UUID, filename: str, content: bytes
     ) -> LoadProfileFiles:
         """Saves a file associated with a load profile."""
-        return self.model.create(
+        return self._model.create(
             profile_id=profile_id, filename=filename, content=content
         )
 
@@ -181,7 +185,7 @@ class LoadProfileFilesRepository(
         based on implementation).
         """
         # Implementation uses profile_id for lookup, so file_id is profile_id
-        return self.model.get_or_none(self.model.profile_id == file_id)
+        return self._model.get_or_none(self._model.profile_id == file_id)
 
 
 class LoadProfileBuilderItemsRepository(
@@ -203,20 +207,20 @@ class LoadProfileBuilderItemsRepository(
         Retrieves all builder items associated with a specific load profile.
         """
         return list(
-            self.model.select().where(self.model.profile_id == profile_id)
+            self._model.select().where(self._model.profile_id == profile_id)
         )
 
     def create_items_in_bulk(self, items: List[Dict[str, Any]]) -> None:
         """Creates multiple load profile builder items in bulk."""
-        self.model.insert_many(items).execute()
+        self._model.insert_many(items).execute()
 
     def delete_by_profile_id(self, profile_id: UUID) -> int:
         """
         Deletes all builder items associated with a specific load profile.
         """
         return (
-            self.model.delete()
-            .where(self.model.profile_id == profile_id)
+            self._model.delete()
+            .where(self._model.profile_id == profile_id)
             .execute()
         )
 
@@ -231,8 +235,8 @@ class LoadProfileBuilderItemsRepository(
                 if item_id is None:
                     # Or raise error, or log and skip
                     continue
-                self.model.update(**item_data).where(
-                    self.model.id == item_id
+                self._model.update(**item_data).where(
+                    self._model.id == item_id
                 ).execute()
 
 
@@ -253,8 +257,8 @@ class LoadGenerationEngineRepository(
         Deletes load generation engine settings for a profile ID.
         """
         return (
-            self.model.delete()
-            .where(self.model.profile_id == profile_id)
+            self._model.delete()
+            .where(self._model.profile_id == profile_id)
             .execute()
         )
 
@@ -277,7 +281,7 @@ class PredefinedTemplatesRepository(
         """
         Retrieves a predefined template record by its associated profile ID.
         """
-        return self.model.get_or_none(self.model.profile_id == profile_id)
+        return self._model.get_or_none(self._model.profile_id == profile_id)
 
     def create_or_update(
         self, profile_id: UUID, template_id: UUID
@@ -287,7 +291,7 @@ class PredefinedTemplatesRepository(
         """
         # Ensure defaults is a dictionary
         defaults_data = {"template_id": template_id}
-        template, created = self.model.get_or_create(
+        template, created = self._model.get_or_create(
             profile_id=profile_id,
             defaults=defaults_data,
         )

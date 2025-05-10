@@ -43,7 +43,7 @@ class SubstationRepository(BaseRepository[Substation]):
         """
         try:
             with self.database_instance.atomic():
-                obj = self.model.create(**data)
+                obj = self._model.create(**data)
                 data["id"] = obj.id
                 data["node_type"] = "substation"
                 data["substation_id"] = obj.id

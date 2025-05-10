@@ -12,17 +12,17 @@ from app.data.interfaces.topology.i_topology_simulator import (
     ITopologySimulator,
 )
 from app.data.schemas.transactional.topology_schema import HouseFlag
-from app.domain.interfaces.i_auth_service import IAuthService
-from app.domain.interfaces.i_mqtt_service import IMqttService
+from app.domain.interfaces.auth.i_auth_service import IAuthService
+from app.domain.interfaces.communication.i_mqtt_service import IMqttService
 from app.domain.interfaces.i_node_service import INodeService
 from app.domain.interfaces.i_service import IService
-from app.domain.interfaces.i_sms_service import ISmsService
-from app.domain.interfaces.i_token_service import ITokenService
+from app.domain.interfaces.communication.i_sms_service import ISmsService
+from app.domain.interfaces.auth.i_token_service import ITokenService
 from app.domain.interfaces.net_topology.i_net_topology_service import (
     INetTopologyService,
 )
 from app.domain.services.base_service import BaseService
-from app.domain.services.load_profile_service import LoadProfileService
+from app.domain.services.solar.load_profile_service import LoadProfileService
 
 c = Container()
 

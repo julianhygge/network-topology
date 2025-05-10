@@ -1,4 +1,4 @@
-"""Middleware for handling authorization."""
+"""Middleware for handling auth."""
 
 from fastapi import status
 from jwt import DecodeError, ExpiredSignatureError, InvalidSignatureError
@@ -9,18 +9,18 @@ from starlette.responses import JSONResponse
 from app.api.v1.dependencies.container_instance import get_token_service
 from app.utils.logger import logger
 
-not_needed_auth_urls = ["/v1/auth/", "/docs", "/openapi.json"]
+not_needed_auth_urls = ["/v1/communication/", "/docs", "/openapi.json"]
 
 
 token_service = get_token_service()
 
 
 class AuthorizationMiddleware(BaseHTTPMiddleware):
-    """Middleware to handle authorization for incoming requests."""
+    """Middleware to handle auth for incoming requests."""
 
     async def dispatch(self, request: Request, call_next):
         """
-        Dispatches the request and handles authorization.
+        Dispatches the request and handles auth.
 
         Args:
             request: The incoming request.
@@ -28,7 +28,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
 
         Returns:
             The response from the next middleware or endpoint, or an
-            authorization error response.
+            auth error response.
         """
         if request.method.upper() != "OPTIONS" and not any(
             url in request.url.path for url in not_needed_auth_urls
@@ -51,7 +51,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             except DecodeError:
                 request.state.authorization_error = "Invalid token"
             # Catching a broad exception to prevent application crashes
-            # due to unexpected errors during authorization.
+            # due to unexpected errors during auth.
             except Exception as ex:  # pylint: disable=broad-exception-caught
                 logger.error("Unknown error when trying to authorize: %s", ex)
                 response = JSONResponse(

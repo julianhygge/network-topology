@@ -5,7 +5,7 @@ from app.api.authorization.enums import Permission
 from app.config.i_configuration import IConfiguration
 from app.data.interfaces.i_group_repository import IGroupRepository
 from app.data.interfaces.i_repository import IRepository
-from app.domain.interfaces.i_token_service import ITokenService
+from app.domain.interfaces.auth.i_token_service import ITokenService
 from app.utils.datetime_util import (
     after_now,
     current_time_millis,

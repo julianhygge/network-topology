@@ -22,7 +22,7 @@ from app.data.schemas.transactional.user_schema import User
 
 class AuthBase(BaseModel):
     class Meta:
-        schema = "auth"
+        schema = "communication"
         abstract = True
 
 

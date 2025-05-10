@@ -5,9 +5,10 @@ from typing import List, Optional
 from uuid import UUID
 
 from app.data.interfaces.i_repository import IRepository, T
+from app.data.schemas.load_profile.load_profile_schema import LoadProfiles
 
 
-class ILoadProfileRepository(IRepository[T]):
+class ILoadProfileRepository(IRepository[LoadProfiles]):
     """
     Interface for repositories managing load profile data.
     Extends the generic IRepository with load profile specific operations.

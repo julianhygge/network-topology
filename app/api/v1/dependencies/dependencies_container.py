@@ -47,15 +47,15 @@ from app.data.schemas.transactional.topology_schema import (
 from app.domain.interfaces.net_topology.i_load_profile_file_completer import (
     ILoadProfileFileCompleter,
 )
-from app.domain.services.auth_service import AuthService
+from app.domain.services.auth.auth_service import AuthService
 from app.domain.services.base_service import BaseService
-from app.domain.services.load_profile_service import LoadProfileService
-from app.domain.services.mqtt_service import MQTTService
-from app.domain.services.sms_service import SmsService
+from app.domain.services.solar.load_profile_service import LoadProfileService
+from app.domain.services.communication.mqtt_service import MQTTService
+from app.domain.services.communication.sms_service import SmsService
 from app.domain.services.solar.solar_profile_service import SolarProfileService
-from app.domain.services.token_service import TokenService
+from app.domain.services.auth.token_service import TokenService
 from app.domain.services.topology.house_service import HouseService
-from app.domain.services.topology.load_profile_file_completer import (
+from app.domain.services.load.load_profile_file_completer import (
     LoadProfileFileCompleterAkima1D,
     LoadProfileFileCompleterLinear,
     LoadProfileFileCompleterPChip,
@@ -68,7 +68,7 @@ from app.domain.services.topology.node_service import NodeService
 from app.domain.services.topology.substation_service import SubstationService
 from app.domain.services.topology.topology_simulator import TopologySimulator
 from app.domain.services.topology.transformer_service import TransformerService
-from app.domain.services.user_service import UserService
+from app.domain.services.auth.user_service import UserService
 
 
 def _load_profile_completer_factory(

@@ -6,7 +6,7 @@ from typing import Any, Dict
 import paho.mqtt.client as mqtt
 
 from app.config.i_configuration import IConfiguration
-from app.domain.interfaces.i_mqtt_service import IMqttService
+from app.domain.interfaces.communication.i_mqtt_service import IMqttService
 from app.utils.json_util import UUIDEncoder
 
 

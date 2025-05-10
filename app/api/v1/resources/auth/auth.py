@@ -12,7 +12,7 @@ from app.api.v1.models.responses.auth.auth_response import (
     OtpVerificationModelResponse,
     OtpVerificationSuccessModelResponse,
 )
-from app.domain.interfaces.i_auth_service import IAuthService
+from app.domain.interfaces.auth.i_auth_service import IAuthService
 from app.exceptions.hygge_exceptions import UnauthorizedError
 from app.utils.logger import logger
 

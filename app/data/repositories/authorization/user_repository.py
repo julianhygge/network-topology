@@ -48,7 +48,9 @@ class UserRepository(BaseRepository[User], IUserRepository[User]):
         Returns:
             A User instance if found, otherwise None.
         """
-        return self.model.get_or_none(self.model.phone_number == phone_number)
+        return self._model.get_or_none(
+            self._model.phone_number == phone_number
+        )
 
     def fetch_account_by_phone_number(
         self, phone_number: str
@@ -85,7 +87,7 @@ class UserRepository(BaseRepository[User], IUserRepository[User]):
         """
         try:
             with self.database_instance.atomic():
-                user = self.model.create(**user_data)
+                user = self._model.create(**user_data)
                 user_id = user_data["id"]  # Assumes user_data contains id
                 # Pass data for UserGroupRel update directly
                 self.update_user_group(user_id, data)
@@ -115,7 +117,7 @@ class UserRepository(BaseRepository[User], IUserRepository[User]):
             logo_file_path = query.pop("logo_file")
             with open(logo_file_path, "rb") as f:
                 query["logo"] = f.read()
-        obj = self.model.create(**query)
+        obj = self._model.create(**query)
         return obj
 
     def insert_into_account(self, data: Any) -> Account:
