@@ -6,7 +6,7 @@
 # Postgres
 db_host = "192.168.0.200"
 db_port = 9814
-db_database = "p2p-simulator-test"
+db_database = "p2p-simulator-int"
 db_user = "p2p-simulator-user"
 db_password = "${HYGGE_DB_PASSWORD}"     
 db_max_connections=20
