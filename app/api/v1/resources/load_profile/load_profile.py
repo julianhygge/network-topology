@@ -150,7 +150,8 @@ async def upload_load_profile(
     Args:
         request: The incoming request object.
         file: The uploaded file.
-        interval_15_minutes: Flag indicating if the data is in 15-min intervals.
+        interval_15_minutes: Flag indicating if the data is in
+        15-min intervals.
         house_id: The ID of the house the profile belongs to.
         profile_name: Optional name for the profile (defaults to filename).
         user_id: The ID of the user uploading the file (from permission).

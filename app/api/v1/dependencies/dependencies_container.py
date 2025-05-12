@@ -224,4 +224,4 @@ class Container(containers.DeclarativeContainer):
         BaseService, repository=_predefined_master_templates_repository
     )
 
-    flag_service = providers.Singleton(BaseService,_flag_repo)
+    flag_service = providers.Singleton(BaseService, _flag_repo)

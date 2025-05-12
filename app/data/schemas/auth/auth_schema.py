@@ -23,7 +23,7 @@ from app.utils.datetime_util import utc_now_iso
 
 class AuthBase(BaseModel):
     class Meta:
-        schema = "communication"
+        schema = "auth"
         abstract = True
 
 

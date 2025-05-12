@@ -24,6 +24,7 @@ class AuthAttemptRepository(
     `IAuthAttemptRepository[AuthAttempts]` for specific authentication
     attempt-related queries.
     """
+
     def __init__(self):
         super().__init__(model=AuthAttempts)
 
@@ -47,12 +48,12 @@ class AuthAttemptRepository(
 
         try:
             return (
-                self.model.select()
+                self._model.select()
                 .where(
-                    (self.model.phone_number == phone_number)
-                    & (self.model.modified_on > records_after_time)
+                    (self._model.phone_number == phone_number)
+                    & (self._model.modified_on > records_after_time)
                 )
-                .order_by(self.model.modified_on.desc())
+                .order_by(self._model.modified_on.desc())
             )
         except OperationalError as e:
             raise DatabaseException(str(e)) from e

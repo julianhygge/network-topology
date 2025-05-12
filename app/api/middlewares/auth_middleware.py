@@ -9,7 +9,7 @@ from starlette.responses import JSONResponse
 from app.api.v1.dependencies.container_instance import get_token_service
 from app.utils.logger import logger
 
-not_needed_auth_urls = ["/v1/communication/", "/docs", "/openapi.json"]
+not_needed_auth_urls = ["/v1/auth/", "/docs", "/openapi.json"]
 
 
 token_service = get_token_service()
@@ -40,7 +40,9 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
                         str.replace(str(auth), "Bearer ", "")
                     )
                     token_service.validate_token_claims(claims)
-                    logger.info("user: %s", claims.get("user"))
+                    logger.info(
+                        "user: %s", claims.get("user") if claims else "Unknown"
+                    )
                     request.state.claims = claims
                 else:
                     request.state.authorization_error = "Unauthorized"
@@ -57,7 +59,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
                 response = JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content={
-                        "detail": "An unexpected error occurred trying to authorize."
+                        "detail": "An unexpected error while authorizing"
                         " Please try again later."
                     },
                 )
