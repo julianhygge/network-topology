@@ -20,8 +20,8 @@ class FlagBase(BaseModel):
         from_attributes = True
         json_schema_extra = {
             "example": {
-                "flag_type": "Maintenance",
-                "flag_value": "Scheduled",
+                "flag_type": "Priority",
+                "flag_value": "Hospital",
                 "active": True,
             }
         }
