@@ -23,6 +23,9 @@ from app.api.v1.dependencies.container_instance import (
     get_load_profile_service,
     get_predefined_template_service,
 )
+from app.api.v1.models.requests.load_profile.load_profile_create import (
+    GenerateProfileFromTemplateRequest,
+)
 from app.api.v1.models.requests.load_profile.load_profile_update import (
     LoadGenerationEngineRequest,
     LoadGenerationEngineResponse,
@@ -392,7 +395,6 @@ async def save_load_generation_engine(
         HTTPException: 500 if an error occurs during saving.
     """
     try:
-
         engine = service.save_load_generation_engine(
             user_id, house_id, data.model_dump()
         )
@@ -451,7 +453,6 @@ async def get_load_generation_engine(
         HTTPException: 404 if data is not found, 500 for unexpected errors.
     """
     try:
-
         engine = service.get_load_generation_engine(user_id, house_id)
         if engine is None:
             raise HTTPException(
@@ -487,7 +488,7 @@ async def get_load_generation_engine(
 @load_router.post(
     "/houses/{house_id}/load-predefined-template",
     response_model=LoadPredefinedTemplateResponse,
-    description="Create or update a load predefined template for a specific house",
+    description="Create or update a load template for a specific house",
     response_description="The created or updated load predefined template",
 )
 async def create_or_update_load_predefined_template(
@@ -566,7 +567,8 @@ async def get_load_predefined_template(
         The load predefined template with links.
 
     Raises:
-        HTTPException: 404 if the template is not found, 500 for unexpected errors.
+        HTTPException: 404 if the template is
+        not found, 500 for unexpected errors.
     """
     try:
         template = service.get_load_predefined_template(user_id, house_id)
@@ -626,3 +628,65 @@ async def get_load_templates(
         return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@load_router.post(
+    "/template/generate",
+    status_code=status.HTTP_201_CREATED,
+    response_description="Load profile generated from template successfully",
+)
+async def generate_load_profile_from_template(
+    request: Request,
+    generate_request: GenerateProfileFromTemplateRequest,
+    service=Depends(get_load_profile_service),
+    _: UUID = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
+):
+    """
+    Generate a 15-minute interval load profile from a predefined template
+    and household characteristics.
+
+    Args:
+        template_id: id of the predefined template.
+        service: Injected load profile service instance.
+        user_id: The ID of the user making the request (from permission).
+
+    Returns:
+        JSONResponse indicating success or failure.
+
+    Raises:
+        HTTPException: 400 for bad requests, 500 for server errors.
+    """
+    try:
+        generated_profile_info = await service.generate_profile_from_template(
+            generate_request.template_id,
+            generate_request.people_profiles,
+        )
+
+        profile_id = generated_profile_info.get("profile_id")
+
+        links = {}
+        if profile_id:
+            base_url = str(request.url_for("list_load_profiles")).split("?")[
+                0
+            ]  # Get base path for profiles
+            links["profile_details"] = f"{base_url}{profile_id}/details"
+
+        return JSONResponse(
+            content={
+                "message": "Load profile generated successfully from template",
+                "profile_id": profile_id.id,
+                "template_id": generate_request.template_id,
+                "links": links,
+            },
+            status_code=status.HTTP_201_CREATED,
+        )
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve)
+        ) from ve
+    except Exception as e:
+        # Log the exception e for debugging
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while generating the profile",
+        ) from e

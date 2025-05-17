@@ -18,7 +18,7 @@ from typing import (
 )
 from uuid import UUID
 
-from peewee import Expression, IntegrityError, ModelSelect
+from peewee import Expression, IntegrityError, ModelSelect, DoesNotExist
 from playhouse.pool import PooledPostgresqlDatabase  # type: ignore[import]
 
 from app.data.interfaces.i_repository import IRepository
@@ -52,6 +52,22 @@ class BaseRepository(IRepository[T]):
     def read(self, id_value: Union[int, UUID]) -> T | None:
         obj = self._model.get_by_id(id_value)
         return obj
+
+    def read_or_none(self, id_value: Union[int, UUID]) -> T | None:
+        """
+        Abstract method to read a record by its ID.
+
+        Args:
+            id_value (Union[int, UUID]): The ID of the record to retrieve.
+
+        Returns:
+            T | None: The model instance if found, otherwise None.
+        """
+        try:
+            obj = self._model.get_by_id(id_value)
+            return obj
+        except DoesNotExist:
+            return None
 
     def update(
         self, id_value: Union[int, UUID], data: Dict[str, Any]

@@ -1,5 +1,7 @@
+"""Service for managing household load profiles."""
+
 from io import BytesIO
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Type, Union
 from uuid import UUID
 
 from pandas import (
@@ -14,6 +16,9 @@ from pandas import (
     to_datetime,
 )
 
+from app.api.v1.models.requests.load_profile.load_profile_create import (
+    PersonProfileItem,
+)
 from app.config.i_configuration import IConfiguration
 from app.data.interfaces.i_user_repository import IUserRepository
 from app.data.interfaces.load.i_load_generation_engine_repository import (
@@ -35,10 +40,24 @@ from app.data.interfaces.load.i_predefined_templates_repository import (
     IPredefinedTemplatesRepository,
 )
 from app.domain.interfaces.enums.load_source_enum import LoadSource
+from app.domain.interfaces.enums.work_profile_type import WorkProfileType
 from app.domain.interfaces.net_topology.i_load_profile_file_completer import (
     ILoadProfileFileCompleter,
 )
+from app.domain.interfaces.solar.i_consumption_patterns import (
+    ConsumptionPatternStrategy,
+)
 from app.domain.services.base_service import BaseService
+from app.domain.services.solar.consumption_patterns.away_day_workers import (
+    DayWorkerStrategy,
+)
+from app.domain.services.solar.consumption_patterns.away_night_workers import (
+    NightWorkerStrategy,
+)
+from app.domain.services.solar.consumption_patterns.home_day_workers import (
+    HomeWorkerStrategy,
+)
+from app.utils.datetime_util import start_of_a_non_leap_year
 from app.utils.logger import logger
 
 
@@ -67,6 +86,14 @@ class LoadProfileService(BaseService):
         self._load_profile_min_days = conf.load_profile.min_days
         self._load_profile_time_formats = conf.load_profile.time_formats
         self._max_interval_length = conf.load_profile.max_interval_length
+        self._intervals_per_day = 1440 // 15  # Assuming 15-minute intervals
+        self._strategy_registry: Dict[
+            WorkProfileType, Type[ConsumptionPatternStrategy]
+        ] = {
+            WorkProfileType.WORKS_AT_HOME: HomeWorkerStrategy,
+            WorkProfileType.NIGHT_WORKER_OUTSIDE: NightWorkerStrategy,
+            WorkProfileType.DAY_WORKER_OUTSIDE: DayWorkerStrategy,
+        }
 
     def _map_profile_to_dict(self, profile):
         data = {
@@ -102,13 +129,13 @@ class LoadProfileService(BaseService):
                 # Significantly reduce consumption
                 consumption_pattern[i] *= 0.5
             elif 19 <= hour < 22:  # From 7 pm to 10 pm
-                consumption_pattern[
-                    i
-                ] *= 1.3  # Increase consumption to reflect peak activity
+                consumption_pattern[i] *= (
+                    1.3  # Increase consumption to reflect peak activity
+                )
             elif 6 <= hour < 8:  # From 6 am to 8 am
-                consumption_pattern[
-                    i
-                ] *= 1.2  # Increase consumption to reflect peak activity
+                consumption_pattern[i] *= (
+                    1.2  # Increase consumption to reflect peak activity
+                )
 
     @staticmethod
     def _normalize_adjusted_consumptions(
@@ -142,53 +169,36 @@ class LoadProfileService(BaseService):
         return [1] * (1440 // interval_minutes)
 
     def _apply_profile_adjustments(
-        self, people_profiles, consumption_pattern, interval_minutes
-    ):
+        self,
+        profile_items: List[PersonProfileItem],
+        consumption_pattern: List[float],
+        interval_minutes: int,
+    ) -> None:
         """
         Applies consumption adjustments based on each person's
-         work profile within the household.
-        """
-        for person in people_profiles:
-            if person.get("works_at_home"):
-                self._adjust_for_home_workers(
-                    consumption_pattern, interval_minutes
-                )
-            elif person.get("work_schedule") == "Night":
-                self._adjust_for_night_workers(
-                    consumption_pattern, interval_minutes
-                )
-            else:
-                # For individuals working outside
-                # (daytime workers or variable schedules)
-                # and for households without specific profile info
-                self._adjust_for_day_workers(
-                    consumption_pattern, interval_minutes
-                )
-
-    def _adjust_for_home_workers(self, consumption_pattern, interval_minutes):
-        """
-        Apply adjustments for individuals working from home during daytime.
-        This includes the general
-        adjustments for typical household activity patterns.
+        work profile within the household.
+        The adjustments from multiple people are compounded.
         """
         self._apply_general_adjustments(consumption_pattern, interval_minutes)
 
-    def _adjust_for_night_workers(self, consumption_pattern, interval_minutes):
-        """
-        For night workers, apply adjustments considering they are away at
-        night and likely active at home during the day.
-        This adjusts for lower nighttime consumption.
-        """
-        self._apply_general_adjustments(consumption_pattern, interval_minutes)
+        for person_profile in profile_items:
+            for _ in range(person_profile.count):
+                strategy_pattern = self._get_strategy_instance(
+                    profile_type=person_profile.profile_type
+                )
 
-    def _adjust_for_day_workers(self, consumption_pattern, interval_minutes):
-        """
-        Apply adjustments for those working outside during the day.
-        This includes increasing
-        consumption in the early morning and evening
-        to reflect typical patterns of leaving and returning home.
-        """
-        self._apply_general_adjustments(consumption_pattern, interval_minutes)
+                strategy_pattern.apply_pattern(
+                    consumption_pattern, interval_minutes
+                )
+
+    def _get_strategy_instance(
+        self, profile_type: WorkProfileType
+    ) -> ConsumptionPatternStrategy:
+        """Get a instance of a Strategy pattern for the give profile."""
+        strategy_class = self._strategy_registry.get(
+            profile_type, DayWorkerStrategy
+        )
+        return strategy_class()
 
     def delete_profile(self, profile_id):
         self._load_details_repository.delete_by_profile_id(profile_id)
@@ -544,3 +554,83 @@ class LoadProfileService(BaseService):
         if template:
             return self._load_pre_templates_repo.get_by_profile_id(template.id)
         return None
+
+    async def generate_profile_from_template(
+        self,
+        template_id: int,
+        profile_items: List[PersonProfileItem],
+    ) -> Dict[str, Any]:
+        """
+        Generates a 15-minute interval load profile for a full year based on a
+        predefined template and household people profiles.
+        """
+        template_details = self._load_pre_templates_repo.read_or_none(
+            template_id
+        )
+
+        if not template_details:
+            raise ValueError(
+                f"Predefined template with ID {template_id} not found."
+            )
+
+        total_daily_kwh_from_template = template_details.template_id.power_kw
+
+        # Clear existing details for this profile_id to prevent duplicates
+        self._load_details_repository.delete_by_profile_id(
+            template_details.profile_id
+        )
+
+        interval_minutes = 15
+
+        base_daily_consumption_pattern = self._initialize_consumption_pattern(
+            interval_minutes
+        )
+
+        # Apply adjustments based on people_profiles
+        self._apply_profile_adjustments(
+            profile_items,
+            base_daily_consumption_pattern,
+            interval_minutes,
+        )
+
+        # Normalize the adjusted pattern to match the template's daily kWh
+        normalized_daily_consumption_kwh = (
+            self._normalize_adjusted_consumptions(
+                base_daily_consumption_pattern, total_daily_kwh_from_template
+            )
+        )
+
+        start_of_a_year = start_of_a_non_leap_year()
+
+        num_days_in_year = 365
+
+        all_details_to_save = []
+        current_timestamp = start_of_a_year
+
+        for _ in range(num_days_in_year):
+            for consumption_value in normalized_daily_consumption_kwh:
+                detail_record = {
+                    "profile_id": template_details.profile_id,
+                    "timestamp": current_timestamp,
+                    "consumption_kwh": consumption_value,
+                }
+                all_details_to_save.append(detail_record)
+                current_timestamp += Timedelta(minutes=interval_minutes)
+
+        if all_details_to_save:
+            self._load_details_repository.create_details_in_bulk(
+                all_details_to_save
+            )
+
+        logger.debug(
+            f"Generated {len(all_details_to_save)} load profile details"
+            f"for profile ID {template_details.profile_id} from template."
+        )
+
+        return {
+            "profile_id": template_details.profile_id,
+            "template_id": template_details.id,
+            "message": "Load profile generated successfully from template.",
+            "details_count": len(all_details_to_save),
+            "house_id": template_details.profile_id.house_id_id,
+        }

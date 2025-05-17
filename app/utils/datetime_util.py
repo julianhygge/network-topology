@@ -244,3 +244,18 @@ def format_datetime_hh_mm_pm_am(dt: datetime.datetime) -> str:
         formatted_date = dt_to_format.strftime("%-I:%M %p")
 
     return formatted_date
+
+
+def start_of_a_non_leap_year() -> datetime.datetime:
+    non_leap_year = 2023
+
+    start_of_year = datetime.datetime(
+        year=non_leap_year,
+        month=1,
+        day=1,
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    return start_of_year

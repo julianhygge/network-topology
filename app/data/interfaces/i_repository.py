@@ -38,7 +38,19 @@ class IRepository(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def read(self, id_value: Union[int, UUID]) -> T | None:
+    def read(self, id_value: Union[int, UUID]) -> T:
+        """
+        Abstract method to read a record by its ID.
+
+        Args:
+            id_value (Union[int, UUID]): The ID of the record to retrieve.
+
+        Returns:
+            T: The model instance if found, otherwise None.
+        """
+
+    @abstractmethod
+    def read_or_none(self, id_value: Union[int, UUID]) -> T | None:
         """
         Abstract method to read a record by its ID.
 
