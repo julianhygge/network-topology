@@ -20,6 +20,7 @@ from app.api.v1.models.requests.load_profile.load_profile_create import (
     PersonProfileItem,
 )
 from app.config.i_configuration import IConfiguration
+from app.data.interfaces.i_repository import IRepository
 from app.data.interfaces.i_user_repository import IUserRepository
 from app.data.interfaces.load.i_load_generation_engine_repository import (
     ILoadGenerationEngineRepository,
@@ -38,6 +39,9 @@ from app.data.interfaces.load.i_load_profile_files_repository import (
 )
 from app.data.interfaces.load.i_predefined_templates_repository import (
     IPredefinedTemplatesRepository,
+)
+from app.data.interfaces.load.i_template_load_patterns_repository import (
+    ITemplateConsumptionPatternsRepository,
 )
 from app.domain.interfaces.enums.load_source_enum import LoadSource
 from app.domain.interfaces.enums.work_profile_type import WorkProfileType
@@ -71,7 +75,9 @@ class LoadProfileService(BaseService):
         load_profile_builder_repository: ILoadProfileBuilderRepository,
         load_gen_engine_repository: ILoadGenerationEngineRepository,
         pre_templates_repository: IPredefinedTemplatesRepository,
+        template_patterns_repository: ITemplateConsumptionPatternsRepository,
         load_profile_completer: ILoadProfileFileCompleter,
+        pre_master_templates_repository: IRepository,
         conf: IConfiguration,
     ):
         super().__init__(repository)
@@ -82,10 +88,14 @@ class LoadProfileService(BaseService):
         self._load_profile_builder_repository = load_profile_builder_repository
         self._load_generation_engine_repository = load_gen_engine_repository
         self._load_pre_templates_repo = pre_templates_repository
+        self._template_patterns_repo = template_patterns_repository
         self._load_profile_completer = load_profile_completer
         self._load_profile_min_days = conf.load_profile.min_days
         self._load_profile_time_formats = conf.load_profile.time_formats
         self._max_interval_length = conf.load_profile.max_interval_length
+        self._pre_master_templates_repo = pre_master_templates_repository
+        self._load_profile_files_repository = load_profile_files_repository
+
         self._intervals_per_day = 1440 // 15  # Assuming 15-minute intervals
         self._strategy_registry: Dict[
             WorkProfileType, Type[ConsumptionPatternStrategy]
@@ -529,6 +539,19 @@ class LoadProfileService(BaseService):
     def create_or_update_load_predefined_template(
         self, user_id: UUID, house_id: UUID, template_id: int
     ):
+        """Create or update a load profile using a predefined template.
+
+        Args:
+            user_id: The ID of the user creating/updating the template.
+            house_id: The ID of the house associated with the load profile.
+            template_id: The ID of the predefined template to use.
+
+        Returns:
+            The created or updated LoadPredefinedTemplate record.
+
+        Raises:
+            Any exceptions raised by the underlying repository methods.
+        """
         load_profile = self._load_profile_repo.get_or_create_by_house_id(
             user_id, house_id, LoadSource.Template.value
         )
@@ -563,22 +586,38 @@ class LoadProfileService(BaseService):
         """
         Generates a 15-minute interval load profile for a full year based on a
         predefined template and household people profiles.
+
+        Args:
+            template_id: The ID of the predefined template to use.
+            profile_items: List of person profile items for the household.
+
+
+        Returns:
+            A dictionary containing the result of the operation with:
+                - profile_id: ID of the generated profile
+                - template_id: ID of the template used
+                - message: Status message
+                - details_count: Number of profile details generated
+                - house_id: ID of the associated house
+
+        Raises:
+            ValueError: If the template with the given ID is not found.
+            DatabaseError: If there's an error during database operations.
         """
-        template_details = self._load_pre_templates_repo.read_or_none(
+        master_template = self._pre_master_templates_repo.read_or_none(
             template_id
         )
 
-        if not template_details:
+        if not master_template:
             raise ValueError(
-                f"Predefined template with ID {template_id} not found."
+                f"Master predefined template with ID {template_id} "
+                f"not found or invalid."
             )
 
-        total_daily_kwh_from_template = template_details.template_id.power_kw
+        total_daily_kwh_from_template = master_template.power_kw
 
-        # Clear existing details for this profile_id to prevent duplicates
-        self._load_details_repository.delete_by_profile_id(
-            template_details.profile_id
-        )
+        # Clear existing patterns for this template_id to prevent duplicates
+        self._template_patterns_repo.delete_by_template_id(master_template.id)
 
         interval_minutes = 15
 
@@ -601,36 +640,47 @@ class LoadProfileService(BaseService):
         )
 
         start_of_a_year = start_of_a_non_leap_year()
-
         num_days_in_year = 365
 
-        all_details_to_save = []
+        template_patterns_to_save = []
         current_timestamp = start_of_a_year
 
-        for _ in range(num_days_in_year):
-            for consumption_value in normalized_daily_consumption_kwh:
-                detail_record = {
-                    "profile_id": template_details.profile_id,
-                    "timestamp": current_timestamp,
-                    "consumption_kwh": consumption_value,
-                }
-                all_details_to_save.append(detail_record)
-                current_timestamp += Timedelta(minutes=interval_minutes)
+        try:
+            for _ in range(num_days_in_year):
+                for consumption_value in normalized_daily_consumption_kwh:
+                    if current_timestamp < start_of_a_year + Timedelta(days=1):
+                        template_patterns_to_save.append(
+                            {
+                                "template_id": master_template.id,
+                                "timestamp": current_timestamp,
+                                "consumption_kwh": consumption_value,
+                            }
+                        )
 
-        if all_details_to_save:
-            self._load_details_repository.create_details_in_bulk(
-                all_details_to_save
+                    current_timestamp += Timedelta(minutes=interval_minutes)
+
+            if template_patterns_to_save:
+                self._template_patterns_repo.create_patterns_in_bulk(
+                    template_patterns_to_save
+                )
+
+            logger.debug(
+                "Generated %s load profile details for template ID %s",
+                len(template_patterns_to_save),
+                master_template.id,
             )
 
-        logger.debug(
-            f"Generated {len(all_details_to_save)} load profile details"
-            f"for profile ID {template_details.profile_id} from template."
-        )
+            return {
+                "template_id": master_template.id,
+                "message": "Load profile generated successfully from template",
+                "details_count": len(template_patterns_to_save),
+            }
 
-        return {
-            "profile_id": template_details.profile_id.id,
-            "template_id": template_details.id,
-            "message": "Load profile generated successfully from template.",
-            "details_count": len(all_details_to_save),
-            "house_id": template_details.profile_id.house_id_id,
-        }
+        except Exception as e:
+            logger.error(
+                "Error generating profile from template %s: %s",
+                template_id,
+                str(e),
+                exc_info=True,
+            )
+            raise

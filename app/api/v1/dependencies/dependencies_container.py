@@ -26,7 +26,9 @@ from app.data.repositories.load_profile.load_profile_repository import (
     LoadProfilesRepository,
     PredefinedTemplatesRepository,
 )
-
+from app.data.repositories.load_profile.template_patterns_repository import (
+    TemplateConsumptionPatternsRepository,
+)
 from app.data.repositories.solar.solar_profile_repository import (
     SolarProfileRepository,
 )
@@ -40,27 +42,28 @@ from app.data.schemas.master.master_schema import (
     PredefinedTemplates,
 )
 from app.data.schemas.transactional.topology_schema import (
+    House,
     HouseFlag,
     Transformer,
-    House,
 )
 from app.domain.interfaces.net_topology.i_load_profile_file_completer import (
     ILoadProfileFileCompleter,
 )
 from app.domain.services.auth.auth_service import AuthService
+from app.domain.services.auth.token_service import TokenService
+from app.domain.services.auth.user_service import UserService
 from app.domain.services.base_service import BaseService
-from app.domain.services.solar.load_profile_service import LoadProfileService
 from app.domain.services.communication.mqtt_service import MQTTService
 from app.domain.services.communication.sms_service import SmsService
-from app.domain.services.solar.solar_profile_service import SolarProfileService
-from app.domain.services.auth.token_service import TokenService
-from app.domain.services.topology.house_service import HouseService
 from app.domain.services.load.load_profile_file_completer import (
     LoadProfileFileCompleterAkima1D,
     LoadProfileFileCompleterLinear,
     LoadProfileFileCompleterPChip,
     LoadProfileFileCompleterSpline,
 )
+from app.domain.services.solar.load_profile_service import LoadProfileService
+from app.domain.services.solar.solar_profile_service import SolarProfileService
+from app.domain.services.topology.house_service import HouseService
 from app.domain.services.topology.net_topology_service import (
     NetTopologyService,
 )
@@ -68,7 +71,6 @@ from app.domain.services.topology.node_service import NodeService
 from app.domain.services.topology.substation_service import SubstationService
 from app.domain.services.topology.topology_simulator import TopologySimulator
 from app.domain.services.topology.transformer_service import TransformerService
-from app.domain.services.auth.user_service import UserService
 
 
 def _load_profile_completer_factory(
@@ -113,9 +115,7 @@ class Container(containers.DeclarativeContainer):
     _transformer_repo = providers.Singleton(
         BaseRepository[Transformer], Transformer
     )
-    _flag_repo = providers.Singleton(
-        BaseRepository[HouseFlag], HouseFlag
-    )
+    _flag_repo = providers.Singleton(BaseRepository[HouseFlag], HouseFlag)
     _house_repo = providers.Singleton(BaseRepository[House], House)
     _node_repo = providers.Singleton(NodeRepository)
     _electrical_appliances_repo = providers.Singleton(
@@ -138,7 +138,11 @@ class Container(containers.DeclarativeContainer):
     _predefined_templates_repository = providers.Singleton(
         PredefinedTemplatesRepository
     )
-    _predefined_master_templates_repository = providers.Singleton(
+
+    _template_patterns_repository = providers.Singleton(
+        TemplateConsumptionPatternsRepository
+    )
+    _predefined_master_templates_repo = providers.Singleton(
         BaseRepository[PredefinedTemplates], PredefinedTemplates
     )
 
@@ -216,12 +220,14 @@ class Container(containers.DeclarativeContainer):
         load_profile_builder_repository=_load_profile_builder_repository,
         load_gen_engine_repository=_load_generation_engine_repository,
         pre_templates_repository=_predefined_templates_repository,
+        template_patterns_repository=_template_patterns_repository,
         load_profile_completer=_load_profile_completer,
+        pre_master_templates_repository=_predefined_master_templates_repo,
         conf=configuration(),
     )
 
     predefined_template_service = providers.Factory(
-        BaseService, repository=_predefined_master_templates_repository
+        BaseService, repository=_predefined_master_templates_repo
     )
 
     flag_service = providers.Singleton(BaseService, _flag_repo)

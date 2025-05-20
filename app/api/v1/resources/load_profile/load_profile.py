@@ -674,7 +674,6 @@ async def generate_load_profile_from_template(
         return JSONResponse(
             content={
                 "message": "Load profile generated successfully from template",
-                "profile_id": profile_id.id,
                 "template_id": generate_request.template_id,
                 "links": links,
             },

@@ -111,3 +111,23 @@ class LoadPredefinedTemplates(LoadProfileBase):
     class Meta:
         table_name = "load_predefined_templates"
         schema = "load"
+
+
+class TemplateConsumptionPatterns(LoadProfileBase):
+    """15-minute interval consumption patterns for predefined templates."""
+
+    id = IntegerField(primary_key=True)
+    template_id = ForeignKeyField(
+        PredefinedTemplates,
+        backref="consumption_patterns",
+        on_delete="CASCADE",
+    )
+    timestamp = DateTimeField(index=True)
+    consumption_kwh = DoubleField()
+
+    class Meta:
+        table_name = "template_consumption_patterns"
+        schema = "load"
+        indexes = (
+            (("template_id", "timestamp"), True),  # unique index
+        )

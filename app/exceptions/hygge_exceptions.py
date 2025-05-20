@@ -49,6 +49,12 @@ class ServiceException(HyggeException):
         super().__init__(message, code)
 
 
+class ValidationError(HyggeException):
+    def __init__(self, message="Validation error occurred"):
+        self.message = message
+        super().__init__(self.message)
+
+
 class InvalidAttemptState(ServiceException):
     def __init__(self, message="Attempt state not as per required"):
         self.message = message
