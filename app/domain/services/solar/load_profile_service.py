@@ -628,7 +628,7 @@ class LoadProfileService(BaseService):
         )
 
         return {
-            "profile_id": template_details.profile_id,
+            "profile_id": template_details.profile_id.id,
             "template_id": template_details.id,
             "message": "Load profile generated successfully from template.",
             "details_count": len(all_details_to_save),
