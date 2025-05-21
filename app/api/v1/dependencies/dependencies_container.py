@@ -29,8 +29,8 @@ from app.data.repositories.load_profile.load_profile_repository import (
 from app.data.repositories.load_profile.template_patterns_repository import (
     TemplateConsumptionPatternsRepository,
 )
-from app.data.repositories.solar.solar_profile_repository import (
-    SolarProfileRepository,
+from app.data.repositories.solar.solar_repository import (
+    SolarProfileRepository, SolarInstallationRepository,
 )
 from app.data.repositories.topology.topology_repository import (
     NodeRepository,
@@ -62,6 +62,7 @@ from app.domain.services.load.load_profile_file_completer import (
     LoadProfileFileCompleterSpline,
 )
 from app.domain.services.solar.load_profile_service import LoadProfileService
+from app.domain.services.solar.solar_installtion_service import SolarInstallationService
 from app.domain.services.solar.solar_profile_service import SolarProfileService
 from app.domain.services.topology.house_service import HouseService
 from app.domain.services.topology.net_topology_service import (
@@ -122,6 +123,7 @@ class Container(containers.DeclarativeContainer):
         BaseRepository[ElectricalAppliances], ElectricalAppliances
     )
     _solar_profile_repo = providers.Singleton(SolarProfileRepository)
+    _solar_installation_repo = providers.Singleton(SolarInstallationRepository)
     _load_profiles_repository = providers.Singleton(LoadProfilesRepository)
     _load_profile_details_repository = providers.Singleton(
         LoadProfileDetailsRepository
@@ -197,6 +199,10 @@ class Container(containers.DeclarativeContainer):
 
     solar_profile_service = providers.Singleton(
         SolarProfileService, repository=_solar_profile_repo
+    )
+
+    solar_installation_service = providers.Singleton(
+        SolarInstallationService, repository=_solar_installation_repo
     )
 
     substation_service = providers.Singleton(

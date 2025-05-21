@@ -6,7 +6,7 @@ from abc import abstractmethod
 from uuid import UUID
 
 from app.data.interfaces.i_repository import IRepository
-from app.data.schemas.solar.solar_profile_schema import SolarProfile
+from app.data.schemas.solar.solar_schema import SolarProfile, SolarInstallation
 
 
 class ISolarProfileRepository(IRepository[SolarProfile]):
@@ -26,3 +26,9 @@ class ISolarProfileRepository(IRepository[SolarProfile]):
         Returns:
             The number of rows deleted.
         """
+
+class ISolarInstallationRepository(IRepository[SolarInstallation]):
+
+    @abstractmethod
+    def get_solar_installation(self, filter_key):
+        pass

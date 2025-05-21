@@ -50,7 +50,7 @@ class BaseRepository(IRepository[T]):
         return obj
 
     def read(self, id_value: Union[int, UUID]) -> T | None:
-        obj = self._model.get_or_none(self._model.id == id_value)
+        obj = self._model.get_by_id(id_value)
         return obj
 
     def read_or_none(self, id_value: Union[int, UUID]) -> T | None:

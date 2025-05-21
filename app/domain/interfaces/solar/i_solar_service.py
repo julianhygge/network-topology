@@ -50,3 +50,9 @@ class ISolarProfileService(IService):
             **kwargs: Keyword arguments containing the updated solar profile
                 data.
         """
+
+class ISolarInstallationService(IService):
+
+    @abstractmethod
+    def get_solar_installation(self, filter_key, limit, offset):
+        pass

@@ -9,6 +9,7 @@ from peewee import (
     DoubleField,
     ForeignKeyField,
     UUIDField,
+    IntegerField
 )
 
 from app.data.schemas.auth.auditable_base import AuditableBase
@@ -66,3 +67,29 @@ class SolarItemProfile(BaseModel):
 
         table_name = "solar_item_profile"
         schema = "solar"
+
+class SolarInstallation(BaseModel):
+    site_id = IntegerField(primary_key=True)
+    name = CharField()
+    status = CharField()
+    peak_power = DoubleField()
+    type = CharField()
+    zip_code = CharField()
+    country = CharField()
+    address = CharField()
+    state = CharField()
+    city = CharField()
+    installation_date = CharField()
+    last_reporting_time = CharField()
+    location = CharField()
+    secondary_address = CharField()
+    uploaded_on = DateTimeField()
+    profile_updated_on = DateTimeField()
+    updated_on = DateTimeField()
+    has_csv = BooleanField()
+
+    class Meta:
+
+        table_name = "solar_installations"
+        schema = "solar"
+

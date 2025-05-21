@@ -5,11 +5,11 @@ Implementation of the Solar Profile Service.
 from typing import Any, Dict, cast
 from uuid import UUID
 
-from app.data.interfaces.solar.i_solar_profile_repository import (
+from app.data.interfaces.solar.i_solar_repository import (
     ISolarProfileRepository,
 )
-from app.data.schemas.solar.solar_profile_schema import SolarProfile
-from app.domain.interfaces.solar.i_solar_profile_service import (
+from app.data.schemas.solar.solar_schema import SolarProfile
+from app.domain.interfaces.solar.i_solar_service import (
     ISolarProfileService,
 )
 from app.domain.services.base_service import BaseService

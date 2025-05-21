@@ -1,6 +1,6 @@
 """API endpoints for managing Solar Profiles."""
 
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,17 +8,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
-    get_solar_profile_service,
+    get_solar_profile_service, get_solar_installation_service,
 )
 from app.api.v1.models.requests.solar.solar_profile_request import (
     SolarProfileRequestModel,
     SolarProfileUpdateModel,
 )
-from app.api.v1.models.responses.solar.solar_profile_response import (
-    SolarProfileResponse,
+from app.api.v1.models.responses.solar.solar_response import (
+    SolarProfileResponse, SolarInstallationListResponse, SolarInstallationResponse,
 )
-from app.domain.interfaces.solar.i_solar_profile_service import (
-    ISolarProfileService,
+from app.domain.interfaces.solar.i_solar_service import (
+    ISolarProfileService, ISolarInstallationService,
 )
 
 solar_router = APIRouter(tags=["Solar"])
@@ -52,6 +52,42 @@ async def create_solar_profile(
         return SolarProfileResponse(**body)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+@solar_router.get(path='/area')
+async def get_solar_installation(
+        filter_key: Union[str, None] = None,
+        limit: int = 10,
+        offset: int = 0,
+        service: ISolarInstallationService = Depends(get_solar_installation_service),
+        _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE))):
+    """
+    Retrieve the solar installation of area
+
+    Args:
+        filter_key: filter the solar installation by country, city, zip_code
+        limit: Number of rows
+        offset: Number of rows offset
+        service: The solar profile service.
+        _: Dependency to check permission.
+
+    Returns:
+        The solar installation filter by country, city, zip_code.
+
+    Raises:
+        HTTPException: If an error occurs during retrieval.
+    """
+    try:
+        data, total_items, total_pages, current_page = service.get_solar_installation(filter_key, limit, offset)
+        response = SolarInstallationListResponse(
+            items=[SolarInstallationResponse(**item) for item in data],
+            total_page=total_pages,
+            total_items=total_items,
+            current_page=current_page,
+        )
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
 
 
 @solar_router.get("/{house_id}", response_model=Optional[SolarProfileResponse])
@@ -136,3 +172,5 @@ async def delete_solar_profile(
         return f"Solar Profile deleted with house_id {house_id}"
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
