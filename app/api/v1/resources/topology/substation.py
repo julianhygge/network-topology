@@ -21,6 +21,8 @@ from app.api.v1.models.responses.substation import (
     SubstationResponseModelList,
     SubstationTopology,
 )
+from app.api.v1.models.responses.house import HouseResponseModelList
+from app.api.v1.models.requests.transformer_requests import HouseResponseModel
 from app.domain.interfaces.i_service import IService
 from app.domain.interfaces.net_topology.i_net_topology_service import (
     INetTopologyService,
@@ -28,6 +30,7 @@ from app.domain.interfaces.net_topology.i_net_topology_service import (
 from app.domain.interfaces.net_topology.i_substation_service import (
     ISubstationService,
 )
+from app.exceptions.hygge_exceptions import NotFoundException
 from app.utils.logger import logger
 
 substation_router = APIRouter(tags=["Substations"])
@@ -204,6 +207,41 @@ async def get(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+@substation_router.get("/{substation_id}/houses", response_model=HouseResponseModelList)
+async def get_houses_by_substation_id(
+    substation_id: UUID,
+    _: str = Depends(
+        permission(Resources.SUBSTATIONS, Permission.RETRIEVE)
+    ),
+    service: INetTopologyService = Depends(get_net_topology_service),
+) -> HouseResponseModelList:
+    """
+    Retrieve the houses for a given substation ID.
+
+    Requires retrieve permission on the Substations resource.
+
+    Args:
+        substation_id: The ID of the substation.
+        _: Placeholder for permission dependency.
+        service: Injected network topology service instance.
+
+    Returns:
+        A list of houses associated with the substation.
+
+    Raises:
+        HTTPException: If the substation is not found (404).
+    """
+    try:
+        houses = service.get_houses_by_substation_id(substation_id)
+        return HouseResponseModelList(
+            items=[HouseResponseModel(**house) for house in houses]
+        )
+    except NotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
+        ) from e
+
+
 @substation_router.delete(
     path="/{substation_id}/delete", status_code=status.HTTP_204_NO_CONTENT
 )
@@ -227,7 +265,6 @@ async def delete(
     """
     try:
         service.delete(substation_id)
-        return None  # Return None for 204 No Content
     except Exception as e:
         logger.exception("Error deleting substation %s: %s", substation_id, e)
         # Consider raising NotFoundException if applicable from service.delete

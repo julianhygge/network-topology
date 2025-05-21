@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 
 class INetTopologyService(ABC):
@@ -22,4 +22,8 @@ class INetTopologyService(ABC):
 
     @abstractmethod
     def update_house(self, user_id, house_id, data):
+        pass
+
+    @abstractmethod
+    def get_houses_by_substation_id(self, substation_id) -> List[Dict[str, Any]]:
         pass
