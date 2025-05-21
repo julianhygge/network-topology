@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 from uuid import UUID
 
 from app.data.interfaces.i_repository import IRepository
@@ -60,7 +60,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             "nodes": self._get_node_details(root_node),
         }
 
-    def _get_node_details(self, node):
+    def _get_node_details(self, node) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
         """Get details of a node and its children."""
         children = self.node_repo.get_children(node.id)
 
@@ -296,3 +296,35 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         updated_dict["status"] = status
 
         return updated_dict
+
+    def _collect_house_nodes(self, node, houses: List[Dict[str, Any]]):
+        """Recursively collect house nodes from the topology."""
+        if node.node_type == NodeType.HOUSE.value:
+            house_details = self._get_basic_node_details(node)
+            house_details.update(self._get_house_details(node.id))
+            houses.append(house_details)
+
+        children = self.node_repo.get_children(node.id)
+        for child in children:
+            self._collect_house_nodes(child, houses)
+
+    def get_houses_by_substation_id(
+        self, substation_id: UUID
+    ) -> List[Dict[str, Any]]:
+        """
+        Get houses for a given substation ID.
+
+        :param substation_id: UUID of the substation (grid/topology ID)
+        :return: List of dictionaries containing house information
+        :raises NotFoundException: If the substation is not found
+        """
+        substation = self.substation_repo.read(substation_id)
+        if not substation:
+            raise NotFoundException(
+                f"Substation with id {substation_id} not found"
+            )
+
+        root_node = self.node_repo.read(substation_id)
+        houses = []
+        self._collect_house_nodes(root_node, houses)
+        return houses
