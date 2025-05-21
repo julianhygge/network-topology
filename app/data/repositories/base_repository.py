@@ -50,7 +50,7 @@ class BaseRepository(IRepository[T]):
         return obj
 
     def read(self, id_value: Union[int, UUID]) -> T | None:
-        obj = self._model.get_by_id(id_value)
+        obj = self._model.get_or_none(self._model.id == id_value)
         return obj
 
     def read_or_none(self, id_value: Union[int, UUID]) -> T | None:
@@ -74,8 +74,8 @@ class BaseRepository(IRepository[T]):
     ) -> Optional[T]:
         """
         Updates an existing record.
-        :param record_id: The ID of the record to update.
-        :param kwargs: Fields and new values to update.
+        :param id_value: The ID of the record to update.
+        :param data: Fields and new values to update.
         :return: The updated model instance if found and updated or None.
         :raises IntegrityError: If data integrity is violated.
         """
