@@ -11,7 +11,7 @@ from app.api.v1.resources.electrical_devices.electrical_appliances import (
     appliances_router,
 )
 from app.api.v1.resources.load_profile.load_profile import load_router
-from app.api.v1.resources.solar.solar_profile import solar_router
+from app.api.v1.resources.solar.solar import solar_router
 from app.api.v1.resources.topology.breadcrumb import breadcrumb_router
 from app.api.v1.resources.topology.flags import flag_router
 from app.api.v1.resources.topology.house import house_router
@@ -63,3 +63,5 @@ app = FastAPI(
 app.servers = hygge_servers
 add_app_middleware(app)
 add_routes(app)
+
+ 
