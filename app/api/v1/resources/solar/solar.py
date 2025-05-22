@@ -129,7 +129,7 @@ async def get_solar_profile(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@solar_router.put("/{house-id}")
+@solar_router.put("/{house_id}")
 async def update_solar_profile(
     house_id: UUID,
     data: SolarProfileUpdateModel,
