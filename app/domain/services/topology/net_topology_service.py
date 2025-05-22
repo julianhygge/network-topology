@@ -280,9 +280,9 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
 
         data["modified_on"] = utc_now_iso()
         data["modified_by"] = user_id
-        self.transformer_repo.update(transformer_id, **data)
+        self.transformer_repo.update(transformer_id, data)
 
-        self.node_repo.update(transformer_id, name=data["name"])
+        # self.node_repo.update(transformer_id, name=data["name"])
         updated_transformer = self.transformer_repo.read(transformer_id)
         status = self._get_transformer_status(updated_transformer)
         updated_dict = self.transformer_repo.to_dicts(updated_transformer)
@@ -309,7 +309,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         data["modified_by"] = user_id
         self.house_repo.update(house_id, **data)
         updated_house = self.house_repo.read(house_id)
-        self.node_repo.update(house_id, name=data["name"])
+        # self.node_repo.update(house_id, name=data["name"])
         status = self._get_house_status(updated_house)
         updated_dict = self.house_repo.to_dicts(updated_house)
         updated_dict["status"] = status

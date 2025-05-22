@@ -2,9 +2,9 @@
 Module for the base repository implementation.
 """
 
+import operator
 from enum import Enum
 from functools import reduce
-import operator
 from typing import (
     Any,
     Dict,
@@ -18,7 +18,7 @@ from typing import (
 )
 from uuid import UUID
 
-from peewee import Expression, IntegrityError, ModelSelect, DoesNotExist
+from peewee import DoesNotExist, Expression, IntegrityError, ModelSelect
 from playhouse.pool import PooledPostgresqlDatabase  # type: ignore[import]
 
 from app.data.interfaces.i_repository import IRepository
@@ -74,8 +74,8 @@ class BaseRepository(IRepository[T]):
     ) -> Optional[T]:
         """
         Updates an existing record.
-        :param record_id: The ID of the record to update.
-        :param kwargs: Fields and new values to update.
+        :param id_value: The ID of the record to update.
+        :param data: Fields and new values to update.
         :return: The updated model instance if found and updated or None.
         :raises IntegrityError: If data integrity is violated.
         """

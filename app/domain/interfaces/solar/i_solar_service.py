@@ -3,7 +3,7 @@ Interface for the Solar Profile Service.
 """
 
 from abc import abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from app.domain.interfaces.i_service import IService
@@ -50,3 +50,11 @@ class ISolarProfileService(IService):
             **kwargs: Keyword arguments containing the updated solar profile
                 data.
         """
+
+
+class ISolarInstallationService(IService):
+    @abstractmethod
+    def get_solar_installation(
+        self, filter_key: Optional[str], limit: int, offset: int
+    ) -> Tuple[List[Dict[str, Any]], int, int, int]:
+        pass

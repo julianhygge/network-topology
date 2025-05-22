@@ -91,6 +91,10 @@ def get_solar_profile_service() -> IService:
     """Get the solar profile service instance."""
     return c.solar_profile_service()
 
+def get_solar_installation_service() -> IService:
+    """Get the solar profile service instance."""
+    return c.solar_installation_service()
+
 
 def get_load_profile_service() -> LoadProfileService:
     """Get the load profile service instance."""
