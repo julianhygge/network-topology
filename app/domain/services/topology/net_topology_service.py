@@ -2,6 +2,15 @@ from typing import Any, Dict, List, Union
 from uuid import UUID
 
 from app.data.interfaces.i_repository import IRepository
+from app.data.interfaces.load.i_load_load_profile_repository import (
+    ILoadProfileRepository,
+)
+from app.data.interfaces.load.i_predefined_templates_repository import (
+    IPredefinedTemplatesRepository,
+)
+from app.data.interfaces.load.i_template_load_patterns_repository import (
+    ITemplateConsumptionPatternsRepository,
+)
 from app.data.interfaces.topology.i_node_repository import INodeRepository
 from app.data.schemas.enums.enums import NodeStatusEnum
 from app.domain.interfaces.enums.node_type import NodeType
@@ -25,12 +34,20 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         node_repo: INodeRepository,
         transformer_repo: IRepository,
         house_repo: IRepository,
+        pre_master_template_repo: IRepository,
+        load_profile_repository: ILoadProfileRepository,
+        template_patterns_repository: ITemplateConsumptionPatternsRepository,
+        pre_templates_repository: IPredefinedTemplatesRepository,
     ):
         super().__init__(substation_repo)
         self.substation_repo = substation_repo
         self.node_repo = node_repo
         self.transformer_repo = transformer_repo
         self.house_repo = house_repo
+        self._pre_master_template_repo = pre_master_template_repo
+        self._load_profile_repo = load_profile_repository
+        self._template_patterns_repo = template_patterns_repository
+        self._pre_templates_repo = pre_templates_repository
 
     INITIALS = {NodeType.TRANSFORMER.value: "T", NodeType.HOUSE.value: "H"}
 
@@ -60,7 +77,9 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             "nodes": self._get_node_details(root_node),
         }
 
-    def _get_node_details(self, node) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+    def _get_node_details(
+        self, node
+    ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
         """Get details of a node and its children."""
         children = self.node_repo.get_children(node.id)
 
@@ -327,4 +346,79 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         root_node = self.node_repo.read(substation_id)
         houses = []
         self._collect_house_nodes(root_node, houses)
+        for house in houses:
+            house_load = self._get_loads_by_house_id(house["id"])
+
         return houses
+
+    def _get_loads_by_house_id(self, house_id: UUID) -> List[Dict[str, Any]]:
+        """
+        Get loads intervals for a given house ID.
+
+        :param house_id: UUID of the house
+        :return: List of dictionaries containing timestamp and load information
+        :raises NotFoundException: If the house is not found
+        """
+
+        house = self.house_repo.read(house_id)
+        if not house:
+            raise NotFoundException(f"House with id {house_id} not found")
+
+        load_profile = self._load_profile_repo.get_by_house_id(house_id)
+
+        if not load_profile:
+            raise NotFoundException(
+                f"Load profile for house {house_id} not found"
+            )
+
+        pre_template = self._pre_templates_repo.filter(
+            profile_id=load_profile.id
+        )
+        load_patterns = (
+            self._template_patterns_repo.get_patterns_by_template_id(
+                pre_template[0].template_id_id
+            )
+        )
+
+        if load_patterns is None:
+            return []
+
+        load_patterns.sort(key=lambda x: x.get("timestamp") or "")
+
+        processed_loads = []
+        for item in load_patterns:
+            processed_loads.append(
+                {
+                    "timestamp": item.get("timestamp"),
+                    "consumption_kwh": item.get("consumption_kwh"),
+                }
+            )
+        return processed_loads
+
+    def _get_solar_by_house_id(self, house_id: UUID) -> List[Dict[str, Any]]:
+        """
+        Get solar generation intervals for a given house ID.
+
+        :param house_id: UUID of the house
+        :return: List of dictionaries with timestamp and solar generation
+        :raises NotFoundException: If the house is not found
+        """
+
+        house = self.house_repo.read(house_id)
+        if not house:
+            raise NotFoundException(f"House with id {house_id} not found")
+        # here I need to select  the solar profile any solar for now
+        solar_profile = self._solar_profile_repo.get_by_house_id(house_id)
+
+        if not solar_profile:
+            raise NotFoundException(
+                f"Solar profile for house {house_id} not found"
+            )
+
+        return [
+            {
+                "timestamp": item.get("timestamp"),
+                "generation_kwh": item.get("generation_kwh"),
+            }
+            for item in solar_profile
+        ]

@@ -179,10 +179,14 @@ class Container(containers.DeclarativeContainer):
 
     net_topology_service = providers.Singleton(
         NetTopologyService,
+        pre_master_template_repo=_predefined_master_templates_repo,
+        load_profile_repository=_load_profiles_repository,
         substation_repo=_substation_repo,
         transformer_repo=_transformer_repo,
         house_repo=_house_repo,
         node_repo=_node_repo,
+        template_patterns_repository=_template_patterns_repository,
+        pre_templates_repository=_predefined_templates_repository
     )
 
     topology_simulator = providers.Singleton(
