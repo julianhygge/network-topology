@@ -6,7 +6,7 @@ from abc import abstractmethod
 from uuid import UUID
 
 from app.data.interfaces.i_repository import IRepository
-from app.data.schemas.solar.solar_schema import SolarProfile, SolarInstallation
+from app.data.schemas.solar.solar_schema import SolarInstallation, SolarProfile
 
 
 class ISolarProfileRepository(IRepository[SolarProfile]):
@@ -27,8 +27,24 @@ class ISolarProfileRepository(IRepository[SolarProfile]):
             The number of rows deleted.
         """
 
-class ISolarInstallationRepository(IRepository[SolarInstallation]):
 
+class ISolarInstallationRepository(IRepository[SolarInstallation]):
     @abstractmethod
-    def get_solar_installation(self, filter_key):
-        pass
+    def get_solar_installation(
+        self, filter_key: str | None, limit: int | None, offset: int | None
+    ) -> tuple[list[SolarInstallation], int, int, int]:
+        """
+        Retrieves solar installations with optional filtering, pagination.
+
+        Args:
+            filter_key: Optional string to filter results.
+            limit: Optional integer for the number of items per page.
+            offset: Optional integer for the number of items to skip.
+
+        Returns:
+            A tuple containing:
+                - list[SolarInstallation]: List of solar installation objects.
+                - int: Total number of items matching the filter.
+                - int: Total number of pages.
+                - int: Current page number.
+        """
