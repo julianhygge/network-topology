@@ -2,9 +2,9 @@
 Module for the base repository implementation.
 """
 
+import operator
 from enum import Enum
 from functools import reduce
-import operator
 from typing import (
     Any,
     Dict,
@@ -18,7 +18,7 @@ from typing import (
 )
 from uuid import UUID
 
-from peewee import Expression, IntegrityError, ModelSelect, DoesNotExist
+from peewee import DoesNotExist, Expression, IntegrityError, ModelSelect
 from playhouse.pool import PooledPostgresqlDatabase  # type: ignore[import]
 
 from app.data.interfaces.i_repository import IRepository
