@@ -56,3 +56,7 @@ class ISolarInstallationService(IService):
     @abstractmethod
     def get_solar_installation(self, filter_key, limit, offset):
         pass
+
+    @abstractmethod
+    def backfill_missing_data(self):
+        pass

@@ -93,3 +93,14 @@ class SolarInstallation(BaseModel):
         table_name = "solar_installations"
         schema = "solar"
 
+
+class SiteRefYearProduction(BaseModel):
+    id = IntegerField(primary_key=True)
+    site_id = ForeignKeyField(SolarInstallation, column_name='site_id', backref='site_ref_production',
+                              on_delete='CASCADE')
+    timestamp = DateTimeField()
+    per_kw_generation = DoubleField()
+
+    class Meta:
+        table_name = "site_reference_year_production"
+        schema = "solar"
