@@ -30,7 +30,8 @@ from app.data.repositories.load_profile.template_patterns_repository import (
     TemplateConsumptionPatternsRepository,
 )
 from app.data.repositories.solar.solar_repository import (
-    SolarProfileRepository, SolarInstallationRepository,
+    SolarInstallationRepository,
+    SolarProfileRepository,
 )
 from app.data.repositories.topology.topology_repository import (
     NodeRepository,
@@ -41,6 +42,7 @@ from app.data.schemas.master.master_schema import (
     ElectricalAppliances,
     PredefinedTemplates,
 )
+from app.data.schemas.solar.solar_schema import SiteReferenceYearProduction
 from app.data.schemas.transactional.topology_schema import (
     House,
     HouseFlag,
@@ -61,8 +63,13 @@ from app.domain.services.load.load_profile_file_completer import (
     LoadProfileFileCompleterPChip,
     LoadProfileFileCompleterSpline,
 )
+from app.domain.services.simulator_engine.data_preparation_service import (
+    DataPreparationService,
+)
 from app.domain.services.solar.load_profile_service import LoadProfileService
-from app.domain.services.solar.solar_installtion_service import SolarInstallationService
+from app.domain.services.solar.solar_installtion_service import (
+    SolarInstallationService,
+)
 from app.domain.services.solar.solar_profile_service import SolarProfileService
 from app.domain.services.topology.house_service import HouseService
 from app.domain.services.topology.net_topology_service import (
@@ -125,6 +132,10 @@ class Container(containers.DeclarativeContainer):
     _solar_profile_repo = providers.Singleton(SolarProfileRepository)
     _solar_installation_repo = providers.Singleton(SolarInstallationRepository)
     _load_profiles_repository = providers.Singleton(LoadProfilesRepository)
+    _yearly_solar_reference_repo = providers.Singleton(
+        BaseRepository[SiteReferenceYearProduction],
+        SiteReferenceYearProduction,
+    )
     _load_profile_details_repository = providers.Singleton(
         LoadProfileDetailsRepository
     )
@@ -188,7 +199,8 @@ class Container(containers.DeclarativeContainer):
         house_repo=_house_repo,
         node_repo=_node_repo,
         template_patterns_repository=_template_patterns_repository,
-        pre_templates_repository=_predefined_templates_repository
+        pre_templates_repository=_predefined_templates_repository,
+        yearly_solar_reference_repo=_yearly_solar_reference_repo,
     )
 
     topology_simulator = providers.Singleton(
@@ -238,6 +250,16 @@ class Container(containers.DeclarativeContainer):
 
     predefined_template_service = providers.Factory(
         BaseService, repository=_predefined_master_templates_repo
+    )
+
+    data_preparations_service = providers.Singleton(
+        DataPreparationService,
+        topology_service=net_topology_service,
+        load_profile_repository=_load_profiles_repository,
+        template_patterns_repository=_template_patterns_repository,
+        pre_templates_repository=_predefined_templates_repository,
+        yearly_solar_reference_repo=_yearly_solar_reference_repo,
+        solar_profile_repository=_solar_profile_repo,
     )
 
     flag_service = providers.Singleton(BaseService, _flag_repo)

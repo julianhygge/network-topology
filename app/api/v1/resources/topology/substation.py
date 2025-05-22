@@ -8,6 +8,7 @@ from pydantic import UUID4
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
+    get_data_preparation_service,
     get_net_topology_service,
     get_substation_service,
 )
@@ -16,19 +17,22 @@ from app.api.v1.models.requests.substation import (
     SubstationsRequestModel,
     SubstationTopologyRequestModel,
 )
+from app.api.v1.models.requests.transformer_requests import HouseResponseModel
+from app.api.v1.models.responses.house import HouseResponseModelList
 from app.api.v1.models.responses.substation import (
     SubstationResponseModel,
     SubstationResponseModelList,
     SubstationTopology,
 )
-from app.api.v1.models.responses.house import HouseResponseModelList
-from app.api.v1.models.requests.transformer_requests import HouseResponseModel
 from app.domain.interfaces.i_service import IService
 from app.domain.interfaces.net_topology.i_net_topology_service import (
     INetTopologyService,
 )
 from app.domain.interfaces.net_topology.i_substation_service import (
     ISubstationService,
+)
+from app.domain.interfaces.simulator_engine.i_data_preparation_service import (
+    IDataPreparationService,
 )
 from app.exceptions.hygge_exceptions import NotFoundException
 from app.utils.logger import logger
@@ -207,12 +211,12 @@ async def get(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@substation_router.get("/{substation_id}/houses", response_model=HouseResponseModelList)
+@substation_router.get(
+    "/{substation_id}/houses", response_model=HouseResponseModelList
+)
 async def get_houses_by_substation_id(
     substation_id: UUID,
-    _: str = Depends(
-        permission(Resources.SUBSTATIONS, Permission.RETRIEVE)
-    ),
+    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)),
     service: INetTopologyService = Depends(get_net_topology_service),
 ) -> HouseResponseModelList:
     """
@@ -233,6 +237,41 @@ async def get_houses_by_substation_id(
     """
     try:
         houses = service.get_houses_by_substation_id(substation_id)
+        return HouseResponseModelList(
+            items=[HouseResponseModel(**house) for house in houses]
+        )
+    except NotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
+        ) from e
+
+
+@substation_router.get(
+    "/{substation_id}/houses_profiles", response_model=HouseResponseModelList
+)
+async def get_houses_profiles_by_substation_id(
+    substation_id: UUID,
+    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)),
+    service: IDataPreparationService = Depends(get_data_preparation_service),
+) -> HouseResponseModelList:
+    """
+    Retrieve the houses for a given substation ID.
+
+    Requires retrieve permission on the Substations resource.
+
+    Args:
+        substation_id: The ID of the substation.
+        _: Placeholder for permission dependency.
+        service: Injected network topology service instance.
+
+    Returns:
+        A list of houses associated with the substation.
+
+    Raises:
+        HTTPException: If the substation is not found (404).
+    """
+    try:
+        houses = service.get_houses_profile_by_substation_id(substation_id)
         return HouseResponseModelList(
             items=[HouseResponseModel(**house) for house in houses]
         )

@@ -13,6 +13,7 @@ from app.data.interfaces.load.i_template_load_patterns_repository import (
 )
 from app.data.interfaces.topology.i_node_repository import INodeRepository
 from app.data.schemas.enums.enums import NodeStatusEnum
+from app.domain.entities.node import Node
 from app.domain.interfaces.enums.node_type import NodeType
 from app.domain.interfaces.net_topology.i_net_topology_service import (
     INetTopologyService,
@@ -38,6 +39,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         load_profile_repository: ILoadProfileRepository,
         template_patterns_repository: ITemplateConsumptionPatternsRepository,
         pre_templates_repository: IPredefinedTemplatesRepository,
+        yearly_solar_reference_repo: IRepository,
     ):
         super().__init__(substation_repo)
         self.substation_repo = substation_repo
@@ -48,6 +50,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         self._load_profile_repo = load_profile_repository
         self._template_patterns_repo = template_patterns_repository
         self._pre_templates_repo = pre_templates_repository
+        self._yearly_solar_reference_repo = yearly_solar_reference_repo
 
     INITIALS = {NodeType.TRANSFORMER.value: "T", NodeType.HOUSE.value: "H"}
 
@@ -327,9 +330,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         for child in children:
             self._collect_house_nodes(child, houses)
 
-    def get_houses_by_substation_id(
-        self, substation_id: UUID
-    ) -> List[Dict[str, Any]]:
+    def get_houses_by_substation_id(self, substation_id: UUID) -> List[Node]:
         """
         Get houses for a given substation ID.
 
@@ -345,11 +346,18 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
 
         root_node = self.node_repo.read(substation_id)
         houses = []
-        self._collect_house_nodes(root_node, houses)
-        for house in houses:
-            house_load = self._get_loads_by_house_id(house["id"])
+        self._get_house_nodes(root_node, houses)
 
         return houses
+
+    def _get_house_nodes(self, node, houses: List[Node]):
+        """Recursively collect house nodes from the topology."""
+        if node.node_type == NodeType.HOUSE.value:
+            houses.append(node)
+
+        children = self.node_repo.get_children(node.id)
+        for child in children:
+            self._get_house_nodes(child, houses)
 
     def _get_loads_by_house_id(self, house_id: UUID) -> List[Dict[str, Any]]:
         """
@@ -408,17 +416,20 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         if not house:
             raise NotFoundException(f"House with id {house_id} not found")
         # here I need to select  the solar profile any solar for now
-        solar_profile = self._solar_profile_repo.get_by_house_id(house_id)
-
+        # Need to get the solar from the locations
+        solar_profile = self._yearly_solar_reference_repo.filter(
+            site_id=2609522
+        )
         if not solar_profile:
             raise NotFoundException(
                 f"Solar profile for house {house_id} not found"
             )
+        solar_profile.sort(key=lambda x: x.get("timestamp") or "")
 
         return [
             {
                 "timestamp": item.get("timestamp"),
-                "generation_kwh": item.get("generation_kwh"),
+                "generation_kwh": item.get("per_kw_generation"),
             }
             for item in solar_profile
         ]
