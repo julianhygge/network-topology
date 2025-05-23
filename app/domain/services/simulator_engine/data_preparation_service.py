@@ -1,3 +1,7 @@
+import csv
+import io
+import os
+import zipfile
 from datetime import datetime
 from typing import List, Tuple
 from uuid import UUID
@@ -22,7 +26,7 @@ from app.domain.interfaces.net_topology.i_net_topology_service import (
 from app.domain.interfaces.simulator_engine.i_data_preparation_service import (
     IDataPreparationService,
 )
-from app.exceptions.hygge_exceptions import NotFoundException
+from app.exceptions.hygge_exceptions import HyggeException, NotFoundException
 
 
 class DataPreparationService(IDataPreparationService):
@@ -78,6 +82,91 @@ class DataPreparationService(IDataPreparationService):
             solar_values=profile_solar_values,
             solar_offset_values=profile_solar_offset_values,
         )
+
+    def _create_house_profile_csv_content(
+        self, house_profile: HouseProfile
+    ) -> str:
+        """Creates CSV content for a given house profile."""
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["timestamp", "load", "solar", "solar_offset"])
+
+        for i in range(len(house_profile.timestamps)):
+            writer.writerow(
+                [
+                    house_profile.timestamps[i].isoformat(),
+                    house_profile.load_values[i],
+                    house_profile.solar_values[i],
+                    house_profile.solar_offset_values[i],
+                ]
+            )
+        return output.getvalue()
+
+    def create_house_profile_csvs_by_substation_id(
+        self, substation_id: UUID, output_directory: str = "house_profiles_csv"
+    ) -> List[str]:
+        """
+        Generates CSV files for each house profile under a substation
+        and saves them to a specified directory.
+        Returns a list of file paths.
+        """
+        house_profiles = self.get_houses_profile_by_substation_id(
+            substation_id
+        )
+        if not house_profiles:
+            raise NotFoundException(
+                f"No houses found for substation {substation_id}"
+            )
+
+        if not os.path.exists(output_directory):
+            os.makedirs(output_directory)
+
+        file_paths: List[str] = []
+        for profile in house_profiles:
+            csv_content = self._create_house_profile_csv_content(profile)
+            file_name = f"house_{profile.house_id}.csv"
+            file_path = os.path.join(output_directory, file_name)
+            try:
+                with open(file_path, "w", newline="") as f:
+                    f.write(csv_content)
+                file_paths.append(file_path)
+            except IOError as e:
+                raise HyggeException(
+                    f"Failed to write CSV for house {profile.house_id}: {e}"
+                )
+        return file_paths
+
+    def get_house_profile_csvs_zip_by_substation_id(
+        self, substation_id: UUID, output_directory: str = "house_profiles_csv"
+    ) -> bytes:
+        """
+        Generates CSV files for house profiles and returns them as a
+        ZIP file in memory.
+        """
+        csv_file_paths = self.create_house_profile_csvs_by_substation_id(
+            substation_id, output_directory
+        )
+
+        if not csv_file_paths:
+            raise NotFoundException(
+                f"No CSV files generated for substation {substation_id}"
+            )
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for file_path in csv_file_paths:
+                zipf.write(file_path, os.path.basename(file_path))
+
+        # Clean up individual CSV files after zipping
+        # for file_path in csv_file_paths:
+        #     try:
+        #         os.remove(file_path)
+        #     except OSError as e:
+        #         # Log this error, but don't let it stop the zip file return
+        #         print(f"Error removing file {file_path}: {e}")
+
+        zip_buffer.seek(0)
+        return zip_buffer.getvalue()
 
     def get_houses_profile_by_substation_id(
         self, substation_id: UUID

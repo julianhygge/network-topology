@@ -1,8 +1,14 @@
 """API endpoints for managing substations and their topology."""
 
+import io
+import os
+import shutil
+from datetime import datetime
+from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from app.api.authorization.authorization import permission
@@ -43,9 +49,7 @@ substation_router = APIRouter(tags=["Substations"])
 @substation_router.get("/{substation_id}", response_model=SubstationTopology)
 async def get_substation_topology(
     substation_id: UUID,
-    _: str = Depends(
-        permission(Resources.SUBSTATIONS, Permission.RETRIEVE)
-    ),  # Corrected permission
+    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)),
     service: INetTopologyService = Depends(get_net_topology_service),
 ) -> SubstationTopology:
     """
@@ -70,7 +74,7 @@ async def get_substation_topology(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Substation not found",
         )
-    return topology
+    return SubstationTopology(**topology)
 
 
 @substation_router.put("/{substation_id}", response_model=SubstationTopology)
@@ -98,14 +102,12 @@ async def update_substation_topology(
 
     Raises:
         HTTPException: If the substation is not found after update (404).
-                       (Indicates potential issue if update succeeded but fetch failed)
+        (Indicates potential issue if update succeeded but fetch failed)
     """
     service.update_topology(user_id, substation_id, topology_data.model_dump())
     # Fetch again to return the updated topology
     topology = service.get_topology_by_substation_id(str(substation_id))
     if not topology:
-        # This case might indicate an issue if the update succeeded
-        # but the subsequent fetch failed.
         logger.error(
             "Failed to fetch topology after update for %s", substation_id
         )
@@ -113,7 +115,7 @@ async def update_substation_topology(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Substation not found after update attempt.",
         )
-    return topology
+    return SubstationTopology(**topology)
 
 
 @substation_router.post("/", response_model=SubstationResponseModel)
@@ -201,7 +203,7 @@ async def get(
     try:
         data_list = service.list_all()
         # Ensure sorting happens correctly, assuming 'created_on' exists
-        data_list.sort(key=lambda x: x.get("created_on"))
+        data_list.sort(key=lambda x: x.get("created_on", datetime.min))
         response = SubstationResponseModelList(
             items=[SubstationResponseModel(**item) for item in data_list]
         )
@@ -236,10 +238,9 @@ async def get_houses_by_substation_id(
         HTTPException: If the substation is not found (404).
     """
     try:
-        houses = service.get_houses_by_substation_id(substation_id)
-        return HouseResponseModelList(
-            items=[HouseResponseModel(**house) for house in houses]
-        )
+        houses_data = service.get_houses_by_substation_id(substation_id)
+        items = [HouseResponseModel.model_validate(h) for h in houses_data]
+        return HouseResponseModelList(items=items)
     except NotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
@@ -255,26 +256,29 @@ async def get_houses_profiles_by_substation_id(
     service: IDataPreparationService = Depends(get_data_preparation_service),
 ) -> HouseResponseModelList:
     """
-    Retrieve the houses for a given substation ID.
+    Retrieve the house profiles for a given substation ID.
 
     Requires retrieve permission on the Substations resource.
 
     Args:
         substation_id: The ID of the substation.
         _: Placeholder for permission dependency.
-        service: Injected network topology service instance.
+        service: Injected data preparation service instance.
 
     Returns:
-        A list of houses associated with the substation.
+        A list of house profiles. (Currently uses HouseResponseModelList)
 
     Raises:
         HTTPException: If the substation is not found (404).
     """
     try:
-        houses = service.get_houses_profile_by_substation_id(substation_id)
-        return HouseResponseModelList(
-            items=[HouseResponseModel(**house) for house in houses]
+        house_profiles = service.get_houses_profile_by_substation_id(
+            substation_id
         )
+        items = [
+            HouseResponseModel.model_validate(hp) for hp in house_profiles
+        ]
+        return HouseResponseModelList(items=items)
     except NotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
@@ -306,5 +310,112 @@ async def delete(
         service.delete(substation_id)
     except Exception as e:
         logger.exception("Error deleting substation %s: %s", substation_id, e)
-        # Consider raising NotFoundException if applicable from service.delete
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@substation_router.post(
+    "/{substation_id}/profiles/csvs",
+    status_code=status.HTTP_201_CREATED,
+    response_model=List[str],
+)
+async def create_house_profiles_csv_files(
+    substation_id: UUID,
+    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.CREATE)),
+    service: IDataPreparationService = Depends(get_data_preparation_service),
+) -> List[str]:
+    """
+    Generate CSV files for all house profiles under a specific substation.
+    The files will be saved in a directory named 'house_profiles_csv'.
+    Returns a list of paths to the generated CSV files.
+    """
+    try:
+        # Define a temporary directory for CSVs for this request
+        # This helps in managing files if multiple requests occur
+        # and for cleanup.
+        output_dir = f"temp_house_profiles_csv_{substation_id}"
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        os.makedirs(output_dir, exist_ok=True)
+
+        file_paths = service.create_house_profile_csvs_by_substation_id(
+            substation_id, output_directory=output_dir
+        )
+        # The service now saves files to the specified output_dir.
+        # We might want to return relative paths or just a success message.
+        # For now, returning absolute paths as generated by the service.
+
+        return file_paths
+    except NotFoundException as e:
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
+        ) from e
+    except Exception as e:
+        logger.exception(
+            "Error generating CSV profiles for substation %s: %s",
+            substation_id,
+            e,
+        )
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate CSV profiles.",
+        ) from e
+
+
+@substation_router.get("/{substation_id}/profiles/zip")
+async def get_house_profiles_zip_file(
+    substation_id: UUID,
+    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)),
+    service: IDataPreparationService = Depends(get_data_preparation_service),
+):
+    """
+    Retrieve a ZIP file containing CSVs of all house profiles for a substation.
+    The CSV files are generated on-the-fly if not already present from a
+    previous call to the POST endpoint.
+    """
+    try:
+        # The service method get_house_profile_csvs_zip_by_substation_id
+        # internally calls create_house_profile_csvs_by_substation_id,
+        # which saves files to a default or specified directory.
+        # We'll use a temporary directory for this operation to ensure
+        # files are cleaned up.
+        temp_output_dir = f"temp_zip_profiles_csv_{substation_id}"
+        if os.path.exists(temp_output_dir):  # Clean up if exists
+            shutil.rmtree(temp_output_dir)
+        os.makedirs(temp_output_dir, exist_ok=True)
+
+        zip_bytes = service.get_house_profile_csvs_zip_by_substation_id(
+            substation_id, output_directory=temp_output_dir
+        )
+
+        # Clean up the temporary directory after generating the zip
+        if os.path.exists(temp_output_dir):
+            shutil.rmtree(temp_output_dir)
+
+        return StreamingResponse(
+            io.BytesIO(zip_bytes),
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": "attachment;"
+                "filename=house_profiles_{substation_id}.zip"
+            },
+        )
+    except NotFoundException as e:
+        if os.path.exists(temp_output_dir):
+            shutil.rmtree(temp_output_dir)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
+        ) from e
+    except Exception as e:
+        logger.exception(
+            "Error generating ZIP file for substation %s: %s", substation_id, e
+        )
+        if os.path.exists(temp_output_dir):
+            shutil.rmtree(temp_output_dir)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate ZIP file.",
+        ) from e
