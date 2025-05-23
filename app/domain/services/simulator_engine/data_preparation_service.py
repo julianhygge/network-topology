@@ -257,10 +257,53 @@ class DataPreparationService(IDataPreparationService):
 
         installed_capacity = profile.installed_capacity_kw
 
+        # Calculate efficiency adjustments
+        efficiency_factor = self._calculate_efficiency_factor(
+            profile.tilt_type, profile.years_since_installation
+        )
+
         return [
             (
                 item.timestamp,
-                item.per_kw_generation * installed_capacity,
+                item.per_kw_generation
+                * installed_capacity
+                * efficiency_factor,
             )
             for item in solar_references
         ]
+
+    def _calculate_efficiency_factor(
+        self, tilt_type: str, years_since_installation: float
+    ) -> float:
+        """
+        Calculate efficiency factor based on tilt type and system age.
+
+        :param tilt_type: Type of solar panel mounting ('fixed' or 'tracking')
+        :param years_since_installation: Years since the system was installed
+        :return: Efficiency factor (multiplier between 0 and 1+)
+        """
+        # Base efficiency factor
+        base_efficiency = 1.0
+
+        # Tilt type adjustment
+        if tilt_type == "tracking":
+            # Sun tracking systems are typically 15-25% more efficient
+            tilt_efficiency = 1.20  # 20% improvement
+        elif tilt_type == "fixed":
+            tilt_efficiency = 1.0  # No adjustment for fixed systems
+        else:
+            # Default to fixed if unknown tilt type
+            tilt_efficiency = 1.0
+
+        # Age degradation adjustment
+        # Solar panels typically degrade 0.5-0.8% per year
+        # Using 0.6% per year degradation rate
+        annual_degradation_rate = 0.006
+        age_efficiency = max(
+            0.5, 1.0 - (years_since_installation * annual_degradation_rate)
+        )
+
+        # Combined efficiency factor
+        total_efficiency = base_efficiency * tilt_efficiency * age_efficiency
+
+        return total_efficiency
