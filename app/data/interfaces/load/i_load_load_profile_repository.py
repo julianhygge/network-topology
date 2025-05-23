@@ -22,10 +22,11 @@ class ILoadProfileRepository(IRepository[LoadProfiles]):
         Returns:
             A list of public load profile instances (T).
         """
-        pass
 
     @abstractmethod
-    def get_load_profiles_by_user_id(self, user_id: UUID) -> List[T]:
+    def get_load_profiles_by_user_id(
+        self, user_id: UUID
+    ) -> List[LoadProfiles]:
         """
         Retrieves all load profiles for a specific user.
 
@@ -35,12 +36,11 @@ class ILoadProfileRepository(IRepository[LoadProfiles]):
         Returns:
             A list of load profile instances (T) belonging to the user.
         """
-        pass
 
     @abstractmethod
     def get_load_profiles_by_user_id_and_house_id(
         self, user_id: UUID, house_id: UUID
-    ) -> List[T]:
+    ) -> List[LoadProfiles]:
         """
         Retrieves load profiles for a specific user and house.
 
@@ -51,12 +51,11 @@ class ILoadProfileRepository(IRepository[LoadProfiles]):
         Returns:
             A list of load profile instances (T) for the user and house.
         """
-        pass
 
-    @abstractmethod  # Added abstractmethod as it's implemented in repo
+    @abstractmethod
     def get_or_create_by_house_id(
         self, user_id: UUID, house_id: UUID, load_source: str
-    ) -> T:
+    ) -> LoadProfiles:
         """
         Retrieves an existing load profile by house_id or creates a new one.
 
@@ -68,10 +67,9 @@ class ILoadProfileRepository(IRepository[LoadProfiles]):
         Returns:
             The existing or newly created load profile instance (T).
         """
-        pass
 
     @abstractmethod
-    def get_by_house_id(self, house_id: UUID) -> Optional[T]:
+    def get_by_house_id(self, house_id: UUID) -> Optional[LoadProfiles]:
         """
         Retrieves a load profile by its associated house_id.
 
@@ -81,4 +79,3 @@ class ILoadProfileRepository(IRepository[LoadProfiles]):
         Returns:
             A load profile instance (T) if found, otherwise None.
         """
-        pass

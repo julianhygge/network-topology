@@ -5,11 +5,10 @@ from peewee import (
     BooleanField,
     CharField,
     DateTimeField,
-    DecimalField,
     DoubleField,
     ForeignKeyField,
+    IntegerField,
     UUIDField,
-    IntegerField
 )
 
 from app.data.schemas.auth.auditable_base import AuditableBase
@@ -26,19 +25,13 @@ class SolarProfile(AuditableBase):
     house_id = ForeignKeyField(
         Node, backref="solar_profile", on_delete="CASCADE"
     )
-    installed_capacity_kw = DecimalField(max_digits=4, decimal_places=2)
+    installed_capacity_kw = DoubleField()
     tilt_type = CharField(max_length=12)
-    years_since_installation = DecimalField(
-        max_digits=4, decimal_places=2, null=True
-    )
+    years_since_installation = DoubleField()
     simulate_using_different_capacity = BooleanField(null=True)
-    capacity_for_simulation_kw = DecimalField(max_digits=4, decimal_places=2)
-    available_space_sqft = DecimalField(
-        max_digits=5, decimal_places=2, null=True
-    )
-    simulated_available_space_sqft = DecimalField(
-        max_digits=4, decimal_places=2, null=True
-    )
+    capacity_for_simulation_kw = DoubleField()
+    available_space_sqft = DoubleField()
+    simulated_available_space_sqft = DoubleField()
 
     class Meta:
         """Metaclass for SolarProfile."""
@@ -68,6 +61,7 @@ class SolarItemProfile(BaseModel):
         table_name = "solar_item_profile"
         schema = "solar"
 
+
 class SolarInstallation(BaseModel):
     site_id = IntegerField(primary_key=True)
     name = CharField()
@@ -89,18 +83,28 @@ class SolarInstallation(BaseModel):
     has_csv = BooleanField()
 
     class Meta:
-
         table_name = "solar_installations"
         schema = "solar"
 
 
-class SiteRefYearProduction(BaseModel):
-    id = IntegerField(primary_key=True)
-    site_id = ForeignKeyField(SolarInstallation, column_name='site_id', backref='site_ref_production',
-                              on_delete='CASCADE')
+class SiteReferenceYearProduction(BaseModel):
+    """
+    Schema for storing reference year production data for solar installations.
+    """
+
+    id = AutoField()
+    site = ForeignKeyField(
+        SolarInstallation,
+        backref="reference_year_productions",
+        on_delete="CASCADE",
+        column_name="site_id",
+    )
     timestamp = DateTimeField()
     per_kw_generation = DoubleField()
 
     class Meta:
+        """Metaclass for SiteReferenceYearProduction."""
+
         table_name = "site_reference_year_production"
         schema = "solar"
+        indexes = ((("site", "reference_timestamp"), True),)

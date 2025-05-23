@@ -13,13 +13,16 @@ from app.data.interfaces.topology.i_topology_simulator import (
 )
 from app.data.schemas.transactional.topology_schema import HouseFlag
 from app.domain.interfaces.auth.i_auth_service import IAuthService
+from app.domain.interfaces.auth.i_token_service import ITokenService
 from app.domain.interfaces.communication.i_mqtt_service import IMqttService
+from app.domain.interfaces.communication.i_sms_service import ISmsService
 from app.domain.interfaces.i_node_service import INodeService
 from app.domain.interfaces.i_service import IService
-from app.domain.interfaces.communication.i_sms_service import ISmsService
-from app.domain.interfaces.auth.i_token_service import ITokenService
 from app.domain.interfaces.net_topology.i_net_topology_service import (
     INetTopologyService,
+)
+from app.domain.interfaces.simulator_engine.i_data_preparation_service import (
+    IDataPreparationService,
 )
 from app.domain.services.base_service import BaseService
 from app.domain.services.solar.load_profile_service import LoadProfileService
@@ -57,6 +60,11 @@ def get_net_topology_service() -> INetTopologyService:
     return c.net_topology_service()
 
 
+def get_data_preparation_service() -> IDataPreparationService:
+    """Get the data preparation service instance."""
+    return c.data_preparations_service()
+
+
 def get_topology_simulator() -> ITopologySimulator:
     """Get the topology simulator instance."""
     return c.topology_simulator()
@@ -90,6 +98,7 @@ def get_electrical_appliances_service() -> IService:
 def get_solar_profile_service() -> IService:
     """Get the solar profile service instance."""
     return c.solar_profile_service()
+
 
 def get_solar_installation_service() -> IService:
     """Get the solar profile service instance."""

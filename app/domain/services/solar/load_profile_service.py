@@ -648,14 +648,13 @@ class LoadProfileService(BaseService):
         try:
             for _ in range(num_days_in_year):
                 for consumption_value in normalized_daily_consumption_kwh:
-                    if current_timestamp < start_of_a_year + Timedelta(days=1):
-                        template_patterns_to_save.append(
-                            {
-                                "template_id": master_template.id,
-                                "timestamp": current_timestamp,
-                                "consumption_kwh": consumption_value,
-                            }
-                        )
+                    template_patterns_to_save.append(
+                        {
+                            "template_id": master_template.id,
+                            "timestamp": current_timestamp,
+                            "consumption_kwh": consumption_value,
+                        }
+                    )
 
                     current_timestamp += Timedelta(minutes=interval_minutes)
 

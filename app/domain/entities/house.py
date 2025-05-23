@@ -17,7 +17,6 @@ class House:
     """Represents a house in the domain."""
 
     active: bool
-    voluntary_storage: bool
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     node_id: Optional[uuid.UUID] = None
     load_profile: Optional[str] = None
