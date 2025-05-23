@@ -87,7 +87,7 @@ class SolarInstallation(BaseModel):
         schema = "solar"
 
 
-class SiteReferenceYearProduction(BaseModel):
+class SiteRefYearProduction(BaseModel):
     """
     Schema for storing reference year production data for solar installations.
     """

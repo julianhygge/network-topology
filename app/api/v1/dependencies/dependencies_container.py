@@ -42,7 +42,7 @@ from app.data.schemas.master.master_schema import (
     ElectricalAppliances,
     PredefinedTemplates,
 )
-from app.data.schemas.solar.solar_schema import SiteReferenceYearProduction
+from app.data.schemas.solar.solar_schema import SiteRefYearProduction
 from app.data.schemas.transactional.topology_schema import (
     House,
     HouseFlag,
@@ -133,8 +133,8 @@ class Container(containers.DeclarativeContainer):
     _solar_installation_repo = providers.Singleton(SolarInstallationRepository)
     _load_profiles_repository = providers.Singleton(LoadProfilesRepository)
     _yearly_solar_reference_repo = providers.Singleton(
-        BaseRepository[SiteReferenceYearProduction],
-        SiteReferenceYearProduction,
+        BaseRepository[SiteRefYearProduction],
+        SiteRefYearProduction,
     )
     _load_profile_details_repository = providers.Singleton(
         LoadProfileDetailsRepository
