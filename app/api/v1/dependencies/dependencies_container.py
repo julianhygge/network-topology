@@ -42,7 +42,7 @@ from app.data.schemas.master.master_schema import (
     ElectricalAppliances,
     PredefinedTemplates,
 )
-from app.data.schemas.solar.solar_schema import SiteReferenceYearProduction
+from app.data.schemas.solar.solar_schema import SiteRefYearProduction
 from app.data.schemas.transactional.topology_schema import (
     House,
     HouseFlag,
@@ -66,7 +66,22 @@ from app.domain.services.load.load_profile_file_completer import (
 from app.domain.services.simulator_engine.data_preparation_service import (
     DataPreparationService,
 )
+from app.domain.services.solar.consumption_pattern_service import (
+    ConsumptionPatternService,
+)
+from app.domain.services.solar.load_profile_builder_service import (
+    LoadProfileBuilderService,
+)
+from app.domain.services.solar.load_profile_engine_service import (
+    LoadProfileEngineService,
+)
+from app.domain.services.solar.load_profile_file_service import (
+    LoadProfileFileService,
+)
 from app.domain.services.solar.load_profile_service import LoadProfileService
+from app.domain.services.solar.load_profile_template_service import (
+    LoadProfileTemplateService,
+)
 from app.domain.services.solar.solar_installtion_service import (
     SolarInstallationService,
 )
@@ -133,8 +148,8 @@ class Container(containers.DeclarativeContainer):
     _solar_installation_repo = providers.Singleton(SolarInstallationRepository)
     _load_profiles_repository = providers.Singleton(LoadProfilesRepository)
     _yearly_solar_reference_repo = providers.Singleton(
-        BaseRepository[SiteReferenceYearProduction],
-        SiteReferenceYearProduction,
+        BaseRepository[SiteRefYearProduction],
+        SiteRefYearProduction,
     )
     _load_profile_details_repository = providers.Singleton(
         LoadProfileDetailsRepository
@@ -161,6 +176,43 @@ class Container(containers.DeclarativeContainer):
 
     _load_profile_completer = providers.Singleton(
         _load_profile_completer_factory(configuration())
+    )
+
+    _consumption_pattern_service = providers.Singleton(
+        ConsumptionPatternService
+    )
+
+    _load_profile_file_service = providers.Singleton(
+        LoadProfileFileService,
+        load_profile_repo=_load_profiles_repository,
+        load_profile_files_repo=_load_profile_files_repository,
+        load_details_repo=_load_profile_details_repository,
+        load_profile_completer=_load_profile_completer,
+        conf=configuration,  # Pass the main configuration
+    )
+
+    # Provider for LoadProfileBuilderService
+    _load_profile_builder_service = providers.Singleton(
+        LoadProfileBuilderService,
+        load_profile_repo=_load_profiles_repository,
+        load_profile_builder_repo=_load_profile_builder_repository,
+    )
+
+    # Provider for LoadProfileEngineService
+    _load_profile_engine_service = providers.Singleton(
+        LoadProfileEngineService,
+        load_profile_repo=_load_profiles_repository,
+        load_gen_engine_repo=_load_generation_engine_repository,
+    )
+
+    # Provider for LoadProfileTemplateService
+    _load_profile_template_service = providers.Singleton(
+        LoadProfileTemplateService,
+        load_profile_repo=_load_profiles_repository,
+        pre_templates_repo=_predefined_templates_repository,
+        template_patterns_repo=_template_patterns_repository,
+        pre_master_templates_repo=_predefined_master_templates_repo,
+        consumption_pattern_service=_consumption_pattern_service,
     )
 
     token_service = providers.Singleton(
@@ -238,14 +290,10 @@ class Container(containers.DeclarativeContainer):
         repository=_load_profiles_repository,
         load_details_repository=_load_profile_details_repository,
         load_profile_files_repository=_load_profile_files_repository,
-        user_repository=_user_repository,
-        load_profile_builder_repository=_load_profile_builder_repository,
-        load_gen_engine_repository=_load_generation_engine_repository,
-        pre_templates_repository=_predefined_templates_repository,
-        template_patterns_repository=_template_patterns_repository,
-        load_profile_completer=_load_profile_completer,
-        pre_master_templates_repository=_predefined_master_templates_repo,
-        conf=configuration(),
+        load_profile_file_service=_load_profile_file_service,
+        load_profile_builder_service=_load_profile_builder_service,
+        load_profile_engine_service=_load_profile_engine_service,
+        load_profile_template_service=_load_profile_template_service,
     )
 
     predefined_template_service = providers.Factory(

@@ -58,3 +58,7 @@ class ISolarInstallationService(IService):
         self, filter_key: Optional[str], limit: int, offset: int
     ) -> Tuple[List[Dict[str, Any]], int, int, int]:
         pass
+
+    @abstractmethod
+    def backfill_missing_data(self):
+        pass

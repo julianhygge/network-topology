@@ -109,24 +109,24 @@ class SolarProfileUpdateModel(BaseModel):
         None, example="65.0", ge=0
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_update_solar_profile(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Validate solar profile update data consistency."""
-        solar_available = values.get("solar_available")
-        if solar_available:
-            if values.get("installed_capacity_kw") is None:
-                raise ValueError(
-                    "installed_capacity_kw must not be null when "
-                    "solar_available is True"
-                )
-            if (
-                values.get("years_since_installation") is None
-                or values.get("years_since_installation", 0) < 0
-            ):
-                raise ValueError(
-                    "years_since_installation must be a positive number when "
-                    "solar_available is True"
-                )
+    # @model_validator(mode="before")
+    # @classmethod
+    # def validate_update_solar_profile(
+    #     cls, values: Dict[str, Any]
+    # ) -> Dict[str, Any]:
+    #     """Validate solar profile update data consistency."""
+    #     solar_available = values.get("solar_available")
+    #     if solar_available:
+    #         if values.get("installed_capacity_kw") is None:
+    #             raise ValueError(
+    #                 "installed_capacity_kw must not be null when "
+    #                 "solar_available is True"
+    #             )
+    #         if (
+    #             values.get("years_since_installation") is None
+    #             or values.get("years_since_installation", 0) < 0
+    #         ):
+    #             raise ValueError(
+    #                 "years_since_installation must be a positive number when "
+    #                 "solar_available is True"
+    #             )

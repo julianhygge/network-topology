@@ -167,7 +167,7 @@ async def upload_load_profile(
         profile_name = file.filename
 
     try:
-        data = await load_profile_service.upload_profile_service_file(
+        data = await load_profile_service.upload_profile_file(
             user_id, profile_name, file, interval_15_minutes, house_id
         )
         self = str(request.url.path)
@@ -180,7 +180,7 @@ async def upload_load_profile(
             "message": "File uploaded successfully",
             "profile_id": data["profile_id"],
             "file_name": data["file_name"],
-            "user": data["user"],
+            "user": data["user_id"],
             "links": {"download": download, "delete": delete, "self": self},
         }
         return JSONResponse(
@@ -214,7 +214,7 @@ async def download_load_profile_file(
         HTTPException: 404 if the file is not found.
     """
     try:
-        file_record = service.get_load_profile_file(profile_id)
+        file_record = service.get_load_profile_file_content(profile_id)
         return StreamingResponse(
             BytesIO(file_record.content),
             media_type="application/octet-stream",
@@ -395,7 +395,7 @@ async def save_load_generation_engine(
         HTTPException: 500 if an error occurs during saving.
     """
     try:
-        engine = service.save_load_generation_engine(
+        engine = service.save_load_generation_engine_config(
             user_id, house_id, data.model_dump()
         )
 
@@ -453,7 +453,7 @@ async def get_load_generation_engine(
         HTTPException: 404 if data is not found, 500 for unexpected errors.
     """
     try:
-        engine = service.get_load_generation_engine(user_id, house_id)
+        engine = service.get_load_generation_engine_config(user_id, house_id)
         if engine is None:
             raise HTTPException(
                 status_code=404, detail="Load generation engine data not found"
@@ -517,7 +517,7 @@ async def create_or_update_load_predefined_template(
         HTTPException: 500 if an error occurs during the operation.
     """
     try:
-        template = service.create_or_update_load_predefined_template(
+        template = service.create_or_update_profile_from_template(
             user_id, house_id, template_data.template_id
         )
         index = request.url.path.find("/load/")
@@ -571,7 +571,7 @@ async def get_load_predefined_template(
         not found, 500 for unexpected errors.
     """
     try:
-        template = service.get_load_predefined_template(user_id, house_id)
+        template = service.get_profile_template_config(user_id, house_id)
         if template is None:
             raise HTTPException(
                 status_code=404, detail="Load predefined template not found"
@@ -657,9 +657,11 @@ async def generate_load_profile_from_template(
         HTTPException: 400 for bad requests, 500 for server errors.
     """
     try:
-        generated_profile_info = await service.generate_profile_from_template(
-            generate_request.template_id,
-            generate_request.people_profiles,
+        generated_profile_info = (
+            await service.generate_profile_values_from_template(
+                generate_request.template_id,
+                generate_request.people_profiles,
+            )
         )
 
         profile_id = generated_profile_info.get("profile_id")

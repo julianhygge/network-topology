@@ -25,6 +25,7 @@ from app.domain.interfaces.solar.i_solar_service import (
     ISolarProfileService,
 )
 
+
 solar_router = APIRouter(tags=["Solar"])
 
 
@@ -128,7 +129,7 @@ async def get_solar_profile(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@solar_router.put("/{house-id}")
+@solar_router.put("/{house_id}")
 async def update_solar_profile(
     house_id: UUID,
     data: SolarProfileUpdateModel,
@@ -181,3 +182,16 @@ async def delete_solar_profile(
         return f"Solar Profile deleted with house_id {house_id}"
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+@solar_router.get('/backfill/data')
+async def backfill_missing_data(
+    service: ISolarInstallationService = Depends(get_solar_installation_service),
+    _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
+):
+    try:
+        service.backfill_missing_data()
+        return "data inserted successfully"
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
