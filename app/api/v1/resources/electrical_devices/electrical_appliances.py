@@ -16,11 +16,25 @@ from app.domain.interfaces.i_service import IService
 
 appliances_router = APIRouter(tags=["Appliances"])
 
+GetElectricalAppliancesServiceDep = Depends(get_electrical_appliances_service)
+ElectricalsRetrievePermissionDep = Depends(
+    permission(Resources.ELECTRICALS, Permission.RETRIEVE)
+)
+ElectricalsCreatePermissionDep = Depends(
+    permission(Resources.ELECTRICALS, Permission.CREATE)
+)
+ElectricalsUpdatePermissionDep = Depends(
+    permission(Resources.ELECTRICALS, Permission.UPDATE)
+)
+ElectricalsDeletePermissionDep = Depends(
+    permission(Resources.ELECTRICALS, Permission.DELETE)
+)
+
 
 @appliances_router.get("/", response_model=AppliancesListResponse)
 async def get_appliances(
-    service: IService = Depends(get_electrical_appliances_service),
-    _: str = Depends(permission(Resources.ELECTRICALS, Permission.RETRIEVE)),
+    service: IService = GetElectricalAppliancesServiceDep,
+    _: str = ElectricalsRetrievePermissionDep,
 ):
     """
     Retrieve a list of all electrical appliances.
@@ -48,10 +62,8 @@ async def get_appliances(
 @appliances_router.post("/", response_model=AppliancesResponse)
 async def create_appliances(
     data: AppliancesRequest,
-    service: IService = Depends(get_electrical_appliances_service),
-    user_id: str = Depends(
-        permission(Resources.ELECTRICALS, Permission.CREATE)
-    ),
+    service: IService = GetElectricalAppliancesServiceDep,
+    user_id: str = ElectricalsCreatePermissionDep,
 ):
     """
     Create a new electrical appliance.
@@ -68,8 +80,8 @@ async def create_appliances(
         HTTPException: If an error occurs during creation.
     """
     try:
-        data = data.model_dump()
-        body = service.create(user_id, **data)
+        data_dict = data.model_dump()
+        body = service.create(user_id, **data_dict)
         return AppliancesResponse(**body)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -79,10 +91,8 @@ async def create_appliances(
 async def update_appliances(
     data: AppliancesRequest,
     appliance_id: int,
-    service: IService = Depends(get_electrical_appliances_service),
-    user_id: str = Depends(
-        permission(Resources.ELECTRICALS, Permission.UPDATE)
-    ),
+    service: IService = GetElectricalAppliancesServiceDep,
+    user_id: str = ElectricalsUpdatePermissionDep,
 ):
     """
     Update an existing electrical appliance.
@@ -100,8 +110,8 @@ async def update_appliances(
         HTTPException: If an error occurs during the update.
     """
     try:
-        data = data.model_dump(exclude_unset=True)
-        body = service.update(user_id, appliance_id, **data)
+        data_dict = data.model_dump(exclude_unset=True)
+        body = service.update(user_id, appliance_id, **data_dict)
         return body
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -110,8 +120,8 @@ async def update_appliances(
 @appliances_router.delete("/{appliance_id}/delete")
 async def delete_appliance(
     appliance_id: int,
-    service: IService = Depends(get_electrical_appliances_service),
-    _: str = Depends(permission(Resources.ELECTRICALS, Permission.DELETE)),
+    service: IService = GetElectricalAppliancesServiceDep,
+    _: str = ElectricalsDeletePermissionDep,
 ):
     """
     Delete an electrical appliance.
