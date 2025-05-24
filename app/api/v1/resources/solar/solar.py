@@ -25,17 +25,23 @@ from app.domain.interfaces.solar.i_solar_service import (
     ISolarProfileService,
 )
 
-
 solar_router = APIRouter(tags=["Solar"])
+
+GetSolarProfileServiceDep = Depends(get_solar_profile_service)
+LoadProfilesCreatePermissionDep = Depends(
+    permission(Resources.LOAD_PROFILES, Permission.CREATE)
+)
+GetSolarInstallationServiceDep = Depends(get_solar_installation_service)
+LoadProfilesRetrievePermissionDep = Depends(
+    permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
+)
 
 
 @solar_router.post("/", response_model=SolarProfileResponse)
 async def create_solar_profile(
     data: SolarProfileRequestModel,
-    service: ISolarProfileService = Depends(get_solar_profile_service),
-    user_id: UUID = Depends(
-        permission(Resources.LOAD_PROFILES, Permission.CREATE)
-    ),
+    service: ISolarProfileService = GetSolarProfileServiceDep,
+    user_id: UUID = LoadProfilesCreatePermissionDep,
 ):
     """
     Create a new solar profile.
@@ -64,10 +70,8 @@ async def get_solar_installation(
     filter_key: Union[str, None] = None,
     limit: int = 10,
     offset: int = 0,
-    service: ISolarInstallationService = Depends(
-        get_solar_installation_service
-    ),
-    _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)),
+    service: ISolarInstallationService = GetSolarInstallationServiceDep,
+    _: str = LoadProfilesRetrievePermissionDep,
 ):
     """
     Retrieve the solar installation of area
@@ -103,8 +107,8 @@ async def get_solar_installation(
 @solar_router.get("/{house_id}", response_model=Optional[SolarProfileResponse])
 async def get_solar_profile(
     house_id: UUID,
-    service: ISolarProfileService = Depends(get_solar_profile_service),
-    _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
+    service: ISolarProfileService = GetSolarProfileServiceDep,
+    _: str = LoadProfilesCreatePermissionDep,
 ) -> Optional[SolarProfileResponse]:
     """
     Retrieve the solar profile for a specific house.
@@ -133,10 +137,8 @@ async def get_solar_profile(
 async def update_solar_profile(
     house_id: UUID,
     data: SolarProfileUpdateModel,
-    service: ISolarProfileService = Depends(get_solar_profile_service),
-    user_id: UUID = Depends(
-        permission(Resources.LOAD_PROFILES, Permission.CREATE)
-    ),
+    service: ISolarProfileService = GetSolarProfileServiceDep,
+    user_id: UUID = LoadProfilesCreatePermissionDep,
 ):
     """
     Update an existing solar profile for a specific house.
@@ -160,8 +162,8 @@ async def update_solar_profile(
 @solar_router.delete("/{house_id}")
 async def delete_solar_profile(
     house_id: UUID,
-    service: ISolarProfileService = Depends(get_solar_profile_service),
-    _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
+    service: ISolarProfileService = GetSolarProfileServiceDep,
+    _: str = LoadProfilesCreatePermissionDep,
 ):
     """
     Delete the solar profile for a specific house.
@@ -183,15 +185,14 @@ async def delete_solar_profile(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@solar_router.get('/backfill/data')
+
+@solar_router.get("/backfill/data")
 async def backfill_missing_data(
-    service: ISolarInstallationService = Depends(get_solar_installation_service),
-    _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
+    service: ISolarInstallationService = GetSolarInstallationServiceDep,
+    _: str = LoadProfilesCreatePermissionDep,
 ):
     try:
         service.backfill_missing_data()
         return "data inserted successfully"
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-
-

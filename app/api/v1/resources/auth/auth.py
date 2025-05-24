@@ -18,11 +18,13 @@ from app.utils.logger import logger
 
 auth_router = APIRouter(tags=["Authorization"])
 
+GetAuthServiceDep = Depends(get_auth_service)
+
 
 @auth_router.post("/user", response_model=OtpRequestModelResponse)
 async def request_otp(
     req_body: OtpRequest,
-    auth_service: IAuthService = Depends(get_auth_service),
+    auth_service: IAuthService = GetAuthServiceDep,
 ) -> OtpRequestModelResponse:
     """
     Request an OTP (One-Time Password) for phone number verification.
@@ -53,7 +55,7 @@ async def request_otp(
 async def verify_otp(
     state_token: str,
     req_body: OtpVerificationRequest,
-    auth_service: IAuthService = Depends(get_auth_service),
+    auth_service: IAuthService = GetAuthServiceDep,
 ) -> OtpVerificationSuccessModelResponse | OtpVerificationModelResponse:
     """
     Verify the provided OTP against the state token.

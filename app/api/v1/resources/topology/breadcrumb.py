@@ -14,14 +14,19 @@ from app.utils.logger import logger
 
 breadcrumb_router = APIRouter(tags=["Breadcrumbs"])
 
+SubstationsRetrievePermissionDep = Depends(
+    permission(Resources.SUBSTATIONS, Permission.RETRIEVE)
+)
+GetNodeServiceDep = Depends(get_node_service)
+
 
 @breadcrumb_router.get(
     "/nodes/{node_id}/breadcrumb", response_model=BreadcrumbResponseModel
 )
 async def get_breadcrumb(
     node_id: UUID,
-    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)),
-    service: INodeService = Depends(get_node_service),
+    _: str = SubstationsRetrievePermissionDep,
+    service: INodeService = GetNodeServiceDep,
 ) -> BreadcrumbResponseModel:
     """
     Retrieve the breadcrumb navigation path for a given topology node.

@@ -45,12 +45,28 @@ from app.utils.logger import logger
 
 substation_router = APIRouter(tags=["Substations"])
 
+SubstationsRetrievePermissionDep = Depends(
+    permission(Resources.SUBSTATIONS, Permission.RETRIEVE)
+)
+GetNetTopologyServiceDep = Depends(get_net_topology_service)
+SubstationsUpdatePermissionDep = Depends(
+    permission(Resources.SUBSTATIONS, Permission.UPDATE)
+)
+SubstationsCreatePermissionDep = Depends(
+    permission(Resources.SUBSTATIONS, Permission.CREATE)
+)
+GetSubstationServiceDep = Depends(get_substation_service)
+GetDataPreparationServiceDep = Depends(get_data_preparation_service)
+SubstationsDeletePermissionDep = Depends(
+    permission(Resources.SUBSTATIONS, Permission.DELETE)
+)
+
 
 @substation_router.get("/{substation_id}", response_model=SubstationTopology)
 async def get_substation_topology(
     substation_id: UUID,
-    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)),
-    service: INetTopologyService = Depends(get_net_topology_service),
+    _: str = SubstationsRetrievePermissionDep,
+    service: INetTopologyService = GetNetTopologyServiceDep,
 ) -> SubstationTopology:
     """
     Retrieve the topology structure for a specific substation.
@@ -81,10 +97,8 @@ async def get_substation_topology(
 async def update_substation_topology(
     substation_id: UUID4,
     topology_data: SubstationTopologyRequestModel,
-    user_id: str = Depends(
-        permission(Resources.SUBSTATIONS, Permission.UPDATE)
-    ),
-    service: INetTopologyService = Depends(get_net_topology_service),
+    user_id: str = SubstationsUpdatePermissionDep,
+    service: INetTopologyService = GetNetTopologyServiceDep,
 ) -> SubstationTopology:
     """
     Update the topology structure for a specific substation.
@@ -121,10 +135,8 @@ async def update_substation_topology(
 @substation_router.post("/", response_model=SubstationResponseModel)
 async def create(
     data: SubstationRequestModel,
-    user_id: UUID = Depends(
-        permission(Resources.SUBSTATIONS, Permission.CREATE)
-    ),
-    service: IService = Depends(get_substation_service),
+    user_id: UUID = SubstationsCreatePermissionDep,
+    service: IService = GetSubstationServiceDep,
 ) -> SubstationResponseModel:
     """
     Create a new substation.
@@ -148,10 +160,8 @@ async def create(
 )
 async def generate_substations(
     data: SubstationsRequestModel,
-    user_id: UUID = Depends(
-        permission(Resources.SUBSTATIONS, Permission.CREATE)
-    ),
-    service: ISubstationService = Depends(get_substation_service),
+    user_id: UUID = SubstationsCreatePermissionDep,
+    service: ISubstationService = GetSubstationServiceDep,
 ) -> SubstationResponseModelList:
     """
     Generate multiple substations within a locality.
@@ -182,8 +192,8 @@ async def generate_substations(
 
 @substation_router.get("", response_model=SubstationResponseModelList)
 async def get(
-    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)),
-    service: IService = Depends(get_substation_service),
+    _: str = SubstationsRetrievePermissionDep,
+    service: IService = GetSubstationServiceDep,
 ) -> SubstationResponseModelList:
     """
     Retrieve a list of all substations.
@@ -218,8 +228,8 @@ async def get(
 )
 async def get_houses_by_substation_id(
     substation_id: UUID,
-    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)),
-    service: INetTopologyService = Depends(get_net_topology_service),
+    _: str = SubstationsRetrievePermissionDep,
+    service: INetTopologyService = GetNetTopologyServiceDep,
 ) -> HouseResponseModelList:
     """
     Retrieve the houses for a given substation ID.
@@ -252,8 +262,8 @@ async def get_houses_by_substation_id(
 )
 async def get_houses_profiles_by_substation_id(
     substation_id: UUID,
-    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)),
-    service: IDataPreparationService = Depends(get_data_preparation_service),
+    _: str = SubstationsRetrievePermissionDep,
+    service: IDataPreparationService = GetDataPreparationServiceDep,
 ) -> HouseResponseModelList:
     """
     Retrieve the house profiles for a given substation ID.
@@ -290,8 +300,8 @@ async def get_houses_profiles_by_substation_id(
 )
 async def delete(
     substation_id: UUID,
-    service: IService = Depends(get_substation_service),
-    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.DELETE)),
+    service: IService = GetSubstationServiceDep,
+    _: str = SubstationsDeletePermissionDep,
 ) -> None:
     """
     Delete a substation.
@@ -320,8 +330,8 @@ async def delete(
 )
 async def create_house_profiles_csv_files(
     substation_id: UUID,
-    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.CREATE)),
-    service: IDataPreparationService = Depends(get_data_preparation_service),
+    _: str = SubstationsCreatePermissionDep,
+    service: IDataPreparationService = GetDataPreparationServiceDep,
 ) -> List[str]:
     """
     Generate CSV files for all house profiles under a specific substation.
@@ -368,8 +378,8 @@ async def create_house_profiles_csv_files(
 @substation_router.get("/{substation_id}/profiles/zip")
 async def get_house_profiles_zip_file(
     substation_id: UUID,
-    _: str = Depends(permission(Resources.SUBSTATIONS, Permission.RETRIEVE)),
-    service: IDataPreparationService = Depends(get_data_preparation_service),
+    _: str = SubstationsRetrievePermissionDep,
+    service: IDataPreparationService = GetDataPreparationServiceDep,
 ):
     """
     Retrieve a ZIP file containing CSVs of all house profiles for a substation.

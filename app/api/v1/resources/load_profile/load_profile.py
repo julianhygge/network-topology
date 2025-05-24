@@ -37,16 +37,22 @@ load_router.include_router(builder_router)
 load_router.include_router(engine_router)
 load_router.include_router(templates_router)
 
+LoadProfilesDeletePermissionDep = Depends(
+    permission(Resources.LOAD_PROFILES, Permission.DELETE)
+)
+GetLoadProfileServiceDep = Depends(get_load_profile_service)
+LoadProfilesRetrievePermissionDep = Depends(
+    permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
+)
+
 
 @load_router.delete(
     "/{load_profile_id}/", status_code=status.HTTP_204_NO_CONTENT
 )
 async def delete_load_profile(
     load_profile_id: int,
-    _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.DELETE)),
-    load_profile_service: ILoadProfileService = Depends(
-        get_load_profile_service
-    ),
+    _: str = LoadProfilesDeletePermissionDep,
+    load_profile_service: ILoadProfileService = GetLoadProfileServiceDep,
 ):
     """
     Delete a specific load profile by its ID.
@@ -77,12 +83,8 @@ async def delete_load_profile(
 async def list_load_profiles(
     request: Request,
     house_id: UUID,
-    user_id: str = Depends(
-        permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
-    ),
-    load_profile_service: ILoadProfileService = Depends(
-        get_load_profile_service
-    ),
+    user_id: str = LoadProfilesRetrievePermissionDep,
+    load_profile_service: ILoadProfileService = GetLoadProfileServiceDep,
 ):
     """
     List all load profiles associated with a specific house for the user.

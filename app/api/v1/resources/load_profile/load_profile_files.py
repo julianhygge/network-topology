@@ -28,6 +28,14 @@ from app.domain.services.solar.load_profile_file_service import (
 
 files_router = APIRouter(tags=["Load Profile"])
 
+LoadProfilesCreatePermissionDep = Depends(
+    permission(Resources.LOAD_PROFILES, Permission.CREATE)
+)
+GetLoadProfileFileServiceDep = Depends(get_load_profile_file_service)
+LoadProfilesRetrievePermissionDep = Depends(
+    permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
+)
+
 
 @files_router.post("/upload/", status_code=status.HTTP_202_ACCEPTED)
 # pylint: disable=too-many-arguments
@@ -37,12 +45,8 @@ async def upload_load_profile(
     interval_15_minutes: bool = Form(...),
     house_id: UUID = Form(...),
     profile_name: str = Form(None),
-    user_id: str = Depends(
-        permission(Resources.LOAD_PROFILES, Permission.CREATE)
-    ),
-    load_profile_file_service: LoadProfileFileService = Depends(
-        get_load_profile_file_service
-    ),
+    user_id: str = LoadProfilesCreatePermissionDep,
+    lpf_service: LoadProfileFileService = GetLoadProfileFileServiceDep,
 ):
     """
     Upload a load profile file for a specific house.
@@ -55,7 +59,7 @@ async def upload_load_profile(
         house_id: The ID of the house the profile belongs to.
         profile_name: Optional name for the profile (defaults to filename).
         user_id: The ID of the user uploading the file (from permission).
-        load_profile_file_service: Injected load profile file service instance.
+        lpf_service: Injected load profile file service instance.
 
     Returns:
         JSONResponse indicating success or failure, with links.
@@ -64,7 +68,7 @@ async def upload_load_profile(
         profile_name = file.filename
 
     try:
-        data = await load_profile_file_service.upload_profile_file(
+        data = await lpf_service.upload_profile_file(
             user_id, profile_name, file, interval_15_minutes, house_id
         )
         self = str(request.url.path)
@@ -93,17 +97,15 @@ async def upload_load_profile(
 @files_router.get("/download/file", status_code=status.HTTP_202_ACCEPTED)
 async def download_load_profile_file(
     profile_id: int,
-    load_profile_file_service: LoadProfileFileService = Depends(
-        get_load_profile_file_service
-    ),
-    _: str = Depends(permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)),
+    lpf_service: LoadProfileFileService = GetLoadProfileFileServiceDep,
+    _: str = LoadProfilesRetrievePermissionDep,
 ):
     """
     Download the file content of a specific load profile.
 
     Args:
         profile_id: The ID of the load profile file to download.
-        load_profile_file_service: Injected load profile file service instance.
+        lpf_service: Injected load profile file service instance.
         _: Dependency to check retrieve permission.
 
     Returns:
@@ -113,9 +115,7 @@ async def download_load_profile_file(
         HTTPException: 404 if the file is not found.
     """
     try:
-        file_record = load_profile_file_service.get_load_profile_file_content(
-            profile_id
-        )
+        file_record = lpf_service.get_load_profile_file_content(profile_id)
         return StreamingResponse(
             BytesIO(file_record.content),
             media_type="application/octet-stream",

@@ -21,10 +21,23 @@ from app.exceptions.hygge_exceptions import (
 )
 from app.utils.logger import logger
 
-
 FlagServiceType = IService[UUID, int]
 
 flag_router = APIRouter(tags=["Flags"])
+
+HousesCreatePermissionDep = Depends(
+    permission(Resources.HOUSES, Permission.CREATE)
+)
+GetFlagServiceDep = Depends(get_flag_service)
+HousesRetrievePermissionDep = Depends(
+    permission(Resources.HOUSES, Permission.RETRIEVE)
+)
+HousesUpdatePermissionDep = Depends(
+    permission(Resources.HOUSES, Permission.UPDATE)
+)
+HousesDeletePermissionDep = Depends(
+    permission(Resources.HOUSES, Permission.DELETE)
+)
 
 
 @flag_router.post(
@@ -35,8 +48,8 @@ flag_router = APIRouter(tags=["Flags"])
 async def create_flag(
     house_id: UUID4,
     flag_data: FlagCreateRequest,
-    user_id: UUID = Depends(permission(Resources.HOUSES, Permission.CREATE)),
-    service: FlagServiceType = Depends(get_flag_service),
+    user_id: UUID = HousesCreatePermissionDep,
+    service: FlagServiceType = GetFlagServiceDep,
 ) -> FlagResponse:
     """
     Create a new flag for a specific house.
@@ -69,8 +82,8 @@ async def create_flag(
 @flag_router.get("/{house_id}/flags", response_model=List[FlagResponse])
 async def get_flags_by_house(
     house_id: UUID4,
-    _: UUID = Depends(permission(Resources.HOUSES, Permission.RETRIEVE)),
-    service: FlagServiceType = Depends(get_flag_service),
+    _: UUID = HousesRetrievePermissionDep,
+    service: FlagServiceType = GetFlagServiceDep,
 ) -> List[FlagResponse]:
     """Retrieve all flags for a specific house.
 
@@ -115,8 +128,8 @@ async def update_flag(
     house_id: UUID4,
     flag_id: int,
     flag_data: FlagUpdateRequest,
-    user_id: UUID = Depends(permission(Resources.HOUSES, Permission.UPDATE)),
-    service: FlagServiceType = Depends(get_flag_service),
+    user_id: UUID = HousesUpdatePermissionDep,
+    service: FlagServiceType = GetFlagServiceDep,
 ) -> FlagResponse:
     """
     Update an existing flag.
@@ -158,8 +171,8 @@ async def update_flag(
 )
 async def delete_flag(
     flag_id: int,
-    _: UUID = Depends(permission(Resources.HOUSES, Permission.DELETE)),
-    service: FlagServiceType = Depends(get_flag_service),
+    _: UUID = HousesDeletePermissionDep,
+    service: FlagServiceType = GetFlagServiceDep,
 ) -> None:
     """
     Delete a flag.
@@ -169,7 +182,7 @@ async def delete_flag(
     try:
         deleted_count = service.delete(item_id=flag_id)
         if deleted_count == 0:
-            detail_msg = f"Flag {flag_id} not found " f"for deletion."
+            detail_msg = f"Flag {flag_id} not found for deletion."
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=detail_msg
             )

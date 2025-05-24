@@ -22,13 +22,20 @@ from app.exceptions.hygge_exceptions import NotFoundException
 
 tr_router = APIRouter(tags=["Transformers"])
 
+TransformersUpdatePermissionDep = Depends(permission(r.TRANSFORMERS, p.UPDATE))
+GetNetTopologyServiceDep = Depends(get_net_topology_service)
+TransformersRetrievePermissionDep = Depends(
+    permission(r.TRANSFORMERS, p.RETRIEVE)
+)
+GetTransformerServiceDep = Depends(get_transformer_service)
+
 
 @tr_router.put("/{transformer_id}", response_model=TransformerResponseModel)
 async def update_transformer(
     transformer_id: UUID4,
     transformer_data: TransformerUpdateRequestModel,
-    user_id: str = Depends(permission(r.TRANSFORMERS, p.UPDATE)),
-    service: INetTopologyService = Depends(get_net_topology_service),
+    user_id: str = TransformersUpdatePermissionDep,
+    service: INetTopologyService = GetNetTopologyServiceDep,
 ) -> TransformerResponseModel:
     """
     Update the details of a specific transformer node.
@@ -63,8 +70,8 @@ async def update_transformer(
 @tr_router.get("/{transformer_id}", response_model=TransformerResponseModel)
 async def get(
     transformer_id: UUID4,
-    _: str = Depends(permission(r.TRANSFORMERS, p.RETRIEVE)),
-    service: IService = Depends(get_transformer_service),
+    _: str = TransformersRetrievePermissionDep,
+    service: IService = GetTransformerServiceDep,
 ) -> TransformerResponseModel:
     """
     Retrieve the details of a specific transformer node.

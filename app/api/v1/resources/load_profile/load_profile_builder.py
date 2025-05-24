@@ -22,6 +22,11 @@ from app.domain.services.solar.load_profile_builder_service import (
 
 builder_router = APIRouter(tags=["Load Profile"])
 
+GetLoadProfileBuilderServiceDep = Depends(get_load_profile_builder_service)
+LoadProfilesRetrievePermissionDep = Depends(
+    permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
+)
+
 
 @builder_router.post(
     "/houses/{house_id}/load-profile-items",
@@ -33,12 +38,8 @@ async def save_load_profile_builder_items(
     request: Request,
     house_id: UUID,
     items: LoadProfileBuilderItemsRequest,
-    load_profile_builder_service: LoadProfileBuilderService = Depends(
-        get_load_profile_builder_service
-    ),
-    user_id: str = Depends(
-        permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
-    ),
+    lpb_service: LoadProfileBuilderService = GetLoadProfileBuilderServiceDep,
+    user_id: str = LoadProfilesRetrievePermissionDep,
 ):
     """
     Save load profile builder items for a specific house.
@@ -47,7 +48,7 @@ async def save_load_profile_builder_items(
         request: The incoming request object.
         house_id: The ID of the house.
         items: The load profile builder items to save.
-        load_profile_builder_service:
+        lpb_service:
         Injected load profile builder service instance.
         user_id: The ID of the user making the request (from permission).
 
@@ -59,10 +60,8 @@ async def save_load_profile_builder_items(
     """
     try:
         items_dicts = [item.model_dump() for item in items.items]
-        updated_items, load_profile_id = (
-            load_profile_builder_service.save_load_profile_items(
-                user_id, house_id, items_dicts
-            )
+        updated_items, load_profile_id = lpb_service.save_load_profile_items(
+            user_id, house_id, items_dicts
         )
         updated_items_response = [
             LoadProfileBuilderItemResponse(
@@ -107,12 +106,8 @@ async def save_load_profile_builder_items(
 async def get_profile_builder_items(
     request: Request,
     house_id: UUID,
-    load_profile_builder_service: LoadProfileBuilderService = Depends(
-        get_load_profile_builder_service
-    ),
-    user_id: str = Depends(
-        permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
-    ),
+    lpb_service: LoadProfileBuilderService = GetLoadProfileBuilderServiceDep,
+    user_id: str = LoadProfilesRetrievePermissionDep,
 ):
     """
     Get builder items for a specific house.
@@ -120,8 +115,7 @@ async def get_profile_builder_items(
     Args:
         request: The incoming request object.
         house_id: The ID of the house.
-        load_profile_builder_service:
-        Injected load profile builder service instance.
+        lpb_service: Injected load profile builder service instance.
         user_id: The ID of the user making the request (from permission).
 
     Returns:
@@ -132,9 +126,7 @@ async def get_profile_builder_items(
     """
     try:
         updated_items, load_profile_id = (
-            load_profile_builder_service.get_load_profile_builder_items(
-                user_id, house_id
-            )
+            lpb_service.get_load_profile_builder_items(user_id, house_id)
         )
         updated_items_response = [
             LoadProfileBuilderItemResponse(

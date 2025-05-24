@@ -19,12 +19,26 @@ from app.utils.logger import logger
 
 user_router = APIRouter(tags=["Users"])
 
+UsersCreatePermissionDep = Depends(
+    permission(Resources.USERS, Permission.CREATE)
+)
+GetUserServiceDep = Depends(get_user_service)
+UsersRetrievePermissionDep = Depends(
+    permission(Resources.USERS, Permission.RETRIEVE)
+)
+UsersUpdatePermissionDep = Depends(
+    permission(Resources.USERS, Permission.UPDATE)
+)
+UsersDeletePermissionDep = Depends(
+    permission(Resources.USERS, Permission.DELETE)
+)
+
 
 @user_router.post(path="/", response_model=UserResponseModel)
 async def create_user(
     user_data: UserRequestModel,
-    user_id: str = Depends(permission(Resources.USERS, Permission.CREATE)),
-    service: IService = Depends(get_user_service),
+    user_id: str = UsersCreatePermissionDep,
+    service: IService = GetUserServiceDep,
 ) -> UserResponseModel:
     """
     Create a new user.
@@ -46,8 +60,8 @@ async def create_user(
 @user_router.get(path="/", response_model=UserListResponse)
 async def get_users(
     request: Request,
-    service: IService = Depends(get_user_service),
-    _: str = Depends(permission(Resources.USERS, Permission.RETRIEVE)),
+    service: IService = GetUserServiceDep,
+    _: str = UsersRetrievePermissionDep,
 ) -> UserListResponse:
     """
     Retrieve a list of all users.
@@ -87,10 +101,8 @@ async def update(
     request: Request,
     user_data: UserRequestModel,
     user_id: UUID,
-    logged_user_id: str = Depends(
-        permission(Resources.USERS, Permission.UPDATE)
-    ),
-    service: IService = Depends(get_user_service),
+    logged_user_id: str = UsersUpdatePermissionDep,
+    service: IService = GetUserServiceDep,
 ) -> UserResponseModel:
     """
     Update an existing user.
@@ -131,8 +143,8 @@ async def update(
 @user_router.delete(path="/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete(
     user_id: UUID,
-    _: str = Depends(permission(Resources.USERS, Permission.DELETE)),
-    service: IService = Depends(get_user_service),
+    _: str = UsersDeletePermissionDep,
+    service: IService = GetUserServiceDep,
 ) -> None:
     """
     Delete a user.

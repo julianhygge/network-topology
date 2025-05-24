@@ -21,13 +21,22 @@ from app.exceptions.hygge_exceptions import NotFoundException
 
 house_router = APIRouter(tags=["Houses"])
 
+HousesUpdatePermissionDep = Depends(
+    permission(Resources.HOUSES, Permission.UPDATE)
+)
+GetNetTopologyServiceDep = Depends(get_net_topology_service)
+HousesRetrievePermissionDep = Depends(
+    permission(Resources.HOUSES, Permission.RETRIEVE)
+)
+GetHouseServiceDep = Depends(get_house_service)
+
 
 @house_router.put("/{house_id}", response_model=HouseResponseModel)
 async def update_house(
     house_id: UUID4,
     house_data: HouseUpdateRequestModel,
-    _: str = Depends(permission(Resources.HOUSES, Permission.UPDATE)),
-    service: INetTopologyService = Depends(get_net_topology_service),
+    _: str = HousesUpdatePermissionDep,
+    service: INetTopologyService = GetNetTopologyServiceDep,
 ) -> HouseResponseModel:
     """
     Update the details of a specific house node.
@@ -60,10 +69,8 @@ async def update_house(
 @house_router.get("/{house_id}", response_model=HouseResponseModel)
 async def get(
     house_id: UUID4,
-    _: str = Depends(
-        permission(Resources.HOUSES, Permission.RETRIEVE)
-    ),  # Corrected permission
-    service: IService = Depends(get_house_service),
+    _: str = HousesRetrievePermissionDep,  # Corrected permission
+    service: IService = GetHouseServiceDep,
 ) -> HouseResponseModel:
     """
     Retrieve the details of a specific house node.

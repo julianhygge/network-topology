@@ -29,6 +29,18 @@ from app.domain.services.solar.load_profile_template_service import (
 
 templates_router = APIRouter(tags=["Load Profile"])
 
+GetLoadProfileTemplateServiceDep = Depends(get_load_profile_template_service)
+LoadProfilesCreatePermissionDep = Depends(
+    permission(Resources.LOAD_PROFILES, Permission.CREATE)
+)
+LoadProfilesRetrievePermissionDep = Depends(
+    permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
+)
+GetPredefinedTemplateServiceDep = Depends(get_predefined_template_service)
+ElectricalsRetrievePermissionDep = Depends(
+    permission(Resources.ELECTRICALS, Permission.RETRIEVE)
+)
+
 
 @templates_router.post(
     "/houses/{house_id}/load-predefined-template",
@@ -40,12 +52,8 @@ async def create_or_update_load_predefined_template(
     request: Request,
     house_id: UUID,
     template_data: LoadPredefinedTemplateRequest,
-    load_profile_template_service: LoadProfileTemplateService = Depends(
-        get_load_profile_template_service
-    ),
-    user_id: UUID = Depends(
-        permission(Resources.LOAD_PROFILES, Permission.CREATE)
-    ),
+    lpt_service: LoadProfileTemplateService = GetLoadProfileTemplateServiceDep,
+    user_id: UUID = LoadProfilesCreatePermissionDep,
 ):
     """
     Create or update a load predefined template for a specific house.
@@ -54,7 +62,7 @@ async def create_or_update_load_predefined_template(
         request: The incoming request object.
         house_id: The ID of the house.
         template_data: The predefined template data.
-        load_profile_template_service: Injected load profile template service instance.
+        lpt_service: Injected load profile template service instance.
         user_id: The ID of the user making the request (from permission).
 
     Returns:
@@ -64,7 +72,7 @@ async def create_or_update_load_predefined_template(
         HTTPException: 500 if an error occurs during the operation.
     """
     try:
-        template = load_profile_template_service.create_or_update_load_predefined_template(
+        template = lpt_service.create_or_update_load_predefined_template(
             user_id, house_id, template_data.template_id
         )
         index = request.url.path.find("/load/")
@@ -96,12 +104,8 @@ async def create_or_update_load_predefined_template(
 async def get_load_predefined_template(
     request: Request,
     house_id: UUID,
-    load_profile_template_service: LoadProfileTemplateService = Depends(
-        get_load_profile_template_service
-    ),
-    user_id: UUID = Depends(
-        permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
-    ),
+    lpt_service: LoadProfileTemplateService = GetLoadProfileTemplateServiceDep,
+    user_id: UUID = LoadProfilesRetrievePermissionDep,
 ):
     """
     Get the load predefined template for a specific house.
@@ -109,7 +113,8 @@ async def get_load_predefined_template(
     Args:
         request: The incoming request object.
         house_id: The ID of the house.
-        load_profile_template_service: Injected load profile template service instance.
+        load_profile_template_service:
+        Injected load profile template service instance.
         user_id: The ID of the user making the request (from permission).
 
     Returns:
@@ -120,9 +125,7 @@ async def get_load_predefined_template(
         not found, 500 for unexpected errors.
     """
     try:
-        template = load_profile_template_service.get_load_predefined_template(
-            user_id, house_id
-        )
+        template = lpt_service.get_load_predefined_template(user_id, house_id)
         if template is None:
             raise HTTPException(
                 status_code=404, detail="Load predefined template not found"
@@ -153,8 +156,8 @@ async def get_load_predefined_template(
     "/load_templates", response_model=LoadPredefinedTemplateListResponse
 )
 async def get_load_templates(
-    service: IService = Depends(get_predefined_template_service),
-    _: str = Depends(permission(Resources.ELECTRICALS, Permission.RETRIEVE)),
+    service: IService = GetPredefinedTemplateServiceDep,
+    _: str = ElectricalsRetrievePermissionDep,
 ):
     """
     Get a list of all predefined load templates.
@@ -189,10 +192,8 @@ async def get_load_templates(
 async def generate_load_profile_from_template(
     request: Request,
     generate_request: GenerateProfileFromTemplateRequest,
-    load_profile_template_service: LoadProfileTemplateService = Depends(
-        get_load_profile_template_service
-    ),
-    _: UUID = Depends(permission(Resources.LOAD_PROFILES, Permission.CREATE)),
+    lpt_service: LoadProfileTemplateService = GetLoadProfileTemplateServiceDep,
+    _: UUID = LoadProfilesCreatePermissionDep,
 ):
     """
     Generate a 15-minute interval load profile from a predefined template
@@ -200,7 +201,7 @@ async def generate_load_profile_from_template(
 
     Args:
         template_id: id of the predefined template.
-        load_profile_template_service: Injected load profile template service instance.
+        lpt_service: Injected load profile template service instance.
         user_id: The ID of the user making the request (from permission).
 
     Returns:
@@ -211,7 +212,7 @@ async def generate_load_profile_from_template(
     """
     try:
         generated_profile_info = (
-            await load_profile_template_service.generate_profile_from_template(
+            await lpt_service.generate_profile_from_template(
                 generate_request.template_id,
                 generate_request.people_profiles,
             )

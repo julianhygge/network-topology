@@ -19,6 +19,14 @@ from app.domain.services.solar.load_profile_engine_service import (
 
 engine_router = APIRouter(tags=["Load Profile"])
 
+GetLoadProfileEngineServiceDep = Depends(get_load_profile_engine_service)
+LoadProfilesCreatePermissionDep = Depends(
+    permission(Resources.LOAD_PROFILES, Permission.CREATE)
+)
+LoadProfilesRetrievePermissionDep = Depends(
+    permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
+)
+
 
 @engine_router.post(
     "/houses/{house_id}/generation-engine",
@@ -30,12 +38,8 @@ async def save_load_generation_engine(
     request: Request,
     house_id: UUID,
     data: LoadGenerationEngineRequest,
-    load_profile_engine_service: LoadProfileEngineService = Depends(
-        get_load_profile_engine_service
-    ),
-    user_id: UUID = Depends(
-        permission(Resources.LOAD_PROFILES, Permission.CREATE)
-    ),
+    lpd_service: LoadProfileEngineService = GetLoadProfileEngineServiceDep,
+    user_id: UUID = LoadProfilesCreatePermissionDep,
 ):
     """
     Save load generation engine data for a specific house.
@@ -44,7 +48,7 @@ async def save_load_generation_engine(
         request: The incoming request object.
         house_id: The ID of the house.
         data: The load generation engine data to save.
-        load_profile_engine_service: Injected load profile engine service instance.
+        lpd_service: Injected load profile engine service instance.
         user_id: The ID of the user making the request (from permission).
 
     Returns:
@@ -54,7 +58,7 @@ async def save_load_generation_engine(
         HTTPException: 500 if an error occurs during saving.
     """
     try:
-        engine = load_profile_engine_service.save_load_generation_engine(
+        engine = lpd_service.save_load_generation_engine(
             user_id, house_id, data.model_dump()
         )
 
@@ -91,12 +95,8 @@ async def save_load_generation_engine(
 async def get_load_generation_engine(
     request: Request,
     house_id: UUID,
-    load_profile_engine_service: LoadProfileEngineService = Depends(
-        get_load_profile_engine_service
-    ),
-    user_id: UUID = Depends(
-        permission(Resources.LOAD_PROFILES, Permission.RETRIEVE)
-    ),
+    lpd_service: LoadProfileEngineService = GetLoadProfileEngineServiceDep,
+    user_id: UUID = LoadProfilesRetrievePermissionDep,
 ):
     """
     Get load generation engine data for a specific house.
@@ -104,7 +104,7 @@ async def get_load_generation_engine(
     Args:
         request: The incoming request object.
         house_id: The ID of the house.
-        load_profile_engine_service: Injected load profile engine service instance.
+        lpd_service: Injected load profile engine service instance.
         user_id: The ID of the user making the request (from permission).
 
     Returns:
@@ -114,9 +114,7 @@ async def get_load_generation_engine(
         HTTPException: 404 if data is not found, 500 for unexpected errors.
     """
     try:
-        engine = load_profile_engine_service.get_load_generation_engine(
-            user_id, house_id
-        )
+        engine = lpd_service.get_load_generation_engine(user_id, house_id)
         if engine is None:
             raise HTTPException(
                 status_code=404, detail="Load generation engine data not found"
