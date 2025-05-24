@@ -128,7 +128,7 @@ class LoadProfileDetailsRepository(
     def __init__(self):
         super().__init__(model=LoadProfileDetails)
 
-    def delete_by_profile_id(self, profile_id: UUID) -> int:
+    def delete_by_profile_id(self, profile_id: int) -> int:
         """
         Deletes all load profile details associated with a given profile ID.
         """
@@ -201,7 +201,7 @@ class LoadProfileBuilderItemsRepository(
         super().__init__(model=LoadProfileBuilderItems)
 
     def get_items_by_profile_id(
-        self, profile_id: UUID
+        self, profile_id: int
     ) -> List[LoadProfileBuilderItems]:
         """
         Retrieves all builder items associated with a specific load profile.
@@ -214,7 +214,7 @@ class LoadProfileBuilderItemsRepository(
         """Creates multiple load profile builder items in bulk."""
         self._model.insert_many(items).execute()
 
-    def delete_by_profile_id(self, profile_id: UUID) -> int:
+    def delete_by_profile_id(self, profile_id: int) -> int:
         """
         Deletes all builder items associated with a specific load profile.
         """
@@ -252,7 +252,7 @@ class LoadGenerationEngineRepository(
     def __init__(self):
         super().__init__(model=LoadGenerationEngine)
 
-    def delete_by_profile_id(self, profile_id: UUID) -> int:
+    def delete_by_profile_id(self, profile_id: int) -> int:
         """
         Deletes load generation engine settings for a profile ID.
         """
@@ -276,7 +276,7 @@ class PredefinedTemplatesRepository(
         super().__init__(model=LoadPredefinedTemplates)
 
     def get_by_profile_id(
-        self, profile_id: UUID
+        self, profile_id: int
     ) -> Optional[LoadPredefinedTemplates]:
         """
         Retrieves a predefined template record by its associated profile ID.
@@ -284,7 +284,7 @@ class PredefinedTemplatesRepository(
         return self._model.get_or_none(self._model.profile_id == profile_id)
 
     def create_or_update(
-        self, profile_id: UUID, template_id: UUID
+        self, profile_id: int, template_id: int
     ) -> LoadPredefinedTemplates:
         """
         Creates or updates a predefined template linked to a load profile.

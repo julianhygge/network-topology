@@ -2,7 +2,6 @@
 
 from abc import abstractmethod
 from typing import Any, Dict, List
-from uuid import UUID
 
 from app.data.interfaces.i_repository import IRepository, T
 from app.data.schemas.load_profile.load_profile_schema import (
@@ -19,18 +18,17 @@ class ILoadProfileBuilderRepository(IRepository[T]):
 
     @abstractmethod
     def get_items_by_profile_id(
-        self, profile_id: UUID
+        self, profile_id: int
     ) -> List[LoadProfileBuilderItems]:
         """
         Retrieves all builder items associated with a specific load profile.
 
         Args:
-            profile_id: The UUID of the load profile.
+            profile_id: The int of the load profile.
 
         Returns:
             A list of LoadProfileBuilderItems instances.
         """
-        pass
 
     @abstractmethod
     def create_items_in_bulk(self, items: List[Dict[str, Any]]) -> None:
@@ -40,20 +38,18 @@ class ILoadProfileBuilderRepository(IRepository[T]):
         Args:
             items: A list of dictionaries, each representing an item's data.
         """
-        pass
 
     @abstractmethod
-    def delete_by_profile_id(self, profile_id: UUID) -> int:
+    def delete_by_profile_id(self, profile_id: int) -> int:
         """
         Deletes all builder items associated with a specific load profile.
 
         Args:
-            profile_id: The UUID of the load profile.
+            profile_id: The int of the load profile.
 
         Returns:
             The number of items deleted.
         """
-        pass
 
     @abstractmethod
     def update_items_in_bulk(self, items: List[Dict[str, Any]]) -> None:
@@ -66,4 +62,3 @@ class ILoadProfileBuilderRepository(IRepository[T]):
             items: A list of dictionaries, each representing an item's data
                    including its 'id'.
         """
-        pass

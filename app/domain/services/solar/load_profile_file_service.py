@@ -145,7 +145,7 @@ class LoadProfileFileService:
 
     @staticmethod
     async def _read_file_content(file: UploadFile) -> DataFrame:
-        """Reads content from an uploaded file (Excel or CSV) into a DataFrame."""
+        """Reads content from an file (Excel or CSV) into a DataFrame."""
         filename = file.filename
         if not filename:
             raise ValueError("Uploaded file must have a filename.")
@@ -168,7 +168,7 @@ class LoadProfileFileService:
     def _create_interpolation_array(
         self, min_date: Timestamp, max_date: Timestamp
     ) -> DatetimeIndex:
-        """Create the interpolation timestamp array based on min and max date."""
+        """Create interpolation timestamp array based on min and max date."""
         min_value = min_date.floor("15min")
         days = self._days_in_year(min_date)
         min_value_plus_year = min_value + Timedelta(days=days)

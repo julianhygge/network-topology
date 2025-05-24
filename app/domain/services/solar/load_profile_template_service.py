@@ -1,6 +1,6 @@
 """Service for managing load profiles based on predefined templates."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from pandas import Timedelta
@@ -49,7 +49,7 @@ class LoadProfileTemplateService:
 
     def create_or_update_load_predefined_template(
         self, user_id: UUID, house_id: UUID, template_id: int
-    ) -> Any:  # Assuming LoadPredefinedTemplate
+    ) -> Any:
         """
         Creates or updates a load profile using a predefined template for a
         specific house and user.
@@ -58,12 +58,12 @@ class LoadProfileTemplateService:
             user_id, house_id, LoadSource.Template.value
         )
         return self._load_pre_templates_repo.create_or_update(
-            load_profile.id, template_id
+            cast(int, load_profile.id), template_id
         )
 
     def get_load_predefined_template(
         self, user_id: UUID, house_id: UUID
-    ) -> Optional[Any]:  # Assuming Optional[LoadPredefinedTemplate]
+    ) -> Optional[Any]:
         """
         Retrieves the predefined template configuration for a load profile
         associated with a given house and user.
@@ -83,9 +83,8 @@ class LoadProfileTemplateService:
             None,
         )
         if template_profile:
-            # Assuming get_by_profile_id takes profile_id (UUID)
             return self._load_pre_templates_repo.get_by_profile_id(
-                template_profile.id
+                cast(int, template_profile.id)
             )
         return None
 
@@ -98,7 +97,6 @@ class LoadProfileTemplateService:
         Generates a 15-minute interval load profile for a full year based on a
         predefined template and household people profiles.
         """
-        # Assuming read_or_none is a method in IRepository
         master_template = self._pre_master_templates_repo.read_or_none(
             template_id
         )

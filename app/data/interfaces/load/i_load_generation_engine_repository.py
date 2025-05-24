@@ -1,7 +1,6 @@
 """Module for the load generation engine repository interface."""
 
 from abc import abstractmethod
-from uuid import UUID
 
 from app.data.interfaces.i_repository import IRepository, T
 
@@ -14,14 +13,14 @@ class ILoadGenerationEngineRepository(IRepository[T]):
     """
 
     @abstractmethod
-    def delete_by_profile_id(self, profile_id: UUID) -> int:
+    def delete_by_profile_id(self, profile_id: int) -> int:
         """
         Deletes load generation engine settings associated with a profile ID.
 
         Args:
-            profile_id: The UUID of the load profile.
+            profile_id: The int of the load profile.
 
         Returns:
             The number of records deleted.
         """
-        pass
+

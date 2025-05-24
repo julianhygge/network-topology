@@ -8,7 +8,7 @@ from app.domain.interfaces.solar.i_solar_service import (
     ISolarInstallationService,
 )
 from app.domain.services.base_service import BaseService
-from app.mock_data_servcice import backfill_missing_data
+from app.mock_data_service import backfill_missing_data
 
 
 class SolarInstallationService(
@@ -58,7 +58,7 @@ class SolarInstallationService(
             List[Dict[str, Any]], self.repository.to_dicts(items_objects)
         )
 
-        return item_dict,total_items,total_pages,current_page
+        return item_dict, total_items, total_pages, current_page
 
     def backfill_missing_data(self):
         backfill_missing_data()

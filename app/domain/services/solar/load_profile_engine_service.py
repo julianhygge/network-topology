@@ -1,6 +1,6 @@
 """Service for managing load profile generation engine configurations."""
 
-from typing import Any, Optional
+from typing import Any, Optional, cast
 from uuid import UUID
 
 from app.data.interfaces.load.i_load_generation_engine_repository import (
@@ -28,7 +28,7 @@ class LoadProfileEngineService:
 
     def save_load_generation_engine(
         self, user_id: UUID, house_id: UUID, data: dict
-    ) -> Any:  # Assuming LoadGenerationEngine
+    ) -> Any:
         """
         Saves or updates the load generation engine configuration for a given
         house and user.
@@ -40,7 +40,7 @@ class LoadProfileEngineService:
 
         engine_data = {
             "user_id": user_id,
-            "profile_id": profile_id,  
+            "profile_id": profile_id,
             "type": data["type"],
             "average_kwh": data.get("average_kwh"),
             "average_monthly_bill": data.get("average_monthly_bill"),
@@ -49,7 +49,7 @@ class LoadProfileEngineService:
             "modified_by": user_id,
         }
         self._load_generation_engine_repository.delete_by_profile_id(
-            profile_id
+            cast(int, profile_id)
         )
 
         created_engine_config = self._load_generation_engine_repository.create(
@@ -60,7 +60,7 @@ class LoadProfileEngineService:
 
     def get_load_generation_engine(
         self, user_id: UUID, house_id: UUID
-    ) -> Optional[Any]:  # Assuming Optional[LoadGenerationEngine]
+    ) -> Optional[Any]:
         """
         Retrieves the load generation engine configuration for a given
         house and user.

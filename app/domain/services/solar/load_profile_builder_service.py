@@ -1,6 +1,6 @@
 """Service for managing load profile builder items."""
 
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, cast
 from uuid import UUID
 
 from app.data.interfaces.load.i_load_load_profile_repository import (
@@ -28,7 +28,7 @@ class LoadProfileBuilderService:
 
     def save_load_profile_items(
         self, user_id: UUID, house_id: UUID, items: List[dict]
-    ) -> Tuple[List[Any], UUID]:  # Assuming List[LoadProfileBuilderItem]
+    ) -> Tuple[List[Any], int]:
         """
         Saves (creates, updates, or deletes) load profile items for a given
         house and user.
@@ -40,7 +40,7 @@ class LoadProfileBuilderService:
 
         existing_items = (
             self._load_profile_builder_repository.get_items_by_profile_id(
-                profile_id
+                cast(int, profile_id)
             )
         )
         existing_ids = {item.id for item in existing_items}
@@ -66,7 +66,9 @@ class LoadProfileBuilderService:
 
         if ids_to_delete:
             for item_id_to_delete in ids_to_delete:
-                self._load_profile_builder_repository.delete(item_id_to_delete)
+                self._load_profile_builder_repository.delete(
+                    cast(int, item_id_to_delete)
+                )
         if to_create:
             self._load_profile_builder_repository.create_items_in_bulk(
                 to_create
@@ -79,14 +81,14 @@ class LoadProfileBuilderService:
         # Fetch and return all current items for the profile
         current_items = (
             self._load_profile_builder_repository.get_items_by_profile_id(
-                profile_id
+                cast(int, profile_id)
             )
         )
-        return current_items, profile_id
+        return current_items, cast(int, profile_id)
 
     def get_load_profile_builder_items(
         self, user_id: UUID, house_id: UUID
-    ) -> Tuple[List[Any], UUID]:  # Assuming List[LoadProfileBuilderItem]
+    ) -> Tuple[List[Any], int]:  # Assuming List[LoadProfileBuilderItem]
         """
         Retrieves load profile builder items for a given house and user.
         If no profile exists for the builder source, one is created.
@@ -96,6 +98,6 @@ class LoadProfileBuilderService:
         )
         # Assuming get_items_by_profile_id takes profile_id (UUID)
         items = self._load_profile_builder_repository.get_items_by_profile_id(
-            load_profile.id
+            cast(int, load_profile.id)
         )
-        return items, load_profile.id
+        return items, cast(int, load_profile.id)
