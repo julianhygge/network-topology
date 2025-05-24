@@ -3,11 +3,12 @@ from typing import List
 from uuid import UUID
 
 from app.domain.entities.house_profile import HouseProfile
+from app.domain.entities.node import Node
 
 
 class IDataPreparationService(ABC):
     @abstractmethod
-    def get_house_profile(self, house_id: UUID) -> HouseProfile:
+    def get_house_profile(self, house: Node) -> HouseProfile:
         """Get the solar profile of a house in
         15 minutes intervals for a full year"""
 

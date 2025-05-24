@@ -3,7 +3,7 @@ import io
 import os
 import zipfile
 from datetime import datetime
-from typing import List, Tuple
+from typing import List, Tuple, cast
 from uuid import UUID
 
 from app.data.interfaces.i_repository import IRepository
@@ -20,6 +20,7 @@ from app.data.interfaces.solar.i_solar_repository import (
     ISolarProfileRepository,
 )
 from app.domain.entities.house_profile import HouseProfile
+from app.domain.entities.node import Node
 from app.domain.interfaces.net_topology.i_net_topology_service import (
     INetTopologyService,
 )
@@ -46,16 +47,16 @@ class DataPreparationService(IDataPreparationService):
         self._yearly_solar_reference_repo = yearly_solar_reference_repo
         self._solar_profile_repo = solar_profile_repository
 
-    def get_house_profile(self, house_id: UUID) -> HouseProfile:
+    def get_house_profile(self, house: Node) -> HouseProfile:
         """Get the load and solar profile of a house.
         Assumes load and solar data are sorted and correspond positionally
         for a full year at 15-minute intervals."""
 
         loads_data_tuples: List[Tuple[datetime, float]] = (
-            self._get_loads_by_house_id(house_id)
+            self._get_loads_by_house_id(house.id)
         )
         solar_data_tuples: List[Tuple[datetime, float]] = (
-            self._get_solar_by_house_id(house_id)
+            self._get_solar_by_house_id(house.id)
         )
 
         profile_timestamps: List[datetime] = []
@@ -76,7 +77,8 @@ class DataPreparationService(IDataPreparationService):
             profile_solar_offset_values.append(solar_value - load_value)
 
         return HouseProfile(
-            house_id=house_id,
+            house_id=house.id,
+            house_name=house.name,
             timestamps=profile_timestamps,
             load_values=profile_load_values,
             solar_values=profile_solar_values,
@@ -124,7 +126,7 @@ class DataPreparationService(IDataPreparationService):
         file_paths: List[str] = []
         for profile in house_profiles:
             csv_content = self._create_house_profile_csv_content(profile)
-            file_name = f"house_{profile.house_id}.csv"
+            file_name = f"house_{profile.house_name}.csv"
             file_path = os.path.join(output_directory, file_name)
             try:
                 with open(file_path, "w", newline="") as f:
@@ -133,7 +135,7 @@ class DataPreparationService(IDataPreparationService):
             except IOError as e:
                 raise HyggeException(
                     f"Failed to write CSV for house {profile.house_id}: {e}"
-                )
+                ) from e
         return file_paths
 
     def get_house_profile_csvs_zip_by_substation_id(
@@ -156,15 +158,6 @@ class DataPreparationService(IDataPreparationService):
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
             for file_path in csv_file_paths:
                 zipf.write(file_path, os.path.basename(file_path))
-
-        # Clean up individual CSV files after zipping
-        # for file_path in csv_file_paths:
-        #     try:
-        #         os.remove(file_path)
-        #     except OSError as e:
-        #         # Log this error, but don't let it stop the zip file return
-        #         print(f"Error removing file {file_path}: {e}")
-
         zip_buffer.seek(0)
         return zip_buffer.getvalue()
 
@@ -178,7 +171,7 @@ class DataPreparationService(IDataPreparationService):
             substation_id
         )
 
-        house_profiles = [self.get_house_profile(house.id) for house in houses]
+        house_profiles = [self.get_house_profile(house) for house in houses]
 
         return house_profiles
 
@@ -259,7 +252,10 @@ class DataPreparationService(IDataPreparationService):
 
         # Calculate efficiency adjustments
         efficiency_factor = self._calculate_efficiency_factor(
-            profile.tilt_type, profile.years_since_installation
+            tilt_type=str(profile.tilt_type),
+            years_since_installation=cast(
+                float, profile.years_since_installation
+            ),
         )
 
         return [

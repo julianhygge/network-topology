@@ -20,6 +20,7 @@ class HouseProfile:
     """
 
     house_id: UUID
+    house_name: str
     timestamps: List[datetime]
     load_values: List[float]
     solar_values: List[float]

@@ -6,6 +6,7 @@ from peewee import (
     CharField,
     DateTimeField,
     DoubleField,
+    FloatField,
     ForeignKeyField,
     IntegerField,
     UUIDField,
@@ -27,7 +28,7 @@ class SolarProfile(AuditableBase):
     )
     installed_capacity_kw = DoubleField()
     tilt_type = CharField(max_length=12)
-    years_since_installation = DoubleField()
+    years_since_installation = FloatField()
     simulate_using_different_capacity = BooleanField(null=True)
     capacity_for_simulation_kw = DoubleField()
     available_space_sqft = DoubleField()

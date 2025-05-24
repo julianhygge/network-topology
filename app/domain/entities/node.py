@@ -19,10 +19,10 @@ class Node:
     """Represents a node in the topology."""
 
     active: bool
+    name: str
     node_type: str  # 'substation', 'transformer', or 'house'
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     parent_id: Optional[uuid.UUID] = None
-    name: Optional[str] = None
     nomenclature: Optional[str] = None
     substation_id: Optional[uuid.UUID] = None
     created_by: Optional[uuid.UUID] = None
