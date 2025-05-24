@@ -290,10 +290,6 @@ class Container(containers.DeclarativeContainer):
         repository=_load_profiles_repository,
         load_details_repository=_load_profile_details_repository,
         load_profile_files_repository=_load_profile_files_repository,
-        load_profile_file_service=_load_profile_file_service,
-        load_profile_builder_service=_load_profile_builder_service,
-        load_profile_engine_service=_load_profile_engine_service,
-        load_profile_template_service=_load_profile_template_service,
     )
 
     predefined_template_service = providers.Factory(

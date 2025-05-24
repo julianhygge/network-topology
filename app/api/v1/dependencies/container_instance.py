@@ -24,8 +24,22 @@ from app.domain.interfaces.net_topology.i_net_topology_service import (
 from app.domain.interfaces.simulator_engine.i_data_preparation_service import (
     IDataPreparationService,
 )
+from app.domain.interfaces.solar.i_load_profile_service import (
+    ILoadProfileService,
+)
 from app.domain.services.base_service import BaseService
-from app.domain.services.solar.load_profile_service import LoadProfileService
+from app.domain.services.solar.load_profile_builder_service import (
+    LoadProfileBuilderService,
+)
+from app.domain.services.solar.load_profile_engine_service import (
+    LoadProfileEngineService,
+)
+from app.domain.services.solar.load_profile_file_service import (
+    LoadProfileFileService,
+)
+from app.domain.services.solar.load_profile_template_service import (
+    LoadProfileTemplateService,
+)
 
 c = Container()
 
@@ -105,9 +119,29 @@ def get_solar_installation_service() -> IService:
     return c.solar_installation_service()
 
 
-def get_load_profile_service() -> LoadProfileService:
+def get_load_profile_service() -> ILoadProfileService:
     """Get the load profile service instance."""
     return c.load_profile_service()
+
+
+def get_load_profile_file_service() -> LoadProfileFileService:
+    """Get the load profile file service instance."""
+    return c._load_profile_file_service()
+
+
+def get_load_profile_builder_service() -> LoadProfileBuilderService:
+    """Get the load profile builder service instance."""
+    return c._load_profile_builder_service()
+
+
+def get_load_profile_engine_service() -> LoadProfileEngineService:
+    """Get the load profile engine service instance."""
+    return c._load_profile_engine_service()
+
+
+def get_load_profile_template_service() -> LoadProfileTemplateService:
+    """Get the load profile template service instance."""
+    return c._load_profile_template_service()
 
 
 def get_predefined_template_service() -> IService:
