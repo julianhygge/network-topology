@@ -1,0 +1,2385 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 15.12 (Debian 15.12-1.pgdg120+1)
+-- Dumped by pg_dump version 17.4
+
+-- Started on 2025-05-27 23:29:13
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 12 (class 2615 OID 280706)
+-- Name: auth; Type: SCHEMA; Schema: -; Owner: p2p-simulator-user
+--
+
+CREATE SCHEMA auth;
+
+
+ALTER SCHEMA auth OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 11 (class 2615 OID 280707)
+-- Name: load; Type: SCHEMA; Schema: -; Owner: p2p-simulator-user
+--
+
+CREATE SCHEMA load;
+
+
+ALTER SCHEMA load OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 10 (class 2615 OID 280708)
+-- Name: master; Type: SCHEMA; Schema: -; Owner: p2p-simulator-user
+--
+
+CREATE SCHEMA master;
+
+
+ALTER SCHEMA master OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 9 (class 2615 OID 2200)
+-- Name: public; Type: SCHEMA; Schema: -; Owner: p2p-simulator-user
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA public OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 13 (class 2615 OID 282642)
+-- Name: simulation_engine; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA simulation_engine;
+
+
+ALTER SCHEMA simulation_engine OWNER TO postgres;
+
+--
+-- TOC entry 5 (class 2615 OID 280709)
+-- Name: solar; Type: SCHEMA; Schema: -; Owner: p2p-simulator-user
+--
+
+CREATE SCHEMA solar;
+
+
+ALTER SCHEMA solar OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 8 (class 2615 OID 280710)
+-- Name: topology; Type: SCHEMA; Schema: -; Owner: p2p-simulator-user
+--
+
+CREATE SCHEMA topology;
+
+
+ALTER SCHEMA topology OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 7 (class 2615 OID 280711)
+-- Name: transactional; Type: SCHEMA; Schema: -; Owner: p2p-simulator-user
+--
+
+CREATE SCHEMA transactional;
+
+
+ALTER SCHEMA transactional OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 2 (class 3079 OID 280712)
+-- Name: uuid-ossp; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+
+
+--
+-- TOC entry 3735 (class 0 OID 0)
+-- Dependencies: 2
+-- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
+
+
+--
+-- TOC entry 286 (class 1255 OID 281413)
+-- Name: update_modified_column(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.update_modified_column() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.modified_on = NOW() AT TIME ZONE 'utc';
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_modified_column() OWNER TO postgres;
+
+--
+-- TOC entry 299 (class 1255 OID 281348)
+-- Name: get_yearly_profile(integer); Type: FUNCTION; Schema: solar; Owner: postgres
+--
+
+CREATE FUNCTION solar.get_yearly_profile(site_id_param integer) RETURNS TABLE(month integer, day integer, hour integer, minute integer, avg_generation_per_kw numeric)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    WITH valid_days AS (
+        -- Find days with valid data
+        SELECT DISTINCT
+            gp.site_id,
+            gp.day_date
+        FROM
+            solar.daily_generation_profile gp
+        WHERE
+            gp.site_id = site_id_param
+            AND solar.is_complete_day(site_id_param, gp.day_date)
+    ),
+    day_coverage AS (
+        -- Calculate coverage for each month-day combination across years
+        SELECT
+            EXTRACT(MONTH FROM day_date) AS month,
+            EXTRACT(DAY FROM day_date) AS day,
+            COUNT(DISTINCT EXTRACT(YEAR FROM day_date)) AS year_count
+        FROM
+            valid_days
+        GROUP BY
+            EXTRACT(MONTH FROM day_date), EXTRACT(DAY FROM day_date)
+    )
+    -- Get average generation for each time point from valid days
+    SELECT
+        EXTRACT(MONTH FROM gp.day_date)::INTEGER AS month,
+        EXTRACT(DAY FROM gp.day_date)::INTEGER AS day,
+        gp.hour::INTEGER,
+        gp.minute::INTEGER,
+        AVG(gp.avg_generation_per_kw)::NUMERIC AS avg_generation_per_kw
+    FROM
+        solar.daily_generation_profile gp
+    JOIN
+        valid_days vd ON gp.site_id = vd.site_id AND gp.day_date = vd.day_date
+    JOIN
+        day_coverage dc ON dc.month = EXTRACT(MONTH FROM gp.day_date) AND dc.day = EXTRACT(DAY FROM gp.day_date)
+    GROUP BY
+        EXTRACT(MONTH FROM gp.day_date), EXTRACT(DAY FROM gp.day_date), gp.hour, gp.minute
+    ORDER BY
+        month, day, hour, minute;
+END;
+$$;
+
+
+ALTER FUNCTION solar.get_yearly_profile(site_id_param integer) OWNER TO postgres;
+
+--
+-- TOC entry 287 (class 1255 OID 281338)
+-- Name: is_complete_day(integer, date); Type: FUNCTION; Schema: solar; Owner: postgres
+--
+
+CREATE FUNCTION solar.is_complete_day(site_id_param integer, day_date date) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    expected_count INTEGER;
+    actual_count INTEGER;
+    zero_count INTEGER;
+BEGIN
+    -- For 15-minute intervals, we expect 96 records per day (24 hours * 4 readings per hour)
+    expected_count := 96;
+    
+    -- Count actual records for this day
+    SELECT COUNT(*) INTO actual_count
+    FROM solar.site_production_data
+    WHERE site_id = site_id_param
+    AND timestamp::date = day_date;
+    
+    -- Count records with zero production
+    SELECT COUNT(*) INTO zero_count
+    FROM solar.site_production_data
+    WHERE site_id = site_id_param
+    AND timestamp::date = day_date
+    AND production = 0;
+    
+    -- Return true if we have at least 90% of expected records and not all are zeros
+    RETURN actual_count >= (expected_count * 0.9) AND zero_count < expected_count;
+END;
+$$;
+
+
+ALTER FUNCTION solar.is_complete_day(site_id_param integer, day_date date) OWNER TO postgres;
+
+--
+-- TOC entry 285 (class 1255 OID 280723)
+-- Name: update_account_type(); Type: FUNCTION; Schema: transactional; Owner: p2p-simulator-user
+--
+
+CREATE FUNCTION transactional.update_account_type() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- Update the account type based on the group name
+    UPDATE transactional.accounts
+    SET type = (SELECT name FROM auth.groups WHERE id = NEW.group_id)
+    WHERE id = NEW.user_record_id;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION transactional.update_account_type() OWNER TO "p2p-simulator-user";
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 222 (class 1259 OID 280724)
+-- Name: auth_attempts; Type: TABLE; Schema: auth; Owner: p2p-simulator-user
+--
+
+CREATE TABLE auth.auth_attempts (
+    txn_id uuid NOT NULL,
+    created_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    modified_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    created_by uuid,
+    modified_by uuid,
+    phone_number character varying(12),
+    country_code character varying(4),
+    otp character varying(6),
+    state character varying(50),
+    user_record_id uuid,
+    state_desc character varying(100),
+    verification_attempt_count integer,
+    gateway_send_otp_res_status character varying(10),
+    gateway_send_otp_res_body jsonb,
+    claims_issued character varying(100),
+    backing_txn_id uuid
+);
+
+
+ALTER TABLE auth.auth_attempts OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 223 (class 1259 OID 280731)
+-- Name: authenticated_sessions; Type: TABLE; Schema: auth; Owner: p2p-simulator-user
+--
+
+CREATE TABLE auth.authenticated_sessions (
+    id uuid NOT NULL,
+    created_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    modified_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    validity_start timestamp without time zone,
+    validity_end timestamp without time zone,
+    created_by uuid,
+    modified_by uuid,
+    record_id uuid,
+    user_record_id uuid,
+    group_id bigint,
+    auth_attempt_id uuid
+);
+
+
+ALTER TABLE auth.authenticated_sessions OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 224 (class 1259 OID 280736)
+-- Name: group_role_rel; Type: TABLE; Schema: auth; Owner: p2p-simulator-user
+--
+
+CREATE TABLE auth.group_role_rel (
+    group_id bigint NOT NULL,
+    role_id bigint NOT NULL
+);
+
+
+ALTER TABLE auth.group_role_rel OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 225 (class 1259 OID 280739)
+-- Name: groups; Type: TABLE; Schema: auth; Owner: p2p-simulator-user
+--
+
+CREATE TABLE auth.groups (
+    id bigint NOT NULL,
+    name character varying(50),
+    description character varying(100)
+);
+
+
+ALTER TABLE auth.groups OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 226 (class 1259 OID 280742)
+-- Name: permissions; Type: TABLE; Schema: auth; Owner: p2p-simulator-user
+--
+
+CREATE TABLE auth.permissions (
+    id bigint NOT NULL,
+    name character varying(255),
+    description character varying(100),
+    resource_name character varying(100),
+    can_retrieve boolean,
+    can_search boolean,
+    can_create boolean,
+    can_update boolean,
+    can_delete boolean
+);
+
+
+ALTER TABLE auth.permissions OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 227 (class 1259 OID 280745)
+-- Name: role_permission_rel; Type: TABLE; Schema: auth; Owner: p2p-simulator-user
+--
+
+CREATE TABLE auth.role_permission_rel (
+    role_id bigint NOT NULL,
+    permission_id bigint NOT NULL
+);
+
+
+ALTER TABLE auth.role_permission_rel OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 228 (class 1259 OID 280748)
+-- Name: roles; Type: TABLE; Schema: auth; Owner: p2p-simulator-user
+--
+
+CREATE TABLE auth.roles (
+    id bigint NOT NULL,
+    name character varying(50),
+    description character varying(100)
+);
+
+
+ALTER TABLE auth.roles OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 229 (class 1259 OID 280751)
+-- Name: user_group_rel_seq; Type: SEQUENCE; Schema: auth; Owner: p2p-simulator-user
+--
+
+CREATE SEQUENCE auth.user_group_rel_seq
+    START WITH 3
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE auth.user_group_rel_seq OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 230 (class 1259 OID 280752)
+-- Name: user_group_rel; Type: TABLE; Schema: auth; Owner: p2p-simulator-user
+--
+
+CREATE TABLE auth.user_group_rel (
+    id bigint DEFAULT nextval('auth.user_group_rel_seq'::regclass) NOT NULL,
+    active boolean,
+    created_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    modified_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    validity_start timestamp without time zone,
+    validity_end timestamp without time zone,
+    created_by uuid,
+    modified_by uuid,
+    user_record_id uuid,
+    group_id bigint
+);
+
+
+ALTER TABLE auth.user_group_rel OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 231 (class 1259 OID 280758)
+-- Name: load_generation_engine; Type: TABLE; Schema: load; Owner: p2p-simulator-user
+--
+
+CREATE TABLE load.load_generation_engine (
+    id integer NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_by uuid NOT NULL,
+    modified_by uuid NOT NULL,
+    created_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    modified_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    user_id uuid NOT NULL,
+    profile_id integer NOT NULL,
+    type character varying(7),
+    average_kwh numeric(10,3),
+    average_monthly_bill numeric(10,3),
+    max_demand_kw numeric(10,3)
+);
+
+
+ALTER TABLE load.load_generation_engine OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 232 (class 1259 OID 280764)
+-- Name: generation_engine_id_seq; Type: SEQUENCE; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE load.load_generation_engine ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME load.generation_engine_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- TOC entry 233 (class 1259 OID 280765)
+-- Name: load_predefined_templates; Type: TABLE; Schema: load; Owner: p2p-simulator-user
+--
+
+CREATE TABLE load.load_predefined_templates (
+    id integer NOT NULL,
+    profile_id integer NOT NULL,
+    template_id integer NOT NULL
+);
+
+
+ALTER TABLE load.load_predefined_templates OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 234 (class 1259 OID 280768)
+-- Name: load_predefined_templates_id_seq; Type: SEQUENCE; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE load.load_predefined_templates ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME load.load_predefined_templates_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- TOC entry 235 (class 1259 OID 280769)
+-- Name: load_profile_builder_items; Type: TABLE; Schema: load; Owner: p2p-simulator-user
+--
+
+CREATE TABLE load.load_profile_builder_items (
+    id integer NOT NULL,
+    profile_id integer,
+    rating_watts integer NOT NULL,
+    quantity integer NOT NULL,
+    hours integer NOT NULL,
+    created_by uuid NOT NULL,
+    modified_by uuid NOT NULL,
+    created_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    modified_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    electrical_device_id integer,
+    active boolean DEFAULT true NOT NULL
+);
+
+
+ALTER TABLE load.load_profile_builder_items OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 236 (class 1259 OID 280775)
+-- Name: load_profile_builder_items_id_seq; Type: SEQUENCE; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE load.load_profile_builder_items ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME load.load_profile_builder_items_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- TOC entry 237 (class 1259 OID 280776)
+-- Name: load_profile_details; Type: TABLE; Schema: load; Owner: p2p-simulator-user
+--
+
+CREATE TABLE load.load_profile_details (
+    id integer NOT NULL,
+    profile_id integer NOT NULL,
+    "timestamp" timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    consumption_kwh numeric(10,3) NOT NULL
+);
+
+
+ALTER TABLE load.load_profile_details OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 238 (class 1259 OID 280780)
+-- Name: load_profile_details_id_seq; Type: SEQUENCE; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE load.load_profile_details ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME load.load_profile_details_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- TOC entry 239 (class 1259 OID 280781)
+-- Name: load_profile_files; Type: TABLE; Schema: load; Owner: p2p-simulator-user
+--
+
+CREATE TABLE load.load_profile_files (
+    id integer NOT NULL,
+    profile_id integer NOT NULL,
+    filename character varying(255) NOT NULL,
+    content bytea NOT NULL,
+    created_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE load.load_profile_files OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 240 (class 1259 OID 280787)
+-- Name: load_profile_files_id_seq; Type: SEQUENCE; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE load.load_profile_files ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME load.load_profile_files_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- TOC entry 241 (class 1259 OID 280788)
+-- Name: load_profiles; Type: TABLE; Schema: load; Owner: p2p-simulator-user
+--
+
+CREATE TABLE load.load_profiles (
+    id integer NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_by uuid NOT NULL,
+    modified_by uuid NOT NULL,
+    created_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    modified_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    user_id uuid NOT NULL,
+    source character varying(15) NOT NULL,
+    profile_name character varying(50) NOT NULL,
+    public boolean NOT NULL,
+    house_id uuid
+);
+
+
+ALTER TABLE load.load_profiles OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 242 (class 1259 OID 280794)
+-- Name: load_profiles_id_seq; Type: SEQUENCE; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE load.load_profiles ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME load.load_profiles_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- TOC entry 266 (class 1259 OID 281396)
+-- Name: template_consumption_patterns; Type: TABLE; Schema: load; Owner: p2p-simulator-user
+--
+
+CREATE TABLE load.template_consumption_patterns (
+    id integer NOT NULL,
+    template_id integer NOT NULL,
+    "timestamp" timestamp without time zone NOT NULL,
+    consumption_kwh double precision NOT NULL,
+    created_on timestamp without time zone DEFAULT (now() AT TIME ZONE 'utc'::text),
+    modified_on timestamp without time zone DEFAULT (now() AT TIME ZONE 'utc'::text)
+);
+
+
+ALTER TABLE load.template_consumption_patterns OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 3736 (class 0 OID 0)
+-- Dependencies: 266
+-- Name: TABLE template_consumption_patterns; Type: COMMENT; Schema: load; Owner: p2p-simulator-user
+--
+
+COMMENT ON TABLE load.template_consumption_patterns IS 'Stores 15-minute interval consumption patterns for predefined templates. Each template has a single day of 15-minute intervals that can be repeated to generate longer time periods.';
+
+
+--
+-- TOC entry 3737 (class 0 OID 0)
+-- Dependencies: 266
+-- Name: COLUMN template_consumption_patterns.id; Type: COMMENT; Schema: load; Owner: p2p-simulator-user
+--
+
+COMMENT ON COLUMN load.template_consumption_patterns.id IS 'Primary key';
+
+
+--
+-- TOC entry 3738 (class 0 OID 0)
+-- Dependencies: 266
+-- Name: COLUMN template_consumption_patterns.template_id; Type: COMMENT; Schema: load; Owner: p2p-simulator-user
+--
+
+COMMENT ON COLUMN load.template_consumption_patterns.template_id IS 'Foreign key to master.predefined_templates';
+
+
+--
+-- TOC entry 3739 (class 0 OID 0)
+-- Dependencies: 266
+-- Name: COLUMN template_consumption_patterns."timestamp"; Type: COMMENT; Schema: load; Owner: p2p-simulator-user
+--
+
+COMMENT ON COLUMN load.template_consumption_patterns."timestamp" IS 'Timestamp for the consumption data point (time within a day)';
+
+
+--
+-- TOC entry 3740 (class 0 OID 0)
+-- Dependencies: 266
+-- Name: COLUMN template_consumption_patterns.consumption_kwh; Type: COMMENT; Schema: load; Owner: p2p-simulator-user
+--
+
+COMMENT ON COLUMN load.template_consumption_patterns.consumption_kwh IS 'Energy consumption in kilowatt-hours for this time interval';
+
+
+--
+-- TOC entry 3741 (class 0 OID 0)
+-- Dependencies: 266
+-- Name: COLUMN template_consumption_patterns.created_on; Type: COMMENT; Schema: load; Owner: p2p-simulator-user
+--
+
+COMMENT ON COLUMN load.template_consumption_patterns.created_on IS 'Timestamp when the record was created';
+
+
+--
+-- TOC entry 3742 (class 0 OID 0)
+-- Dependencies: 266
+-- Name: COLUMN template_consumption_patterns.modified_on; Type: COMMENT; Schema: load; Owner: p2p-simulator-user
+--
+
+COMMENT ON COLUMN load.template_consumption_patterns.modified_on IS 'Timestamp when the record was last modified';
+
+
+--
+-- TOC entry 265 (class 1259 OID 281395)
+-- Name: template_consumption_patterns_id_seq; Type: SEQUENCE; Schema: load; Owner: p2p-simulator-user
+--
+
+CREATE SEQUENCE load.template_consumption_patterns_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE load.template_consumption_patterns_id_seq OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 3743 (class 0 OID 0)
+-- Dependencies: 265
+-- Name: template_consumption_patterns_id_seq; Type: SEQUENCE OWNED BY; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER SEQUENCE load.template_consumption_patterns_id_seq OWNED BY load.template_consumption_patterns.id;
+
+
+--
+-- TOC entry 243 (class 1259 OID 280795)
+-- Name: appliances_id_seq; Type: SEQUENCE; Schema: master; Owner: p2p-simulator-user
+--
+
+CREATE SEQUENCE master.appliances_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE master.appliances_id_seq OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 244 (class 1259 OID 280796)
+-- Name: electrical_appliances; Type: TABLE; Schema: master; Owner: p2p-simulator-user
+--
+
+CREATE TABLE master.electrical_appliances (
+    id numeric DEFAULT nextval('master.appliances_id_seq'::regclass) NOT NULL,
+    name character varying(50) NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_by uuid NOT NULL,
+    modified_by uuid NOT NULL,
+    created_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    modified_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE master.electrical_appliances OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 268 (class 1259 OID 282439)
+-- Name: net_metering_policy_types; Type: TABLE; Schema: master; Owner: postgres
+--
+
+CREATE TABLE master.net_metering_policy_types (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    policy_code character varying(50) NOT NULL,
+    display_name character varying(100) NOT NULL,
+    description text
+);
+
+
+ALTER TABLE master.net_metering_policy_types OWNER TO postgres;
+
+--
+-- TOC entry 245 (class 1259 OID 280805)
+-- Name: predefined_templates; Type: TABLE; Schema: master; Owner: p2p-simulator-user
+--
+
+CREATE TABLE master.predefined_templates (
+    id integer NOT NULL,
+    name character varying(50) NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_by uuid NOT NULL,
+    modified_by uuid NOT NULL,
+    created_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    modified_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    power_kw double precision
+);
+
+
+ALTER TABLE master.predefined_templates OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 246 (class 1259 OID 280811)
+-- Name: predefined_templates_id_seq; Type: SEQUENCE; Schema: master; Owner: p2p-simulator-user
+--
+
+ALTER TABLE master.predefined_templates ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME master.predefined_templates_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- TOC entry 267 (class 1259 OID 282429)
+-- Name: simulation_algorithm_types; Type: TABLE; Schema: master; Owner: postgres
+--
+
+CREATE TABLE master.simulation_algorithm_types (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    algorithm_code character varying(50) NOT NULL,
+    display_name character varying(100) NOT NULL,
+    description text
+);
+
+
+ALTER TABLE master.simulation_algorithm_types OWNER TO postgres;
+
+--
+-- TOC entry 271 (class 1259 OID 282695)
+-- Name: gross_metering_policy_params; Type: TABLE; Schema: simulation_engine; Owner: postgres
+--
+
+CREATE TABLE simulation_engine.gross_metering_policy_params (
+    simulation_run_id uuid NOT NULL,
+    import_retail_price_per_kwh numeric(10,4) NOT NULL,
+    export_wholesale_price_per_kwh numeric(10,4) NOT NULL
+);
+
+
+ALTER TABLE simulation_engine.gross_metering_policy_params OWNER TO postgres;
+
+--
+-- TOC entry 273 (class 1259 OID 282717)
+-- Name: house_bills; Type: TABLE; Schema: simulation_engine; Owner: postgres
+--
+
+CREATE TABLE simulation_engine.house_bills (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    simulation_run_id uuid NOT NULL,
+    house_node_id uuid NOT NULL,
+    total_energy_imported_kwh numeric(12,4),
+    total_energy_exported_kwh numeric(12,4),
+    net_energy_balance_kwh numeric(12,4),
+    calculated_bill_amount numeric(12,2),
+    bill_details jsonb
+);
+
+
+ALTER TABLE simulation_engine.house_bills OWNER TO postgres;
+
+--
+-- TOC entry 270 (class 1259 OID 282685)
+-- Name: net_metering_policy_params; Type: TABLE; Schema: simulation_engine; Owner: postgres
+--
+
+CREATE TABLE simulation_engine.net_metering_policy_params (
+    simulation_run_id uuid NOT NULL,
+    retail_price_per_kwh numeric(10,4) NOT NULL
+);
+
+
+ALTER TABLE simulation_engine.net_metering_policy_params OWNER TO postgres;
+
+--
+-- TOC entry 269 (class 1259 OID 282643)
+-- Name: simulation_runs; Type: TABLE; Schema: simulation_engine; Owner: postgres
+--
+
+CREATE TABLE simulation_engine.simulation_runs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    run_name character varying(255),
+    topology_root_node_id uuid NOT NULL,
+    simulation_algorithm_type_id uuid NOT NULL,
+    billing_cycle_month integer,
+    billing_cycle_year integer,
+    status character varying(50) DEFAULT 'PENDING'::character varying,
+    created_by uuid,
+    created_on timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    modified_on timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    simulation_start_timestamp timestamp with time zone,
+    simulation_end_timestamp timestamp with time zone
+);
+
+
+ALTER TABLE simulation_engine.simulation_runs OWNER TO postgres;
+
+--
+-- TOC entry 274 (class 1259 OID 282741)
+-- Name: simulation_selected_policies; Type: TABLE; Schema: simulation_engine; Owner: postgres
+--
+
+CREATE TABLE simulation_engine.simulation_selected_policies (
+    simulation_run_id uuid NOT NULL,
+    net_metering_policy_type_id uuid NOT NULL,
+    fixed_charge_tariff_rate_per_kw numeric(10,4) DEFAULT 210.0,
+    fac_charge_per_kwh_imported numeric(10,4) DEFAULT 0.0,
+    tax_rate_on_energy_charges numeric(5,4) DEFAULT 0.09
+);
+
+
+ALTER TABLE simulation_engine.simulation_selected_policies OWNER TO postgres;
+
+--
+-- TOC entry 272 (class 1259 OID 282705)
+-- Name: tou_rate_policy_params; Type: TABLE; Schema: simulation_engine; Owner: postgres
+--
+
+CREATE TABLE simulation_engine.tou_rate_policy_params (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    simulation_run_id uuid NOT NULL,
+    time_period_label character varying(100),
+    start_time time without time zone,
+    end_time time without time zone,
+    import_retail_rate_per_kwh numeric(10,4) NOT NULL,
+    export_wholesale_rate_per_kwh numeric(10,4) NOT NULL
+);
+
+
+ALTER TABLE simulation_engine.tou_rate_policy_params OWNER TO postgres;
+
+--
+-- TOC entry 262 (class 1259 OID 281325)
+-- Name: site_production_data; Type: TABLE; Schema: solar; Owner: p2p-simulator-user
+--
+
+CREATE TABLE solar.site_production_data (
+    id integer NOT NULL,
+    site_id integer NOT NULL,
+    "timestamp" timestamp without time zone NOT NULL,
+    production double precision NOT NULL
+);
+
+
+ALTER TABLE solar.site_production_data OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 261 (class 1259 OID 281324)
+-- Name: site_production_data_id_seq; Type: SEQUENCE; Schema: solar; Owner: p2p-simulator-user
+--
+
+CREATE SEQUENCE solar.site_production_data_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE solar.site_production_data_id_seq OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 3744 (class 0 OID 0)
+-- Dependencies: 261
+-- Name: site_production_data_id_seq; Type: SEQUENCE OWNED BY; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER SEQUENCE solar.site_production_data_id_seq OWNED BY solar.site_production_data.id;
+
+
+--
+-- TOC entry 264 (class 1259 OID 281350)
+-- Name: site_reference_year_production; Type: TABLE; Schema: solar; Owner: p2p-simulator-user
+--
+
+CREATE TABLE solar.site_reference_year_production (
+    id integer NOT NULL,
+    site_id integer NOT NULL,
+    "timestamp" timestamp without time zone NOT NULL,
+    per_kw_generation double precision NOT NULL
+);
+
+
+ALTER TABLE solar.site_reference_year_production OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 263 (class 1259 OID 281349)
+-- Name: site_reference_year_production_id_seq; Type: SEQUENCE; Schema: solar; Owner: p2p-simulator-user
+--
+
+CREATE SEQUENCE solar.site_reference_year_production_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE solar.site_reference_year_production_id_seq OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 3745 (class 0 OID 0)
+-- Dependencies: 263
+-- Name: site_reference_year_production_id_seq; Type: SEQUENCE OWNED BY; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER SEQUENCE solar.site_reference_year_production_id_seq OWNED BY solar.site_reference_year_production.id;
+
+
+--
+-- TOC entry 260 (class 1259 OID 281202)
+-- Name: solar_installations; Type: TABLE; Schema: solar; Owner: p2p-simulator-user
+--
+
+CREATE TABLE solar.solar_installations (
+    site_id integer NOT NULL,
+    name character varying(255),
+    status character varying(255),
+    peak_power character varying(255),
+    type character varying(255),
+    zip_code character varying(255),
+    address character varying(255),
+    country character varying(255),
+    state character varying(255),
+    city character varying(255),
+    installation_date character varying(255),
+    last_reporting_time character varying(255),
+    location character varying(255),
+    secondary_address character varying(255),
+    updated_on timestamp without time zone,
+    has_csv boolean DEFAULT false NOT NULL,
+    uploaded_on timestamp without time zone,
+    profile_updated_on timestamp without time zone
+);
+
+
+ALTER TABLE solar.solar_installations OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 247 (class 1259 OID 280812)
+-- Name: solar_item_profile; Type: TABLE; Schema: solar; Owner: p2p-simulator-user
+--
+
+CREATE TABLE solar.solar_item_profile (
+    id integer NOT NULL,
+    solar_profile_id uuid NOT NULL,
+    production_kwh double precision NOT NULL,
+    "timestamp" timestamp with time zone NOT NULL,
+    voltage_v double precision,
+    current_amps double precision
+);
+
+
+ALTER TABLE solar.solar_item_profile OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 248 (class 1259 OID 280815)
+-- Name: solar_item_profile_id_seq; Type: SEQUENCE; Schema: solar; Owner: p2p-simulator-user
+--
+
+CREATE SEQUENCE solar.solar_item_profile_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE solar.solar_item_profile_id_seq OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 3746 (class 0 OID 0)
+-- Dependencies: 248
+-- Name: solar_item_profile_id_seq; Type: SEQUENCE OWNED BY; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER SEQUENCE solar.solar_item_profile_id_seq OWNED BY solar.solar_item_profile.id;
+
+
+--
+-- TOC entry 249 (class 1259 OID 280816)
+-- Name: solar_profile; Type: TABLE; Schema: solar; Owner: p2p-simulator-user
+--
+
+CREATE TABLE solar.solar_profile (
+    id uuid NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_by uuid NOT NULL,
+    created_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    modified_by uuid NOT NULL,
+    modified_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    solar_available boolean NOT NULL,
+    installed_capacity_kw numeric,
+    tilt_type character varying(12) NOT NULL,
+    years_since_installation real,
+    available_space_sqft numeric,
+    simulate_using_different_capacity boolean,
+    capacity_for_simulation_kw numeric,
+    house_id uuid NOT NULL,
+    simulated_available_space_sqft numeric
+);
+
+
+ALTER TABLE solar.solar_profile OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 250 (class 1259 OID 280824)
+-- Name: accounts; Type: TABLE; Schema: transactional; Owner: p2p-simulator-user
+--
+
+CREATE TABLE transactional.accounts (
+    id uuid NOT NULL,
+    active boolean NOT NULL,
+    created_on timestamp without time zone DEFAULT now(),
+    modified_on timestamp without time zone DEFAULT now(),
+    validity_start timestamp without time zone NOT NULL,
+    validity_end timestamp without time zone NOT NULL,
+    record_id uuid NOT NULL,
+    alias_name character varying(50),
+    created_by uuid,
+    modified_by uuid,
+    type character varying(50),
+    phone_number character varying(12) DEFAULT '8429020287'::character varying
+);
+
+
+ALTER TABLE transactional.accounts OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 251 (class 1259 OID 280830)
+-- Name: house_flags; Type: TABLE; Schema: transactional; Owner: p2p-simulator-user
+--
+
+CREATE TABLE transactional.house_flags (
+    id integer NOT NULL,
+    house_id uuid NOT NULL,
+    flag_type character varying(50),
+    flag_value character varying(50) NOT NULL,
+    created_by uuid,
+    created_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    modified_on timestamp without time zone NOT NULL,
+    modified_by uuid,
+    active boolean NOT NULL
+);
+
+
+ALTER TABLE transactional.house_flags OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 252 (class 1259 OID 280834)
+-- Name: house_flags_id_seq; Type: SEQUENCE; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE transactional.house_flags ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME transactional.house_flags_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- TOC entry 253 (class 1259 OID 280835)
+-- Name: houses; Type: TABLE; Schema: transactional; Owner: p2p-simulator-user
+--
+
+CREATE TABLE transactional.houses (
+    id uuid NOT NULL,
+    load_profile text,
+    has_solar boolean,
+    solar_kw numeric(10,2),
+    house_type character varying(50),
+    connection_kw numeric(10,2),
+    has_battery boolean,
+    battery_type character varying(50),
+    battery_peak_charging_rate numeric(10,2),
+    battery_peak_discharging_rate numeric(10,2),
+    battery_total_kwh numeric(10,2),
+    created_on timestamp without time zone DEFAULT now(),
+    modified_on timestamp without time zone DEFAULT now(),
+    created_by uuid,
+    modified_by uuid,
+    active boolean DEFAULT true,
+    voluntary_storage boolean,
+    node_id uuid
+);
+
+
+ALTER TABLE transactional.houses OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 254 (class 1259 OID 280843)
+-- Name: localities; Type: TABLE; Schema: transactional; Owner: p2p-simulator-user
+--
+
+CREATE TABLE transactional.localities (
+    id uuid NOT NULL,
+    name character varying(100) NOT NULL,
+    created_on timestamp without time zone DEFAULT now(),
+    modified_on timestamp without time zone DEFAULT now(),
+    created_by uuid,
+    modified_by uuid,
+    active boolean DEFAULT true
+);
+
+
+ALTER TABLE transactional.localities OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 255 (class 1259 OID 280849)
+-- Name: nodes; Type: TABLE; Schema: transactional; Owner: p2p-simulator-user
+--
+
+CREATE TABLE transactional.nodes (
+    id uuid NOT NULL,
+    parent_id uuid,
+    node_type character varying(50) NOT NULL,
+    created_on timestamp without time zone DEFAULT now(),
+    modified_on timestamp without time zone DEFAULT now(),
+    created_by uuid,
+    modified_by uuid,
+    active boolean DEFAULT true,
+    name character varying(50),
+    substation_id uuid,
+    nomenclature character varying(50)
+);
+
+
+ALTER TABLE transactional.nodes OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 256 (class 1259 OID 280855)
+-- Name: substations; Type: TABLE; Schema: transactional; Owner: p2p-simulator-user
+--
+
+CREATE TABLE transactional.substations (
+    id uuid NOT NULL,
+    locality_id uuid NOT NULL,
+    name character varying(100) NOT NULL,
+    created_on timestamp without time zone DEFAULT now(),
+    modified_on timestamp without time zone DEFAULT now(),
+    created_by uuid,
+    modified_by uuid,
+    active boolean DEFAULT true
+);
+
+
+ALTER TABLE transactional.substations OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 257 (class 1259 OID 280861)
+-- Name: test1; Type: TABLE; Schema: transactional; Owner: p2p-simulator-user
+--
+
+CREATE TABLE transactional.test1 (
+)
+INHERITS (transactional.nodes);
+
+
+ALTER TABLE transactional.test1 OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 258 (class 1259 OID 280867)
+-- Name: transformers; Type: TABLE; Schema: transactional; Owner: p2p-simulator-user
+--
+
+CREATE TABLE transactional.transformers (
+    id uuid NOT NULL,
+    max_capacity_kw numeric(10,2),
+    allow_export boolean DEFAULT false,
+    created_on timestamp without time zone DEFAULT now(),
+    modified_on timestamp without time zone DEFAULT now(),
+    created_by uuid,
+    modified_by uuid,
+    active boolean DEFAULT true,
+    node_id uuid,
+    name character varying(255),
+    backward_efficiency numeric(5,2),
+    primary_ampacity numeric(5,2),
+    secondary_ampacity numeric(5,2),
+    years_of_service integer,
+    forward_efficiency numeric(5,2),
+    digital_twin_model boolean DEFAULT false
+);
+
+
+ALTER TABLE transactional.transformers OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 259 (class 1259 OID 280875)
+-- Name: users; Type: TABLE; Schema: transactional; Owner: p2p-simulator-user
+--
+
+CREATE TABLE transactional.users (
+    id uuid NOT NULL,
+    active boolean NOT NULL,
+    created_on timestamp without time zone NOT NULL,
+    modified_on timestamp without time zone NOT NULL,
+    validity_start timestamp without time zone NOT NULL,
+    validity_end timestamp without time zone NOT NULL,
+    record_id uuid NOT NULL,
+    user_name character varying(50),
+    phone_number character varying(12) NOT NULL,
+    email character varying(50),
+    address character varying(50),
+    created_by uuid NOT NULL,
+    modified_by uuid NOT NULL,
+    country_code character varying(4),
+    name character varying(50) NOT NULL,
+    state character varying(50) NOT NULL,
+    locality character varying(50),
+    meter_number character varying(50),
+    connection_number character varying(50),
+    utility_id uuid,
+    pin_code character varying(8),
+    last_name character varying(50)
+);
+
+
+ALTER TABLE transactional.users OWNER TO "p2p-simulator-user";
+
+--
+-- TOC entry 3419 (class 2604 OID 281399)
+-- Name: template_consumption_patterns id; Type: DEFAULT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.template_consumption_patterns ALTER COLUMN id SET DEFAULT nextval('load.template_consumption_patterns_id_seq'::regclass);
+
+
+--
+-- TOC entry 3417 (class 2604 OID 281328)
+-- Name: site_production_data id; Type: DEFAULT; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY solar.site_production_data ALTER COLUMN id SET DEFAULT nextval('solar.site_production_data_id_seq'::regclass);
+
+
+--
+-- TOC entry 3418 (class 2604 OID 281353)
+-- Name: site_reference_year_production id; Type: DEFAULT; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY solar.site_reference_year_production ALTER COLUMN id SET DEFAULT nextval('solar.site_reference_year_production_id_seq'::regclass);
+
+
+--
+-- TOC entry 3388 (class 2604 OID 280880)
+-- Name: solar_item_profile id; Type: DEFAULT; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY solar.solar_item_profile ALTER COLUMN id SET DEFAULT nextval('solar.solar_item_profile_id_seq'::regclass);
+
+
+--
+-- TOC entry 3408 (class 2604 OID 280881)
+-- Name: test1 created_on; Type: DEFAULT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.test1 ALTER COLUMN created_on SET DEFAULT now();
+
+
+--
+-- TOC entry 3409 (class 2604 OID 280882)
+-- Name: test1 modified_on; Type: DEFAULT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.test1 ALTER COLUMN modified_on SET DEFAULT now();
+
+
+--
+-- TOC entry 3410 (class 2604 OID 280883)
+-- Name: test1 active; Type: DEFAULT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.test1 ALTER COLUMN active SET DEFAULT true;
+
+
+--
+-- TOC entry 3434 (class 2606 OID 280930)
+-- Name: auth_attempts auth_attempts_pkey; Type: CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.auth_attempts
+    ADD CONSTRAINT auth_attempts_pkey PRIMARY KEY (txn_id);
+
+
+--
+-- TOC entry 3436 (class 2606 OID 280932)
+-- Name: authenticated_sessions authenticated_sessions_pkey; Type: CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.authenticated_sessions
+    ADD CONSTRAINT authenticated_sessions_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3438 (class 2606 OID 280934)
+-- Name: group_role_rel group_role_rel_pkey; Type: CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.group_role_rel
+    ADD CONSTRAINT group_role_rel_pkey PRIMARY KEY (group_id, role_id);
+
+
+--
+-- TOC entry 3440 (class 2606 OID 280936)
+-- Name: groups groups_pkey; Type: CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.groups
+    ADD CONSTRAINT groups_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3442 (class 2606 OID 280938)
+-- Name: permissions permissions_pkey; Type: CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.permissions
+    ADD CONSTRAINT permissions_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3444 (class 2606 OID 280940)
+-- Name: role_permission_rel role_permission_rel_pkey; Type: CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.role_permission_rel
+    ADD CONSTRAINT role_permission_rel_pkey PRIMARY KEY (role_id, permission_id);
+
+
+--
+-- TOC entry 3446 (class 2606 OID 280942)
+-- Name: roles roles_pkey; Type: CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.roles
+    ADD CONSTRAINT roles_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3448 (class 2606 OID 280944)
+-- Name: load_generation_engine load_generation_engine_pkey; Type: CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_generation_engine
+    ADD CONSTRAINT load_generation_engine_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3450 (class 2606 OID 280946)
+-- Name: load_predefined_templates load_predefined_templates_pkey; Type: CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_predefined_templates
+    ADD CONSTRAINT load_predefined_templates_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3452 (class 2606 OID 280948)
+-- Name: load_profile_builder_items load_profile_builder_items_pkey; Type: CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_profile_builder_items
+    ADD CONSTRAINT load_profile_builder_items_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3454 (class 2606 OID 280950)
+-- Name: load_profiles load_profiles_pkey; Type: CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_profiles
+    ADD CONSTRAINT load_profiles_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3498 (class 2606 OID 281403)
+-- Name: template_consumption_patterns template_consumption_patterns_pkey; Type: CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.template_consumption_patterns
+    ADD CONSTRAINT template_consumption_patterns_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3500 (class 2606 OID 281405)
+-- Name: template_consumption_patterns uq_template_consumption_patterns_template_timestamp; Type: CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.template_consumption_patterns
+    ADD CONSTRAINT uq_template_consumption_patterns_template_timestamp UNIQUE (template_id, "timestamp");
+
+
+--
+-- TOC entry 3456 (class 2606 OID 280952)
+-- Name: electrical_appliances electrical_devices_pkey; Type: CONSTRAINT; Schema: master; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY master.electrical_appliances
+    ADD CONSTRAINT electrical_devices_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3506 (class 2606 OID 282446)
+-- Name: net_metering_policy_types net_metering_policy_types_pkey; Type: CONSTRAINT; Schema: master; Owner: postgres
+--
+
+ALTER TABLE ONLY master.net_metering_policy_types
+    ADD CONSTRAINT net_metering_policy_types_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3508 (class 2606 OID 282448)
+-- Name: net_metering_policy_types net_metering_policy_types_policy_code_key; Type: CONSTRAINT; Schema: master; Owner: postgres
+--
+
+ALTER TABLE ONLY master.net_metering_policy_types
+    ADD CONSTRAINT net_metering_policy_types_policy_code_key UNIQUE (policy_code);
+
+
+--
+-- TOC entry 3458 (class 2606 OID 280954)
+-- Name: predefined_templates predefined_templates_pkey; Type: CONSTRAINT; Schema: master; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY master.predefined_templates
+    ADD CONSTRAINT predefined_templates_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3502 (class 2606 OID 282438)
+-- Name: simulation_algorithm_types simulation_algorithm_types_algorithm_code_key; Type: CONSTRAINT; Schema: master; Owner: postgres
+--
+
+ALTER TABLE ONLY master.simulation_algorithm_types
+    ADD CONSTRAINT simulation_algorithm_types_algorithm_code_key UNIQUE (algorithm_code);
+
+
+--
+-- TOC entry 3504 (class 2606 OID 282436)
+-- Name: simulation_algorithm_types simulation_algorithm_types_pkey; Type: CONSTRAINT; Schema: master; Owner: postgres
+--
+
+ALTER TABLE ONLY master.simulation_algorithm_types
+    ADD CONSTRAINT simulation_algorithm_types_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3516 (class 2606 OID 282699)
+-- Name: gross_metering_policy_params gross_metering_policy_params_pkey; Type: CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.gross_metering_policy_params
+    ADD CONSTRAINT gross_metering_policy_params_pkey PRIMARY KEY (simulation_run_id);
+
+
+--
+-- TOC entry 3521 (class 2606 OID 282724)
+-- Name: house_bills house_bills_pkey; Type: CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.house_bills
+    ADD CONSTRAINT house_bills_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3523 (class 2606 OID 282726)
+-- Name: house_bills house_bills_simulation_run_id_house_node_id_key; Type: CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.house_bills
+    ADD CONSTRAINT house_bills_simulation_run_id_house_node_id_key UNIQUE (simulation_run_id, house_node_id);
+
+
+--
+-- TOC entry 3514 (class 2606 OID 282689)
+-- Name: net_metering_policy_params net_metering_policy_params_pkey; Type: CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.net_metering_policy_params
+    ADD CONSTRAINT net_metering_policy_params_pkey PRIMARY KEY (simulation_run_id);
+
+
+--
+-- TOC entry 3512 (class 2606 OID 282651)
+-- Name: simulation_runs simulation_runs_pkey; Type: CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.simulation_runs
+    ADD CONSTRAINT simulation_runs_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3528 (class 2606 OID 282748)
+-- Name: simulation_selected_policies simulation_selected_policies_pkey; Type: CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.simulation_selected_policies
+    ADD CONSTRAINT simulation_selected_policies_pkey PRIMARY KEY (simulation_run_id);
+
+
+--
+-- TOC entry 3519 (class 2606 OID 282710)
+-- Name: tou_rate_policy_params tou_rate_policy_params_pkey; Type: CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.tou_rate_policy_params
+    ADD CONSTRAINT tou_rate_policy_params_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3486 (class 2606 OID 281330)
+-- Name: site_production_data site_production_data_pkey; Type: CONSTRAINT; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY solar.site_production_data
+    ADD CONSTRAINT site_production_data_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3490 (class 2606 OID 281355)
+-- Name: site_reference_year_production site_reference_year_production_pkey; Type: CONSTRAINT; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY solar.site_reference_year_production
+    ADD CONSTRAINT site_reference_year_production_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3484 (class 2606 OID 281208)
+-- Name: solar_installations solar_installations_pkey; Type: CONSTRAINT; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY solar.solar_installations
+    ADD CONSTRAINT solar_installations_pkey PRIMARY KEY (site_id);
+
+
+--
+-- TOC entry 3460 (class 2606 OID 280956)
+-- Name: solar_item_profile solar_item_profile_pkey; Type: CONSTRAINT; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY solar.solar_item_profile
+    ADD CONSTRAINT solar_item_profile_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3462 (class 2606 OID 280958)
+-- Name: solar_profile solar_profile_pkey; Type: CONSTRAINT; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY solar.solar_profile
+    ADD CONSTRAINT solar_profile_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3494 (class 2606 OID 281416)
+-- Name: site_reference_year_production unique_site_timestamp; Type: CONSTRAINT; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY solar.site_reference_year_production
+    ADD CONSTRAINT unique_site_timestamp UNIQUE (site_id, "timestamp");
+
+
+--
+-- TOC entry 3464 (class 2606 OID 280960)
+-- Name: accounts accounts_pkey; Type: CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.accounts
+    ADD CONSTRAINT accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3466 (class 2606 OID 280962)
+-- Name: house_flags house_flags_pkey; Type: CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.house_flags
+    ADD CONSTRAINT house_flags_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3470 (class 2606 OID 280964)
+-- Name: houses houses_pkey; Type: CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.houses
+    ADD CONSTRAINT houses_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3472 (class 2606 OID 280966)
+-- Name: localities localities_pkey; Type: CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.localities
+    ADD CONSTRAINT localities_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3474 (class 2606 OID 280968)
+-- Name: nodes nodes_pkey; Type: CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.nodes
+    ADD CONSTRAINT nodes_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3476 (class 2606 OID 280970)
+-- Name: substations substations_pkey; Type: CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.substations
+    ADD CONSTRAINT substations_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3478 (class 2606 OID 280972)
+-- Name: transformers transformers_pkey; Type: CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.transformers
+    ADD CONSTRAINT transformers_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3480 (class 2606 OID 280974)
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3482 (class 2606 OID 280976)
+-- Name: users users_record_id_key; Type: CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.users
+    ADD CONSTRAINT users_record_id_key UNIQUE (record_id);
+
+
+--
+-- TOC entry 3495 (class 1259 OID 281411)
+-- Name: idx_template_consumption_patterns_template_id; Type: INDEX; Schema: load; Owner: p2p-simulator-user
+--
+
+CREATE INDEX idx_template_consumption_patterns_template_id ON load.template_consumption_patterns USING btree (template_id);
+
+
+--
+-- TOC entry 3496 (class 1259 OID 281412)
+-- Name: idx_template_consumption_patterns_timestamp; Type: INDEX; Schema: load; Owner: p2p-simulator-user
+--
+
+CREATE INDEX idx_template_consumption_patterns_timestamp ON load.template_consumption_patterns USING btree ("timestamp");
+
+
+--
+-- TOC entry 3524 (class 1259 OID 282738)
+-- Name: idx_house_bills_house_node_id; Type: INDEX; Schema: simulation_engine; Owner: postgres
+--
+
+CREATE INDEX idx_house_bills_house_node_id ON simulation_engine.house_bills USING btree (house_node_id);
+
+
+--
+-- TOC entry 3525 (class 1259 OID 282737)
+-- Name: idx_house_bills_simulation_run_id; Type: INDEX; Schema: simulation_engine; Owner: postgres
+--
+
+CREATE INDEX idx_house_bills_simulation_run_id ON simulation_engine.house_bills USING btree (simulation_run_id);
+
+
+--
+-- TOC entry 3509 (class 1259 OID 282668)
+-- Name: idx_simulation_runs_algorithm_id; Type: INDEX; Schema: simulation_engine; Owner: postgres
+--
+
+CREATE INDEX idx_simulation_runs_algorithm_id ON simulation_engine.simulation_runs USING btree (simulation_algorithm_type_id);
+
+
+--
+-- TOC entry 3510 (class 1259 OID 282667)
+-- Name: idx_simulation_runs_topology_id; Type: INDEX; Schema: simulation_engine; Owner: postgres
+--
+
+CREATE INDEX idx_simulation_runs_topology_id ON simulation_engine.simulation_runs USING btree (topology_root_node_id);
+
+
+--
+-- TOC entry 3526 (class 1259 OID 282759)
+-- Name: idx_simulation_selected_policies_policy_type_id; Type: INDEX; Schema: simulation_engine; Owner: postgres
+--
+
+CREATE INDEX idx_simulation_selected_policies_policy_type_id ON simulation_engine.simulation_selected_policies USING btree (net_metering_policy_type_id);
+
+
+--
+-- TOC entry 3517 (class 1259 OID 282716)
+-- Name: idx_tou_rate_policy_params_simulation_run_id; Type: INDEX; Schema: simulation_engine; Owner: postgres
+--
+
+CREATE INDEX idx_tou_rate_policy_params_simulation_run_id ON simulation_engine.tou_rate_policy_params USING btree (simulation_run_id);
+
+
+--
+-- TOC entry 3487 (class 1259 OID 281336)
+-- Name: siteproductiondata_site_id; Type: INDEX; Schema: solar; Owner: p2p-simulator-user
+--
+
+CREATE INDEX siteproductiondata_site_id ON solar.site_production_data USING btree (site_id);
+
+
+--
+-- TOC entry 3488 (class 1259 OID 281337)
+-- Name: siteproductiondata_site_id_timestamp; Type: INDEX; Schema: solar; Owner: p2p-simulator-user
+--
+
+CREATE UNIQUE INDEX siteproductiondata_site_id_timestamp ON solar.site_production_data USING btree (site_id, "timestamp");
+
+
+--
+-- TOC entry 3491 (class 1259 OID 281361)
+-- Name: sitereferenceyearproduction_site_id; Type: INDEX; Schema: solar; Owner: p2p-simulator-user
+--
+
+CREATE INDEX sitereferenceyearproduction_site_id ON solar.site_reference_year_production USING btree (site_id);
+
+
+--
+-- TOC entry 3492 (class 1259 OID 281362)
+-- Name: sitereferenceyearproduction_site_id_reference_timestamp; Type: INDEX; Schema: solar; Owner: p2p-simulator-user
+--
+
+CREATE UNIQUE INDEX sitereferenceyearproduction_site_id_reference_timestamp ON solar.site_reference_year_production USING btree (site_id, "timestamp");
+
+
+--
+-- TOC entry 3467 (class 1259 OID 280977)
+-- Name: idx_house_flags_flag_type; Type: INDEX; Schema: transactional; Owner: p2p-simulator-user
+--
+
+CREATE INDEX idx_house_flags_flag_type ON transactional.house_flags USING btree (flag_type);
+
+
+--
+-- TOC entry 3468 (class 1259 OID 280978)
+-- Name: idx_house_flags_house_id; Type: INDEX; Schema: transactional; Owner: p2p-simulator-user
+--
+
+CREATE INDEX idx_house_flags_house_id ON transactional.house_flags USING btree (house_id);
+
+
+--
+-- TOC entry 3586 (class 2620 OID 280979)
+-- Name: user_group_rel update_account_type_trigger; Type: TRIGGER; Schema: auth; Owner: p2p-simulator-user
+--
+
+CREATE TRIGGER update_account_type_trigger AFTER UPDATE OF group_id ON auth.user_group_rel FOR EACH ROW WHEN ((old.group_id IS DISTINCT FROM new.group_id)) EXECUTE FUNCTION transactional.update_account_type();
+
+
+--
+-- TOC entry 3587 (class 2620 OID 281414)
+-- Name: template_consumption_patterns update_template_consumption_patterns_modified; Type: TRIGGER; Schema: load; Owner: p2p-simulator-user
+--
+
+CREATE TRIGGER update_template_consumption_patterns_modified BEFORE UPDATE ON load.template_consumption_patterns FOR EACH ROW EXECUTE FUNCTION public.update_modified_column();
+
+
+--
+-- TOC entry 3539 (class 2606 OID 280980)
+-- Name: user_group_rel account_fk; Type: FK CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.user_group_rel
+    ADD CONSTRAINT account_fk FOREIGN KEY (user_record_id) REFERENCES transactional.accounts(id) NOT VALID;
+
+
+--
+-- TOC entry 3529 (class 2606 OID 280985)
+-- Name: auth_attempts auth_attempts_created_by_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.auth_attempts
+    ADD CONSTRAINT auth_attempts_created_by_fkey FOREIGN KEY (created_by) REFERENCES transactional.accounts(id) NOT VALID;
+
+
+--
+-- TOC entry 3530 (class 2606 OID 280990)
+-- Name: auth_attempts auth_attempts_modified_by_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.auth_attempts
+    ADD CONSTRAINT auth_attempts_modified_by_fkey FOREIGN KEY (modified_by) REFERENCES transactional.accounts(id) NOT VALID;
+
+
+--
+-- TOC entry 3531 (class 2606 OID 280995)
+-- Name: auth_attempts auth_attempts_user_record_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.auth_attempts
+    ADD CONSTRAINT auth_attempts_user_record_id_fkey FOREIGN KEY (user_record_id) REFERENCES transactional.accounts(id) NOT VALID;
+
+
+--
+-- TOC entry 3532 (class 2606 OID 281000)
+-- Name: authenticated_sessions authenticated_sessions_created_by_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.authenticated_sessions
+    ADD CONSTRAINT authenticated_sessions_created_by_fkey FOREIGN KEY (created_by) REFERENCES transactional.users(record_id) NOT VALID;
+
+
+--
+-- TOC entry 3533 (class 2606 OID 281005)
+-- Name: authenticated_sessions authenticated_sessions_modified_by_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.authenticated_sessions
+    ADD CONSTRAINT authenticated_sessions_modified_by_fkey FOREIGN KEY (modified_by) REFERENCES transactional.users(record_id) NOT VALID;
+
+
+--
+-- TOC entry 3534 (class 2606 OID 281010)
+-- Name: authenticated_sessions authenticated_sessions_user_record_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.authenticated_sessions
+    ADD CONSTRAINT authenticated_sessions_user_record_id_fkey FOREIGN KEY (record_id) REFERENCES transactional.users(record_id) NOT VALID;
+
+
+--
+-- TOC entry 3535 (class 2606 OID 281015)
+-- Name: group_role_rel group_role_rel_group_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.group_role_rel
+    ADD CONSTRAINT group_role_rel_group_id_fkey FOREIGN KEY (group_id) REFERENCES auth.groups(id);
+
+
+--
+-- TOC entry 3536 (class 2606 OID 281020)
+-- Name: group_role_rel group_role_rel_role_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.group_role_rel
+    ADD CONSTRAINT group_role_rel_role_id_fkey FOREIGN KEY (role_id) REFERENCES auth.roles(id);
+
+
+--
+-- TOC entry 3537 (class 2606 OID 281025)
+-- Name: role_permission_rel role_permission_rel_permission_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.role_permission_rel
+    ADD CONSTRAINT role_permission_rel_permission_id_fkey FOREIGN KEY (permission_id) REFERENCES auth.permissions(id);
+
+
+--
+-- TOC entry 3538 (class 2606 OID 281030)
+-- Name: role_permission_rel role_permission_rel_role_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY auth.role_permission_rel
+    ADD CONSTRAINT role_permission_rel_role_id_fkey FOREIGN KEY (role_id) REFERENCES auth.roles(id);
+
+
+--
+-- TOC entry 3575 (class 2606 OID 281406)
+-- Name: template_consumption_patterns fk_template_consumption_patterns_template; Type: FK CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.template_consumption_patterns
+    ADD CONSTRAINT fk_template_consumption_patterns_template FOREIGN KEY (template_id) REFERENCES master.predefined_templates(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3543 (class 2606 OID 281035)
+-- Name: load_profile_builder_items load_profile_builder_items_electrical_d_id_fkey; Type: FK CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_profile_builder_items
+    ADD CONSTRAINT load_profile_builder_items_electrical_d_id_fkey FOREIGN KEY (electrical_device_id) REFERENCES master.electrical_appliances(id) NOT VALID;
+
+
+--
+-- TOC entry 3544 (class 2606 OID 281040)
+-- Name: load_profile_builder_items load_profile_builder_items_profile_id_fkey; Type: FK CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_profile_builder_items
+    ADD CONSTRAINT load_profile_builder_items_profile_id_fkey FOREIGN KEY (profile_id) REFERENCES load.load_profiles(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3540 (class 2606 OID 281045)
+-- Name: load_generation_engine load_profile_fk; Type: FK CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_generation_engine
+    ADD CONSTRAINT load_profile_fk FOREIGN KEY (profile_id) REFERENCES load.load_profiles(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3547 (class 2606 OID 281050)
+-- Name: load_profiles load_profiles_created_by_fkey; Type: FK CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_profiles
+    ADD CONSTRAINT load_profiles_created_by_fkey FOREIGN KEY (created_by) REFERENCES transactional.users(id);
+
+
+--
+-- TOC entry 3548 (class 2606 OID 281055)
+-- Name: load_profiles load_profiles_house_id_fkey; Type: FK CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_profiles
+    ADD CONSTRAINT load_profiles_house_id_fkey FOREIGN KEY (house_id) REFERENCES transactional.nodes(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3549 (class 2606 OID 281060)
+-- Name: load_profiles load_profiles_modified_by_fkey; Type: FK CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_profiles
+    ADD CONSTRAINT load_profiles_modified_by_fkey FOREIGN KEY (modified_by) REFERENCES transactional.users(id);
+
+
+--
+-- TOC entry 3550 (class 2606 OID 281065)
+-- Name: load_profiles load_profiles_user_id_fkey; Type: FK CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_profiles
+    ADD CONSTRAINT load_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES transactional.users(id);
+
+
+--
+-- TOC entry 3546 (class 2606 OID 281070)
+-- Name: load_profile_files profile_fk; Type: FK CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_profile_files
+    ADD CONSTRAINT profile_fk FOREIGN KEY (profile_id) REFERENCES load.load_profiles(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3545 (class 2606 OID 281075)
+-- Name: load_profile_details profile_fk; Type: FK CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_profile_details
+    ADD CONSTRAINT profile_fk FOREIGN KEY (profile_id) REFERENCES load.load_profiles(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3541 (class 2606 OID 281080)
+-- Name: load_predefined_templates profile_fk; Type: FK CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_predefined_templates
+    ADD CONSTRAINT profile_fk FOREIGN KEY (profile_id) REFERENCES load.load_profiles(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3542 (class 2606 OID 281085)
+-- Name: load_predefined_templates template_fk; Type: FK CONSTRAINT; Schema: load; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY load.load_predefined_templates
+    ADD CONSTRAINT template_fk FOREIGN KEY (template_id) REFERENCES master.predefined_templates(id) NOT VALID;
+
+
+--
+-- TOC entry 3576 (class 2606 OID 282662)
+-- Name: simulation_runs fk_created_by; Type: FK CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.simulation_runs
+    ADD CONSTRAINT fk_created_by FOREIGN KEY (created_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3582 (class 2606 OID 282732)
+-- Name: house_bills fk_house_node; Type: FK CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.house_bills
+    ADD CONSTRAINT fk_house_node FOREIGN KEY (house_node_id) REFERENCES transactional.nodes(id);
+
+
+--
+-- TOC entry 3584 (class 2606 OID 282754)
+-- Name: simulation_selected_policies fk_net_metering_policy_type; Type: FK CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.simulation_selected_policies
+    ADD CONSTRAINT fk_net_metering_policy_type FOREIGN KEY (net_metering_policy_type_id) REFERENCES master.net_metering_policy_types(id);
+
+
+--
+-- TOC entry 3577 (class 2606 OID 282657)
+-- Name: simulation_runs fk_simulation_algorithm_type; Type: FK CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.simulation_runs
+    ADD CONSTRAINT fk_simulation_algorithm_type FOREIGN KEY (simulation_algorithm_type_id) REFERENCES master.simulation_algorithm_types(id);
+
+
+--
+-- TOC entry 3579 (class 2606 OID 282690)
+-- Name: net_metering_policy_params fk_simulation_run; Type: FK CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.net_metering_policy_params
+    ADD CONSTRAINT fk_simulation_run FOREIGN KEY (simulation_run_id) REFERENCES simulation_engine.simulation_runs(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3580 (class 2606 OID 282700)
+-- Name: gross_metering_policy_params fk_simulation_run; Type: FK CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.gross_metering_policy_params
+    ADD CONSTRAINT fk_simulation_run FOREIGN KEY (simulation_run_id) REFERENCES simulation_engine.simulation_runs(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3581 (class 2606 OID 282711)
+-- Name: tou_rate_policy_params fk_simulation_run; Type: FK CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.tou_rate_policy_params
+    ADD CONSTRAINT fk_simulation_run FOREIGN KEY (simulation_run_id) REFERENCES simulation_engine.simulation_runs(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3585 (class 2606 OID 282749)
+-- Name: simulation_selected_policies fk_simulation_run; Type: FK CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.simulation_selected_policies
+    ADD CONSTRAINT fk_simulation_run FOREIGN KEY (simulation_run_id) REFERENCES simulation_engine.simulation_runs(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3583 (class 2606 OID 282727)
+-- Name: house_bills fk_simulation_run_bill; Type: FK CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.house_bills
+    ADD CONSTRAINT fk_simulation_run_bill FOREIGN KEY (simulation_run_id) REFERENCES simulation_engine.simulation_runs(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3578 (class 2606 OID 282652)
+-- Name: simulation_runs fk_topology_root_node; Type: FK CONSTRAINT; Schema: simulation_engine; Owner: postgres
+--
+
+ALTER TABLE ONLY simulation_engine.simulation_runs
+    ADD CONSTRAINT fk_topology_root_node FOREIGN KEY (topology_root_node_id) REFERENCES transactional.nodes(id);
+
+
+--
+-- TOC entry 3573 (class 2606 OID 281331)
+-- Name: site_production_data site_production_data_site_id_fkey; Type: FK CONSTRAINT; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY solar.site_production_data
+    ADD CONSTRAINT site_production_data_site_id_fkey FOREIGN KEY (site_id) REFERENCES solar.solar_installations(site_id);
+
+
+--
+-- TOC entry 3574 (class 2606 OID 281356)
+-- Name: site_reference_year_production site_reference_year_production_site_id_fkey; Type: FK CONSTRAINT; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY solar.site_reference_year_production
+    ADD CONSTRAINT site_reference_year_production_site_id_fkey FOREIGN KEY (site_id) REFERENCES solar.solar_installations(site_id);
+
+
+--
+-- TOC entry 3551 (class 2606 OID 281090)
+-- Name: solar_item_profile solar_item_profile_solar_profile_id_fkey; Type: FK CONSTRAINT; Schema: solar; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY solar.solar_item_profile
+    ADD CONSTRAINT solar_item_profile_solar_profile_id_fkey FOREIGN KEY (solar_profile_id) REFERENCES solar.solar_profile(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3552 (class 2606 OID 281095)
+-- Name: accounts accounts_created_by_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.accounts
+    ADD CONSTRAINT accounts_created_by_fkey FOREIGN KEY (created_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3553 (class 2606 OID 281100)
+-- Name: accounts accounts_modified_by_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.accounts
+    ADD CONSTRAINT accounts_modified_by_fkey FOREIGN KEY (modified_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3554 (class 2606 OID 281105)
+-- Name: house_flags fk_house; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.house_flags
+    ADD CONSTRAINT fk_house FOREIGN KEY (house_id) REFERENCES transactional.houses(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3555 (class 2606 OID 281110)
+-- Name: houses houses_created_by_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.houses
+    ADD CONSTRAINT houses_created_by_fkey FOREIGN KEY (created_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3556 (class 2606 OID 281115)
+-- Name: houses houses_modified_by_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.houses
+    ADD CONSTRAINT houses_modified_by_fkey FOREIGN KEY (modified_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3557 (class 2606 OID 281120)
+-- Name: houses houses_node_id_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.houses
+    ADD CONSTRAINT houses_node_id_fkey FOREIGN KEY (id) REFERENCES transactional.nodes(id) ON DELETE CASCADE NOT VALID;
+
+
+--
+-- TOC entry 3558 (class 2606 OID 281125)
+-- Name: localities localities_created_by_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.localities
+    ADD CONSTRAINT localities_created_by_fkey FOREIGN KEY (created_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3559 (class 2606 OID 281130)
+-- Name: localities localities_modified_by_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.localities
+    ADD CONSTRAINT localities_modified_by_fkey FOREIGN KEY (modified_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3560 (class 2606 OID 281135)
+-- Name: nodes nodes_created_by_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.nodes
+    ADD CONSTRAINT nodes_created_by_fkey FOREIGN KEY (created_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3561 (class 2606 OID 281140)
+-- Name: nodes nodes_modified_by_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.nodes
+    ADD CONSTRAINT nodes_modified_by_fkey FOREIGN KEY (modified_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3562 (class 2606 OID 281145)
+-- Name: nodes nodes_parent_id_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.nodes
+    ADD CONSTRAINT nodes_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES transactional.nodes(id) ON DELETE CASCADE NOT VALID;
+
+
+--
+-- TOC entry 3563 (class 2606 OID 281150)
+-- Name: nodes nodes_substation_id_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.nodes
+    ADD CONSTRAINT nodes_substation_id_fkey FOREIGN KEY (substation_id) REFERENCES transactional.substations(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3564 (class 2606 OID 281155)
+-- Name: substations substations_created_by_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.substations
+    ADD CONSTRAINT substations_created_by_fkey FOREIGN KEY (created_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3565 (class 2606 OID 281160)
+-- Name: substations substations_locality_id_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.substations
+    ADD CONSTRAINT substations_locality_id_fkey FOREIGN KEY (locality_id) REFERENCES transactional.localities(id);
+
+
+--
+-- TOC entry 3566 (class 2606 OID 281165)
+-- Name: substations substations_modified_by_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.substations
+    ADD CONSTRAINT substations_modified_by_fkey FOREIGN KEY (modified_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3567 (class 2606 OID 281170)
+-- Name: test1 test; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.test1
+    ADD CONSTRAINT test FOREIGN KEY (parent_id) REFERENCES transactional.nodes(id);
+
+
+--
+-- TOC entry 3568 (class 2606 OID 281175)
+-- Name: transformers transformers_created_by_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.transformers
+    ADD CONSTRAINT transformers_created_by_fkey FOREIGN KEY (created_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3569 (class 2606 OID 281180)
+-- Name: transformers transformers_modified_by_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.transformers
+    ADD CONSTRAINT transformers_modified_by_fkey FOREIGN KEY (modified_by) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3570 (class 2606 OID 281185)
+-- Name: transformers transformers_node_id_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.transformers
+    ADD CONSTRAINT transformers_node_id_fkey FOREIGN KEY (id) REFERENCES transactional.nodes(id) ON DELETE CASCADE NOT VALID;
+
+
+--
+-- TOC entry 3571 (class 2606 OID 281190)
+-- Name: users user_account_id_fk; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.users
+    ADD CONSTRAINT user_account_id_fk FOREIGN KEY (id) REFERENCES transactional.accounts(id);
+
+
+--
+-- TOC entry 3572 (class 2606 OID 281195)
+-- Name: users users_record_id_fkey; Type: FK CONSTRAINT; Schema: transactional; Owner: p2p-simulator-user
+--
+
+ALTER TABLE ONLY transactional.users
+    ADD CONSTRAINT users_record_id_fkey FOREIGN KEY (record_id) REFERENCES transactional.users(id);
+
+
+-- Completed on 2025-05-27 23:29:19
+
+--
+-- PostgreSQL database dump complete
+--
+
