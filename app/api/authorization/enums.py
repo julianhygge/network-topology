@@ -17,6 +17,7 @@ class Resources(enum.Enum):
     ELECTRICALS = "electricals"
     LOAD_PROFILE_DETAILS = "load_profile_details"
     LOAD_PROFILES = "load_profiles"
+    SIMULATION = "simulation"
 
 
 class Permission(enum.Enum):

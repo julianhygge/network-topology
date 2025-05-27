@@ -157,3 +157,15 @@ def get_mqtt_service() -> IMqttService:
 def get_flag_service() -> BaseService[HouseFlag]:
     """Get the flag service instance."""
     return c.flag_service()
+
+def get_simulation_algorithm_service()->IService:
+    """Get Simulation Algorithm instance"""
+    return c.simulation_algorithm_service()
+
+def get_net_metering_algorithm_service()->IService:
+    """Get Net Metering Algorithm instance"""
+    return c.net_metering_algorithm_service()
+
+def get_simulation_runs_service()->IService:
+    """Get Net Metering Algorithm instance"""
+    return c.simulation_runs_service()

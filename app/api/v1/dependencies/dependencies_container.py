@@ -40,8 +40,9 @@ from app.data.repositories.topology.topology_repository import (
 from app.data.schemas.hygge_database import HyggeDatabase
 from app.data.schemas.master.master_schema import (
     ElectricalAppliances,
-    PredefinedTemplates,
+    PredefinedTemplates, SimulationAlgorithm, NetMeteringAlgorithm,
 )
+from app.data.schemas.simulation.simulation_runs_schema import SimulationRuns
 from app.data.schemas.solar.solar_schema import SiteRefYearProduction
 from app.data.schemas.transactional.topology_schema import (
     House,
@@ -167,6 +168,18 @@ class Container(containers.DeclarativeContainer):
         PredefinedTemplatesRepository
     )
 
+    _simulation_algorithm_repository = providers.Singleton(
+        BaseRepository[SimulationAlgorithm], SimulationAlgorithm
+    )
+
+    _net_metering_algorithm_repository = providers.Singleton(
+        BaseRepository[NetMeteringAlgorithm], NetMeteringAlgorithm
+    )
+
+    _simulation_runs_repository = providers.Singleton(
+        BaseRepository[SimulationRuns], SimulationRuns
+    )
+
     _template_patterns_repository = providers.Singleton(
         TemplateConsumptionPatternsRepository
     )
@@ -263,6 +276,18 @@ class Container(containers.DeclarativeContainer):
 
     electrical_appliances_service = providers.Singleton(
         BaseService, repository=_electrical_appliances_repo
+    )
+
+    simulation_algorithm_service = providers.Singleton(
+        BaseService, repository=_simulation_algorithm_repository
+    )
+
+    net_metering_algorithm_service = providers.Singleton(
+        BaseService, repository=_net_metering_algorithm_repository
+    )
+
+    simulation_runs_service = providers.Singleton(
+        BaseService, repository=_simulation_runs_repository
     )
 
     solar_profile_service = providers.Singleton(

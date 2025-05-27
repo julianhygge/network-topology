@@ -11,6 +11,7 @@ from app.api.v1.resources.electrical_devices.electrical_appliances import (
     appliances_router,
 )
 from app.api.v1.resources.load_profile.load_profile import load_router
+from app.api.v1.resources.simulation.simulation import simulation_router
 from app.api.v1.resources.solar.solar import solar_router
 from app.api.v1.resources.topology.breadcrumb import breadcrumb_router
 from app.api.v1.resources.topology.flags import flag_router
@@ -47,6 +48,7 @@ def add_routes(cc_app: FastAPI):
     cc_app.include_router(appliances_router, prefix=f"{version_1}appliances")
     cc_app.include_router(solar_router, prefix=f"{version_1}solar")
     cc_app.include_router(flag_router, prefix=f"{version_1}flags")
+    cc_app.include_router(simulation_router, prefix=f"{version_1}simulation")
 
 
 app = FastAPI(
@@ -64,4 +66,6 @@ app.servers = hygge_servers
 add_app_middleware(app)
 add_routes(app)
 
- 
+if __name__ == '__main__':
+    import uvicorn
+    uvicorn.run(app, port=8022, host='localhost')
