@@ -28,7 +28,7 @@ class SimulationRuns(BaseModel):
     created_on = DateTimeField(default=datetime.datetime.utcnow)
     modified_on = DateTimeField(default=datetime.datetime.utcnow)
     simulation_start_timestamp = DateTimeField()
-    simulation_end_timestamp = DateTimeField
+    simulation_end_timestamp = DateTimeField()
 
     class Meta:
         schema = "simulation_engine"

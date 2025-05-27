@@ -12,3 +12,12 @@ class SimulationRunsRequestModel(BaseModel):
     status: str = Field(..., example="Completed")
     simulation_start_timestamp: datetime = Field(..., example="2023-02-02 00:00:00")
     simulation_end_timestamp: datetime = Field(..., example="2023-02-02 00:00:00")
+
+class NetMeteringRequestModel(BaseModel):
+    simulation_run_id: UUID = Field(..., example="94522a0a-c8f1-40f8-a2e5-9aed2dc55555")
+    retail_price_per_kwh: float = Field(..., example=5.2)
+
+class GrossMeteringRequestModel(BaseModel):
+    simulation_run_id: UUID = Field(..., example="94522a0a-c8f1-40f8-a2e5-9aed2dc55555")
+    import_retail_price_per_kwh: float = Field(..., example=5.2)
+    export_wholesale_price_per_kwh: float = Field(..., example=5)

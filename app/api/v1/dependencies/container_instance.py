@@ -169,3 +169,11 @@ def get_net_metering_algorithm_service()->IService:
 def get_simulation_runs_service()->IService:
     """Get Net Metering Algorithm instance"""
     return c.simulation_runs_service()
+
+def get_net_metering_policy_service()->IService:
+    """Get Net Metering policy instance"""
+    return c.net_metering_policy_service()
+
+def get_gross_metering_policy_service()->IService:
+    """Get Net Metering policy instance"""
+    return c.gross_metering_policy_service()

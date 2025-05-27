@@ -4,8 +4,10 @@ from uuid import UUID
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Resources, Permission
 from app.api.v1.dependencies.container_instance import get_simulation_algorithm_service, \
-    get_net_metering_algorithm_service, get_simulation_runs_service
-from app.api.v1.models.requests.simulation_request import SimulationRunsRequestModel
+    get_net_metering_algorithm_service, get_simulation_runs_service, get_net_metering_policy_service, \
+    get_gross_metering_policy_service
+from app.api.v1.models.requests.simulation_request import SimulationRunsRequestModel, NetMeteringRequestModel, \
+    GrossMeteringRequestModel
 from app.api.v1.models.responses.simulation_response import SimulationAlgorithmResponse, \
     SimulationAlgorithmListResponse, NetMeteringAlgorithmListResponse, NetMeteringAlgorithmResponse
 from app.domain.interfaces.i_service import IService
@@ -14,6 +16,8 @@ simulation_router = APIRouter(tags=["Simulation"])
 GetSimulationAlgorithmServiceDep = Depends(get_simulation_algorithm_service)
 GetNetMeteringAlgorithmServiceDep = Depends(get_net_metering_algorithm_service)
 GetSimulationRunServiceDep = Depends(get_simulation_runs_service)
+GetNetMeteringPolicyServiceDep = Depends(get_net_metering_policy_service)
+GetGrossMeteringPolicyServiceDep = Depends(get_gross_metering_policy_service)
 SimulationAlgorithmRetrievePermissionDep = Depends(
     permission(Resources.SIMULATION, Permission.RETRIEVE)
 )
@@ -86,13 +90,26 @@ async def create_simulation_runs(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@simulation_router.post(path="/{simulation_id}/net-metring")
+@simulation_router.post(path="/policy/net-metering")
 async def create_net_metering_policy(
-        simulation_id: UUID,
-        service: IService = GetNetMeteringAlgorithmServiceDep,
-        _: UUID = SimulationAlgorithmRetrievePermissionDep
+        data: NetMeteringRequestModel,
+        service: IService = GetNetMeteringPolicyServiceDep,
+        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
 ):
     try:
-        print("HI")
+        data = data.model_dump()
+        service.create(user_id, **data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+@simulation_router.post(path="/policy/gross-metering")
+async def create_gross_metering_policy(
+        data: GrossMeteringRequestModel,
+        service: IService = GetGrossMeteringPolicyServiceDep,
+        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+):
+    try:
+        data = data.model_dump()
+        service.create(user_id, **data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

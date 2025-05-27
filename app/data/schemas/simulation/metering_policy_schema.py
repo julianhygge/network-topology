@@ -8,25 +8,27 @@ class GrossMeteringPolicy(BaseModel):
     simulation_run_id = ForeignKeyField(
         SimulationRuns,
         backref="gross",
-        column_name="simulation_run_id"
+        column_name="simulation_run_id",
+        primary_key=True
     )
     import_retail_price_per_kwh = DoubleField()
     export_wholesale_price_per_kwh = DoubleField()
 
     class Meta:
-        schema = "simulation_engine",
+        schema = "simulation_engine"
         table_name = "gross_metering_policy_params"
 
 class NetMeteringPolicy(BaseModel):
     simulation_run_id = ForeignKeyField(
         SimulationRuns,
         backref="net_metering",
-        column_name="simulation_run_id"
+        column_name="simulation_run_id",
+        primary_key=True
     )
     retail_price_per_kwh = DoubleField()
 
     class Meta:
-        schema = "simulation_engine",
+        schema = "simulation_engine"
         table_name = "net_metering_policy_params"
 
 class TimeOfUseRatePolicy(BaseModel):

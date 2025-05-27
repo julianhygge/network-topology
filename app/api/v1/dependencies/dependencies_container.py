@@ -42,6 +42,7 @@ from app.data.schemas.master.master_schema import (
     ElectricalAppliances,
     PredefinedTemplates, SimulationAlgorithm, NetMeteringAlgorithm,
 )
+from app.data.schemas.simulation.metering_policy_schema import NetMeteringPolicy, GrossMeteringPolicy
 from app.data.schemas.simulation.simulation_runs_schema import SimulationRuns
 from app.data.schemas.solar.solar_schema import SiteRefYearProduction
 from app.data.schemas.transactional.topology_schema import (
@@ -180,6 +181,13 @@ class Container(containers.DeclarativeContainer):
         BaseRepository[SimulationRuns], SimulationRuns
     )
 
+    _net_metering_policy_repository = providers.Singleton(
+        BaseRepository[NetMeteringPolicy], NetMeteringPolicy
+    )
+    _gross_metering_policy_repository = providers.Singleton(
+        BaseRepository[GrossMeteringPolicy], GrossMeteringPolicy
+    )
+
     _template_patterns_repository = providers.Singleton(
         TemplateConsumptionPatternsRepository
     )
@@ -288,6 +296,12 @@ class Container(containers.DeclarativeContainer):
 
     simulation_runs_service = providers.Singleton(
         BaseService, repository=_simulation_runs_repository
+    )
+    net_metering_policy_service = providers.Singleton(
+        BaseService, repository=_net_metering_policy_repository
+    )
+    gross_metering_policy_service = providers.Singleton(
+        BaseService, repository=_gross_metering_policy_repository
     )
 
     solar_profile_service = providers.Singleton(
