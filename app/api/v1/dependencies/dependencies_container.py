@@ -42,8 +42,10 @@ from app.data.schemas.master.master_schema import (
     ElectricalAppliances,
     PredefinedTemplates, SimulationAlgorithm, NetMeteringAlgorithm,
 )
-from app.data.schemas.simulation.metering_policy_schema import NetMeteringPolicy, GrossMeteringPolicy
-from app.data.schemas.simulation.simulation_runs_schema import SimulationRuns
+from app.data.schemas.simulation.house_bill_schema import HouseBill
+from app.data.schemas.simulation.metering_policy_schema import NetMeteringPolicy, GrossMeteringPolicy, \
+    TimeOfUseRatePolicy
+from app.data.schemas.simulation.simulation_runs_schema import SimulationRuns, SimulationSelectedPolicy
 from app.data.schemas.solar.solar_schema import SiteRefYearProduction
 from app.data.schemas.transactional.topology_schema import (
     House,
@@ -188,6 +190,18 @@ class Container(containers.DeclarativeContainer):
         BaseRepository[GrossMeteringPolicy], GrossMeteringPolicy
     )
 
+    _tou_rate_policy_repository = providers.Singleton(
+        BaseRepository[TimeOfUseRatePolicy], TimeOfUseRatePolicy
+    )
+
+    _simulation_selected_policy_repository = providers.Singleton(
+        BaseRepository[SimulationSelectedPolicy], SimulationSelectedPolicy
+    )
+
+    _house_bill_repository = providers.Singleton(
+        BaseRepository[HouseBill], HouseBill
+    )
+
     _template_patterns_repository = providers.Singleton(
         TemplateConsumptionPatternsRepository
     )
@@ -302,6 +316,18 @@ class Container(containers.DeclarativeContainer):
     )
     gross_metering_policy_service = providers.Singleton(
         BaseService, repository=_gross_metering_policy_repository
+    )
+
+    tou_rate_policy_service = providers.Singleton(
+        BaseService, repository=_tou_rate_policy_repository
+    )
+
+    simulation_selected_policy_service = providers.Singleton(
+        BaseService, repository=_simulation_selected_policy_repository
+    )
+
+    house_bill_service = providers.Singleton(
+        BaseService, repository=_house_bill_repository
     )
 
     solar_profile_service = providers.Singleton(

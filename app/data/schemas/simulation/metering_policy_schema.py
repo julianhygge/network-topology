@@ -41,8 +41,8 @@ class TimeOfUseRatePolicy(BaseModel):
     time_period_label = CharField()
     start_time = TimeField()
     end_time = TimeField()
-    import_retail_price_per_kwh = DoubleField()
-    export_wholesale_price_per_kwh = DoubleField()
+    import_retail_rate_per_kwh = DoubleField()
+    export_wholesale_rate_per_kwh = DoubleField()
 
     class Meta:
         schema = "simulation_engine"

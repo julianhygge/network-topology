@@ -177,3 +177,15 @@ def get_net_metering_policy_service()->IService:
 def get_gross_metering_policy_service()->IService:
     """Get Net Metering policy instance"""
     return c.gross_metering_policy_service()
+
+def get_tou_rate_policy_service()->IService:
+    """Get time of use rate policy instance"""
+    return c.tou_rate_policy_service()
+
+def get_simulation_selected_policy_service()->IService:
+    """Get time of use rate policy instance"""
+    return c.simulation_selected_policy_service()
+
+def get_house_bill_service()->IService:
+    """Get time of use rate policy instance"""
+    return c.house_bill_service()

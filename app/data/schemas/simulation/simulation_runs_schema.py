@@ -38,7 +38,8 @@ class SimulationSelectedPolicy(BaseModel):
     simulation_run_id = ForeignKeyField(
         SimulationRuns,
         backref="simulation_policy",
-        column_name="simulation_run_id"
+        column_name="simulation_run_id",
+        primary_key=True
     )
     net_metering_policy_type_id = ForeignKeyField(
         NetMeteringAlgorithm,

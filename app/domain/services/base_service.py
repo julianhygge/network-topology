@@ -6,6 +6,7 @@ from uuid import UUID
 from app.data.interfaces.i_repository import IRepository
 from app.data.schemas.schema_base import BaseModel
 from app.domain.interfaces.i_service import IService
+from app.exceptions.hygge_exceptions import ServiceException, NotFoundException
 from app.utils.datetime_util import utc_now
 
 T = TypeVar("T", bound=BaseModel)
@@ -92,9 +93,15 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
         kwargs["modified_on"] = utc_now()
         kwargs["modified_by"] = user_id
 
+        existing_item = self.repository.read_or_none(item_id)
+        if existing_item is None:
+            raise NotFoundException(
+                f"No data exist for id {item_id}"
+            )
+
         updated_count = self.repository.update(item_id, kwargs)
 
-        if updated_count > 0:
+        if updated_count:
             # Re-fetch the item to return its latest state as a dict
             updated_item = self.repository.read(item_id)
             if updated_item:
