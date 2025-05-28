@@ -3,11 +3,11 @@
 
 
 # Postgres
-db_host = "192.168.0.200"
-db_port = 9814
-db_database = "p2p-simulator-test"
-db_user = "p2p-simulator-user"
-db_password = "${HYGGE_DB_PASSWORD}"     
+db_host = "${HYGGE_DB_HOST}"
+db_port = "${HYGGE_DB_PORT}"
+db_database = "${HYGGE_DB_DATABASE}"
+db_user = "${HYGGE_DB_USER}"
+db_password = "${HYGGE_DB_PASSWORD}"
 db_max_connections=20
 db_stale_timeout=50
 db_options="-csearch_path=public,authentication,support,telemetry,payment,master,transactional,engagement"
@@ -25,7 +25,7 @@ mqtt_password = "${HYGGE_MQTT_PASSWORD}"
 
 # Logging 
 logging_level = "DEBUG" 
-logging_log_directory = "/var/log/application"
+logging_log_directory = "${HYGGE_LOG_DIRECTORY}"
 
 # SMS 
 sms_provider_server="https://2factor.in/API/V1"
