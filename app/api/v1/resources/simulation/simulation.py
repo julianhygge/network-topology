@@ -26,13 +26,19 @@ GetGrossMeteringPolicyServiceDep = Depends(get_gross_metering_policy_service)
 GetTOURatePolicyServiceDep = Depends(get_tou_rate_policy_service)
 GetSimulationSelectedPolicyServiceDep = Depends(get_simulation_selected_policy_service)
 GetHouseBillServiceDep = Depends(get_house_bill_service)
-SimulationAlgorithmRetrievePermissionDep = Depends(
+SimulationRetrievePermissionDep = Depends(
     permission(Resources.SIMULATION, Permission.RETRIEVE)
+)
+SimulationCreatePermissionDep = Depends(
+    permission(Resources.SIMULATION, Permission.CREATE)
+)
+SimulationUpdatePermissionDep = Depends(
+    permission(Resources.SIMULATION, Permission.UPDATE)
 )
 @simulation_router.get(path="/simulation-algo", response_model=SimulationAlgorithmListResponse)
 async def get_simulation_algorithm(
         service: IService = GetSimulationAlgorithmServiceDep,
-        _: UUID = SimulationAlgorithmRetrievePermissionDep
+        _: UUID = SimulationRetrievePermissionDep
 ):
     """
        Retrieve the simulation algorithm type
@@ -60,7 +66,7 @@ async def get_simulation_algorithm(
 @simulation_router.get(path="/net-metering/algo", response_model=NetMeteringAlgorithmListResponse)
 async def get_net_metering_algorithm(
         service: IService = GetNetMeteringAlgorithmServiceDep,
-        _: UUID = SimulationAlgorithmRetrievePermissionDep
+        _: UUID = SimulationRetrievePermissionDep
 ):
     """
        Retrieve the net metering algorithm type
@@ -88,7 +94,7 @@ async def get_net_metering_algorithm(
 async def create_simulation_runs(
         data: SimulationRunsRequestModel,
         service: IService = GetSimulationRunServiceDep,
-        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+        user_id: UUID = SimulationCreatePermissionDep
 ):
     """
         Create the simulation run
@@ -118,7 +124,7 @@ async def update_simulation_runs(
         simulation_run_id: UUID,
         data: SimulationRunsUpdateModel,
         service: IService = GetSimulationRunServiceDep,
-        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+        user_id: UUID = SimulationUpdatePermissionDep
 ):
     """
             Update the simulation run
@@ -147,7 +153,7 @@ async def update_simulation_runs(
 async def create_net_metering_policy(
         data: NetMeteringRequestModel,
         service: IService = GetNetMeteringPolicyServiceDep,
-        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+        user_id: UUID = SimulationCreatePermissionDep
 ):
     """
         Create Net Metering Policy
@@ -176,7 +182,7 @@ async def update_net_metering_policy(
         simulation_run_id: UUID,
         data: NetMeteringUpdateModel,
         service: IService = GetNetMeteringPolicyServiceDep,
-        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+        user_id: UUID = SimulationUpdatePermissionDep
 ):
     """
             Update Net Metering Policy
@@ -204,7 +210,7 @@ async def update_net_metering_policy(
 async def create_gross_metering_policy(
         data: GrossMeteringRequestModel,
         service: IService = GetGrossMeteringPolicyServiceDep,
-        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+        user_id: UUID = SimulationCreatePermissionDep
 ):
     """
                 Create Gross Metering Policy
@@ -233,7 +239,7 @@ async def update_gross_metering_policy(
         simulation_run_id: UUID,
         data: GrossMeteringUpdateModel,
         service: IService = GetGrossMeteringPolicyServiceDep,
-        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+        user_id: UUID = SimulationUpdatePermissionDep
 ):
     """
                 Update Gross Metering Policy
@@ -261,7 +267,7 @@ async def update_gross_metering_policy(
 async def create_tou_metering_policy(
         data: TimeOfUseRequestModel,
         service: IService = GetTOURatePolicyServiceDep,
-        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+        user_id: UUID = SimulationCreatePermissionDep
 ):
     """
                 Create Time of Use Rate Policy
@@ -289,7 +295,7 @@ async def update_tou_metering_policy(
         tou_id: UUID,
         data: TimeOfUseUpdateModel,
         service: IService = GetTOURatePolicyServiceDep,
-        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+        user_id: UUID = SimulationUpdatePermissionDep
 ):
     """
                 Update time of use rate Policy
@@ -317,7 +323,7 @@ async def update_tou_metering_policy(
 async def create_simulation_selected_policy(
         data: SimulationSelectedRequestModel,
         service: IService = GetSimulationSelectedPolicyServiceDep,
-        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+        user_id: UUID = SimulationCreatePermissionDep
 ):
     """
                 Create Simulation selected policies
@@ -346,7 +352,7 @@ async def update_simulation_selected_policy(
         simulation_run_id: UUID,
         data: SimulationSelectedUpdateModel,
         service: IService = GetSimulationSelectedPolicyServiceDep,
-        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+        user_id: UUID = SimulationUpdatePermissionDep
 ):
     """
                 Update Simulation selected policy table
@@ -375,7 +381,7 @@ async def update_simulation_selected_policy(
 async def get_house_bill(
         house_bill_id: UUID,
         service: IService = GetHouseBillServiceDep,
-        _: UUID = SimulationAlgorithmRetrievePermissionDep
+        _: UUID = SimulationRetrievePermissionDep
 ):
     """
                 Retrieve house bill
@@ -401,7 +407,7 @@ async def get_house_bill(
 async def generate_house_bill(
         data: HouseBillRequestModel,
         service: IService = GetHouseBillServiceDep,
-        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+        user_id: UUID = SimulationCreatePermissionDep
 ):
     """
                     Generate house bill
@@ -430,7 +436,7 @@ async def update_house_bill(
         simulation_run_id: UUID,
         data: HouseBillUpdateModel,
         service: IService = GetHouseBillServiceDep,
-        user_id: UUID = SimulationAlgorithmRetrievePermissionDep
+        user_id: UUID = SimulationUpdatePermissionDep
 ):
     """
                     Update house bill
