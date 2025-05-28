@@ -157,3 +157,35 @@ def get_mqtt_service() -> IMqttService:
 def get_flag_service() -> BaseService[HouseFlag]:
     """Get the flag service instance."""
     return c.flag_service()
+
+def get_simulation_algorithm_service()->IService:
+    """Get Simulation Algorithm instance"""
+    return c.simulation_algorithm_service()
+
+def get_net_metering_algorithm_service()->IService:
+    """Get Net Metering Algorithm instance"""
+    return c.net_metering_algorithm_service()
+
+def get_simulation_runs_service()->IService:
+    """Get Net Metering Algorithm instance"""
+    return c.simulation_runs_service()
+
+def get_net_metering_policy_service()->IService:
+    """Get Net Metering policy instance"""
+    return c.net_metering_policy_service()
+
+def get_gross_metering_policy_service()->IService:
+    """Get Net Metering policy instance"""
+    return c.gross_metering_policy_service()
+
+def get_tou_rate_policy_service()->IService:
+    """Get time of use rate policy instance"""
+    return c.tou_rate_policy_service()
+
+def get_simulation_selected_policy_service()->IService:
+    """Get time of use rate policy instance"""
+    return c.simulation_selected_policy_service()
+
+def get_house_bill_service()->IService:
+    """Get time of use rate policy instance"""
+    return c.house_bill_service()

@@ -6,7 +6,7 @@ from peewee import (
     DateTimeField,
     DoubleField,
     ForeignKeyField,
-    PrimaryKeyField,
+    PrimaryKeyField, UUIDField,
 )
 
 from app.data.schemas.schema_base import BaseModel
@@ -64,3 +64,26 @@ class PredefinedTemplates(BaseModel):
     class Meta:
         schema = "master"
         table_name = "predefined_templates"
+
+
+class SimulationAlgorithm(BaseModel):
+    id = UUIDField(primary_key=True)
+    algorithm_code = CharField()
+    display_name = CharField()
+    description = CharField()
+    active = BooleanField()
+
+    class Meta:
+        schema = "master"
+        table_name = "simulation_algorithm_types"
+
+class NetMeteringAlgorithm(BaseModel):
+    id = UUIDField(primary_key=True)
+    policy_code = CharField()
+    display_name = CharField()
+    description = CharField()
+    active = BooleanField()
+
+    class Meta:
+        schema = "master"
+        table_name = "net_metering_policy_types"

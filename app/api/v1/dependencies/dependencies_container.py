@@ -40,8 +40,12 @@ from app.data.repositories.topology.topology_repository import (
 from app.data.schemas.hygge_database import HyggeDatabase
 from app.data.schemas.master.master_schema import (
     ElectricalAppliances,
-    PredefinedTemplates,
+    PredefinedTemplates, SimulationAlgorithm, NetMeteringAlgorithm,
 )
+from app.data.schemas.simulation.house_bill_schema import HouseBill
+from app.data.schemas.simulation.metering_policy_schema import NetMeteringPolicy, GrossMeteringPolicy, \
+    TimeOfUseRatePolicy
+from app.data.schemas.simulation.simulation_runs_schema import SimulationRuns, SimulationSelectedPolicy
 from app.data.schemas.solar.solar_schema import SiteRefYearProduction
 from app.data.schemas.transactional.topology_schema import (
     House,
@@ -167,6 +171,37 @@ class Container(containers.DeclarativeContainer):
         PredefinedTemplatesRepository
     )
 
+    _simulation_algorithm_repository = providers.Singleton(
+        BaseRepository[SimulationAlgorithm], SimulationAlgorithm
+    )
+
+    _net_metering_algorithm_repository = providers.Singleton(
+        BaseRepository[NetMeteringAlgorithm], NetMeteringAlgorithm
+    )
+
+    _simulation_runs_repository = providers.Singleton(
+        BaseRepository[SimulationRuns], SimulationRuns
+    )
+
+    _net_metering_policy_repository = providers.Singleton(
+        BaseRepository[NetMeteringPolicy], NetMeteringPolicy
+    )
+    _gross_metering_policy_repository = providers.Singleton(
+        BaseRepository[GrossMeteringPolicy], GrossMeteringPolicy
+    )
+
+    _tou_rate_policy_repository = providers.Singleton(
+        BaseRepository[TimeOfUseRatePolicy], TimeOfUseRatePolicy
+    )
+
+    _simulation_selected_policy_repository = providers.Singleton(
+        BaseRepository[SimulationSelectedPolicy], SimulationSelectedPolicy
+    )
+
+    _house_bill_repository = providers.Singleton(
+        BaseRepository[HouseBill], HouseBill
+    )
+
     _template_patterns_repository = providers.Singleton(
         TemplateConsumptionPatternsRepository
     )
@@ -263,6 +298,36 @@ class Container(containers.DeclarativeContainer):
 
     electrical_appliances_service = providers.Singleton(
         BaseService, repository=_electrical_appliances_repo
+    )
+
+    simulation_algorithm_service = providers.Singleton(
+        BaseService, repository=_simulation_algorithm_repository
+    )
+
+    net_metering_algorithm_service = providers.Singleton(
+        BaseService, repository=_net_metering_algorithm_repository
+    )
+
+    simulation_runs_service = providers.Singleton(
+        BaseService, repository=_simulation_runs_repository
+    )
+    net_metering_policy_service = providers.Singleton(
+        BaseService, repository=_net_metering_policy_repository
+    )
+    gross_metering_policy_service = providers.Singleton(
+        BaseService, repository=_gross_metering_policy_repository
+    )
+
+    tou_rate_policy_service = providers.Singleton(
+        BaseService, repository=_tou_rate_policy_repository
+    )
+
+    simulation_selected_policy_service = providers.Singleton(
+        BaseService, repository=_simulation_selected_policy_repository
+    )
+
+    house_bill_service = providers.Singleton(
+        BaseService, repository=_house_bill_repository
     )
 
     solar_profile_service = providers.Singleton(
