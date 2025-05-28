@@ -35,7 +35,7 @@ SimulationCreatePermissionDep = Depends(
 SimulationUpdatePermissionDep = Depends(
     permission(Resources.SIMULATION, Permission.UPDATE)
 )
-@simulation_router.get(path="/simulation-algo", response_model=SimulationAlgorithmListResponse)
+@simulation_router.get(path="/algorithm", response_model=SimulationAlgorithmListResponse)
 async def get_simulation_algorithm(
         service: IService = GetSimulationAlgorithmServiceDep,
         _: UUID = SimulationRetrievePermissionDep
@@ -63,7 +63,7 @@ async def get_simulation_algorithm(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@simulation_router.get(path="/net-metering/algo", response_model=NetMeteringAlgorithmListResponse)
+@simulation_router.get(path="/net-metering/policy", response_model=NetMeteringAlgorithmListResponse)
 async def get_net_metering_algorithm(
         service: IService = GetNetMeteringAlgorithmServiceDep,
         _: UUID = SimulationRetrievePermissionDep
@@ -118,7 +118,7 @@ async def create_simulation_runs(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@simulation_router.put(path="/update/{simulation_run_id}/simulations-runs",
+@simulation_router.put(path="/{simulation_run_id}/simulations-runs",
                        response_model=SimulationRunsResponse)
 async def update_simulation_runs(
         simulation_run_id: UUID,
@@ -176,7 +176,7 @@ async def create_net_metering_policy(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@simulation_router.put(path="/update/{simulation_run_id}/net-metering",
+@simulation_router.put(path="/{simulation_run_id}/net-metering",
                        response_model=NetMeteringPolicyResponse)
 async def update_net_metering_policy(
         simulation_run_id: UUID,
@@ -233,7 +233,7 @@ async def create_gross_metering_policy(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@simulation_router.put(path="/update/{simulation_run_id}/gross-metering",
+@simulation_router.put(path="/{simulation_run_id}/gross-metering",
                        response_model=GrossMeteringPolicyResponse)
 async def update_gross_metering_policy(
         simulation_run_id: UUID,
@@ -290,7 +290,7 @@ async def create_tou_metering_policy(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@simulation_router.put(path="/update/{tou_id}/tou", response_model=TimeOfUseResponse)
+@simulation_router.put(path="/{tou_id}/tou", response_model=TimeOfUseResponse)
 async def update_tou_metering_policy(
         tou_id: UUID,
         data: TimeOfUseUpdateModel,
@@ -347,7 +347,7 @@ async def create_simulation_selected_policy(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@simulation_router.put(path="/update/{simulation_run_id}/policies", response_model=SimulationSelectedResponse)
+@simulation_router.put(path="/{simulation_run_id}/policies", response_model=SimulationSelectedResponse)
 async def update_simulation_selected_policy(
         simulation_run_id: UUID,
         data: SimulationSelectedUpdateModel,
@@ -431,7 +431,7 @@ async def generate_house_bill(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@simulation_router.put(path="/update/{simulation_run_id}/house-bill", response_model=HouseBillResponse)
+@simulation_router.put(path="/{simulation_run_id}/house-bill", response_model=HouseBillResponse)
 async def update_house_bill(
         simulation_run_id: UUID,
         data: HouseBillUpdateModel,

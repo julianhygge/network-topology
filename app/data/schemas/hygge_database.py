@@ -11,7 +11,6 @@ connection pooling.
 from typing import Any, Optional
 
 from peewee import OperationalError
-from playhouse.postgres_ext import PostgresqlExtDatabase # type: ignore[import]
 from playhouse.pool import PooledPostgresqlDatabase  # type: ignore[import]
 
 from app.config.i_configuration import DbConfig
