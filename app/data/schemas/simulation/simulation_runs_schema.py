@@ -1,7 +1,19 @@
-from peewee import UUIDField, CharField, ForeignKeyField, IntegerField, DateTimeField, DoubleField
-import uuid
 import datetime
-from app.data.schemas.master.master_schema import SimulationAlgorithm, NetMeteringAlgorithm
+import uuid
+
+from peewee import (
+    CharField,
+    DateTimeField,
+    DoubleField,
+    ForeignKeyField,
+    IntegerField,
+    UUIDField,
+)
+
+from app.data.schemas.master.master_schema import (
+    NetMeteringAlgorithm,
+    SimulationAlgorithm,
+)
 from app.data.schemas.schema_base import BaseModel
 from app.data.schemas.transactional.topology_schema import Node
 from app.data.schemas.transactional.user_schema import User
@@ -11,9 +23,12 @@ class SimulationRuns(BaseModel):
     id = UUIDField(primary_key=True, default=uuid.uuid4)
     run_name = CharField()
     topology_root_node_id = ForeignKeyField(
-        Node, backref="simulation", column_name="topology_root_node_id")
+        Node, backref="simulation", column_name="topology_root_node_id"
+    )
     simulation_algorithm_type_id = ForeignKeyField(
-        SimulationAlgorithm, backref="simulation_algo", column_name="simulation_algorithm_type_id"
+        SimulationAlgorithm,
+        backref="simulation_algo",
+        column_name="simulation_algorithm_type_id",
     )
     billing_cycle_month = IntegerField()
     billing_cycle_year = IntegerField()
@@ -34,17 +49,18 @@ class SimulationRuns(BaseModel):
         schema = "simulation_engine"
         table_name = "simulation_runs"
 
+
 class SimulationSelectedPolicy(BaseModel):
     simulation_run_id = ForeignKeyField(
         SimulationRuns,
         backref="simulation_policy",
         column_name="simulation_run_id",
-        primary_key=True
+        primary_key=True,
     )
     net_metering_policy_type_id = ForeignKeyField(
         NetMeteringAlgorithm,
         backref="simulation_policy",
-        column_name="net_metering_policy_type_id"
+        column_name="net_metering_policy_type_id",
     )
     fac_charge_per_kwh_imported = DoubleField()
     tax_rate_on_energy_charges = DoubleField()
