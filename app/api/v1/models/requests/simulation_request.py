@@ -67,9 +67,9 @@ class TimeOfUseUpdateModel(BaseModel):
 class SimulationSelectedRequestModel(BaseModel):
     simulation_run_id: UUID = Field(...)
     net_metering_policy_type_id: UUID = Field(...)
-    fixed_charge_tariff_rate_per_kw: float = Field(...)
-    fac_charge_per_kwh_imported: float = Field(...)
-    tax_rate_on_energy_charges: float = Field(...)
+    fixed_charge_tariff_rate_per_kw: Optional[float] = Field(210.0)
+    fac_charge_per_kwh_imported: Optional[float] = Field(0.0)
+    tax_rate_on_energy_charges: Optional[float] = Field(0.09)
 
 
 class SimulationSelectedUpdateModel(BaseModel):

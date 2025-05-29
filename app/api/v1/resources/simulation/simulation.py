@@ -76,7 +76,7 @@ SimulationUpdatePermissionDep = Depends(
 
 
 @simulation_router.get(
-    path="/algorithm", response_model=SimulationAlgorithmListResponse
+    path="/algorithms", response_model=SimulationAlgorithmListResponse
 )
 async def get_simulation_algorithm(
     service: IService = GetSimulationAlgorithmServiceDep,
@@ -149,7 +149,7 @@ async def trigger_bill_calculation(
 
 
 @simulation_router.get(
-    path="/net-metering/policy",
+    path="/net-metering/policies",
     response_model=NetMeteringAlgorithmListResponse,
 )
 async def get_net_metering_algorithm(
@@ -157,14 +157,14 @@ async def get_net_metering_algorithm(
     _: UUID = SimulationRetrievePermissionDep,
 ):
     """
-    Retrieve the net metering algorithm type
+    Retrieve the net metering policies types
 
     Args:
         service: The net metering algorithm service.
         _: Dependency to check permission.
 
     Returns:
-        All the active net metring algorithm
+        All the active net metering policies
 
     Raises:
         HTTPException: If an error occurs during retrieval.
@@ -427,7 +427,7 @@ async def update_tou_metering_policy(
 
 
 @simulation_router.post(
-    path="/selected/policies", response_model=SimulationSelectedResponse
+    path="/selected/policy", response_model=SimulationSelectedResponse
 )
 async def create_simulation_selected_policy(
     data: SimulationSelectedRequestModel,
@@ -435,10 +435,10 @@ async def create_simulation_selected_policy(
     user_id: UUID = SimulationCreatePermissionDep,
 ):
     """
-    Create Simulation selected policies
+    Create Simulation selected policy
 
     Args:
-        data: data to create simulation selected policies
+        data: data to create simulation selected policy
         service: The simulation selected policy service.
         user_id: Dependency to check permission.
 

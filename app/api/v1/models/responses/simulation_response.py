@@ -63,9 +63,9 @@ class SimulationRunsResponse(BaseModel):
 class SimulationSelectedResponse(BaseModel):
     simulation_run_id: UUID
     net_metering_policy_type_id: UUID
-    fixed_charge_tariff_rate_per_kw: float
-    fac_charge_per_kwh_imported: float
-    tax_rate_on_energy_charges: float
+    fixed_charge_tariff_rate_per_kw: Optional[float]
+    fac_charge_per_kwh_imported: Optional[float]
+    tax_rate_on_energy_charges: Optional[float]
 
 
 class HouseBillResponse(BaseModel):
