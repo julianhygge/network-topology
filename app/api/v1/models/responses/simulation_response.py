@@ -1,7 +1,9 @@
-from pydantic import BaseModel
-from uuid import UUID
-from typing import List, Optional, Dict, Any
 from datetime import datetime, time
+from typing import Any, Dict, List, Optional
+from uuid import UUID
+
+from pydantic import BaseModel
+
 
 class SimulationAlgorithmResponse(BaseModel):
     id: UUID
@@ -9,8 +11,10 @@ class SimulationAlgorithmResponse(BaseModel):
     display_name: str
     description: str
 
+
 class SimulationAlgorithmListResponse(BaseModel):
     items: List[SimulationAlgorithmResponse]
+
 
 class NetMeteringAlgorithmResponse(BaseModel):
     id: UUID
@@ -18,17 +22,21 @@ class NetMeteringAlgorithmResponse(BaseModel):
     display_name: str
     description: str
 
+
 class NetMeteringAlgorithmListResponse(BaseModel):
     items: List[NetMeteringAlgorithmResponse]
+
 
 class NetMeteringPolicyResponse(BaseModel):
     simulation_run_id: UUID
     retail_price_per_kwh: float
 
+
 class GrossMeteringPolicyResponse(BaseModel):
     simulation_run_id: UUID
     import_retail_price_per_kwh: float
     export_wholesale_price_per_kwh: float
+
 
 class TimeOfUseResponse(BaseModel):
     id: UUID
@@ -39,16 +47,18 @@ class TimeOfUseResponse(BaseModel):
     import_retail_rate_per_kwh: float
     export_wholesale_rate_per_kwh: float
 
+
 class SimulationRunsResponse(BaseModel):
     id: UUID
     run_name: Optional[str]
     topology_root_node_id: UUID
     simulation_algorithm_type_id: UUID
-    billing_cycle_month: int
-    billing_cycle_year: int
+    billing_cycle_month: Optional[int]
+    billing_cycle_year: Optional[int]
     status: str
-    simulation_start_timestamp: datetime
-    simulation_end_timestamp: datetime
+    simulation_start_timestamp: Optional[datetime]
+    simulation_end_timestamp: Optional[datetime]
+
 
 class SimulationSelectedResponse(BaseModel):
     simulation_run_id: UUID
@@ -56,6 +66,7 @@ class SimulationSelectedResponse(BaseModel):
     fixed_charge_tariff_rate_per_kw: float
     fac_charge_per_kwh_imported: float
     tax_rate_on_energy_charges: float
+
 
 class HouseBillResponse(BaseModel):
     id: UUID
@@ -66,4 +77,3 @@ class HouseBillResponse(BaseModel):
     net_energy_balance_kwh: float
     calculated_bill_amount: float
     bill_details: Dict[str, Any]
-
