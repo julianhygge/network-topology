@@ -90,6 +90,7 @@ from app.domain.services.solar.solar_installtion_service import (
     SolarInstallationService,
 )
 from app.domain.services.solar.solar_profile_service import SolarProfileService
+from app.domain.services.simulator_engine.bill_simulation_service import BillSimulationService
 from app.domain.services.topology.house_service import HouseService
 from app.domain.services.topology.net_topology_service import (
     NetTopologyService,
@@ -369,6 +370,20 @@ class Container(containers.DeclarativeContainer):
         pre_templates_repository=_predefined_templates_repository,
         yearly_solar_reference_repo=_yearly_solar_reference_repo,
         solar_profile_repository=_solar_profile_repo,
+    )
+
+    bill_simulation_service = providers.Singleton(
+        BillSimulationService,
+        simulation_runs_service=simulation_runs_service,
+        simulation_selected_policy_service=simulation_selected_policy_service,
+        net_metering_policy_service=net_metering_policy_service,
+        net_metering_algorithm_service=net_metering_algorithm_service,
+        # gross_metering_policy_service, # Add when phase 2 is implemented
+        # tou_rate_policy_service, # Add when phase 3 is implemented
+        house_bill_service=house_bill_service,
+        net_topology_service=net_topology_service,
+        house_service=house_service,
+        data_preparation_service=data_preparations_service,
     )
 
     flag_service = providers.Singleton(BaseService, _flag_repo)
