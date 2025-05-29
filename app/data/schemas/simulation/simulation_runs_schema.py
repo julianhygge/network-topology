@@ -46,7 +46,6 @@ class SimulationSelectedPolicy(BaseModel):
         backref="simulation_policy",
         column_name="net_metering_policy_type_id"
     )
-    fixed_charge_tariff_rate_per_kw = DoubleField()
     fac_charge_per_kwh_imported = DoubleField()
     tax_rate_on_energy_charges = DoubleField()
 

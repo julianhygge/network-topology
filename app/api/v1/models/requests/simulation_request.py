@@ -30,21 +30,25 @@ class SimulationRunsUpdateModel(BaseModel):
 class NetMeteringRequestModel(BaseModel):
     simulation_run_id: UUID = Field(...)
     retail_price_per_kwh: float = Field(...)
+    fixed_charge_tariff_rate_per_kw: Optional[float] = Field(210.0)
 
 
 class NetMeteringUpdateModel(BaseModel):
     retail_price_per_kwh: Optional[float] = Field(None)
+    fixed_charge_tariff_rate_per_kw: Optional[float] = Field(None)
 
 
 class GrossMeteringRequestModel(BaseModel):
     simulation_run_id: UUID = Field(...)
     import_retail_price_per_kwh: float = Field(...)
     export_wholesale_price_per_kwh: float = Field(...)
+    fixed_charge_tariff_rate_per_kw: Optional[float] = Field(210.0)
 
 
 class GrossMeteringUpdateModel(BaseModel):
     import_retail_price_per_kwh: Optional[float] = Field(None)
     export_wholesale_price_per_kwh: Optional[float] = Field(None)
+    fixed_charge_tariff_rate_per_kw: Optional[float] = Field(None)
 
 
 class TimeOfUseRequestModel(BaseModel):
@@ -67,14 +71,12 @@ class TimeOfUseUpdateModel(BaseModel):
 class SimulationSelectedRequestModel(BaseModel):
     simulation_run_id: UUID = Field(...)
     net_metering_policy_type_id: UUID = Field(...)
-    fixed_charge_tariff_rate_per_kw: Optional[float] = Field(210.0)
     fac_charge_per_kwh_imported: Optional[float] = Field(0.0)
     tax_rate_on_energy_charges: Optional[float] = Field(0.09)
 
 
 class SimulationSelectedUpdateModel(BaseModel):
     net_metering_policy_type_id: Optional[UUID] = Field(None)
-    fixed_charge_tariff_rate_per_kw: Optional[float] = Field(None)
     fac_charge_per_kwh_imported: Optional[float] = Field(None)
     tax_rate_on_energy_charges: Optional[float] = Field(None)
 

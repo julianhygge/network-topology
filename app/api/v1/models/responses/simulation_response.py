@@ -30,12 +30,14 @@ class NetMeteringAlgorithmListResponse(BaseModel):
 class NetMeteringPolicyResponse(BaseModel):
     simulation_run_id: UUID
     retail_price_per_kwh: float
+    fixed_charge_tariff_rate_per_kw: Optional[float]
 
 
 class GrossMeteringPolicyResponse(BaseModel):
     simulation_run_id: UUID
     import_retail_price_per_kwh: float
     export_wholesale_price_per_kwh: float
+    fixed_charge_tariff_rate_per_kw: Optional[float]
 
 
 class TimeOfUseResponse(BaseModel):
@@ -63,7 +65,6 @@ class SimulationRunsResponse(BaseModel):
 class SimulationSelectedResponse(BaseModel):
     simulation_run_id: UUID
     net_metering_policy_type_id: UUID
-    fixed_charge_tariff_rate_per_kw: Optional[float]
     fac_charge_per_kwh_imported: Optional[float]
     tax_rate_on_energy_charges: Optional[float]
 
