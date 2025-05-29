@@ -1,0 +1,96 @@
+Bills
+
+Net Metering: A billing mechanism where the electricity imported from the grid is offset by the electricity exported to the grid. Consumers are billed only for their net usage: Imported Units - Exported Units. If exported units exceed imports, the consumer may receive a credit or payout.						
+						
+						
+						
+Bill 1: Import < Export						
+Consumer Name	M M RAMANAND					
+Billing Period	01-Apr-2025 to 01-May-2025					
+Sanctioned Load (kW)	15					
+Tarif Rate	210					
+Imported Units	142					
+Exported Units	643					
+Net Usage	-501					
+Retail Rate (₹/unit)	6					
+Energy Charges	0					
+Fixed Charges	3150					
+FAC (Fuel Adjustment Charges)	0					
+Tax (on 9% of energy charge)	0					
+Arrears (Credit from previous month)	0					
+Total Bill Amount	144					
+						
+						
+Bill 2: Import > Export						
+Consumer Name	M M RAMANAND					
+Billing Period	01-May-2025 to 01-Jun-2025					
+Sanctioned Load (kW)	15					
+Tariff Rate	210					
+Imported Units	643					
+Exported Units	142					
+Net Usage	501					
+Retail Rate (₹/unit)	6					
+Energy Charges	3006					
+Fixed Charges	3150					
+FAC (Fuel Adjustment Charges)	0					
+Tax (on 9% of energy charge)	270.54					
+Arrears (Credit from previous month)	0					
+Total Bill Amount	6426.54					
+
+
+Gross Metering: A billing mechanism where the electricity imported from the grid and the electricity exported to the grid are treated as separate transactions. Consumers are billed for the total imported units at the retail rate, and are separately credited for all exported units at a fixed feed-in tariff. There is no offsetting between import and export. If export earnings are less than import charges, the consumer pays the difference.						
+						
+Bill 1: Import < Export						
+Consumer Name	M M RAMANAND					
+Billing Period	01-Apr-2025 to 01-May-2025					
+Sanctioned Load (kW)	15					
+Tariff Rate	210					
+Imported Units	500					
+Exported Units	600					
+Retail Rate (₹/unit)	6					
+Feed-in Tariff (₹/unit)	3					
+Cost of Import (Retail)	3000					
+Revenue from Export (Wholesale)	1800					
+Fixed Charges	3150					
+Tax (on 9% of Import Cost)	270					
+FAC	0					
+Arrears	0					
+Total Bill Amount	4620					
+						
+						
+Bill 1: Import > Export						
+Consumer Name	M M RAMANAND					
+Billing Period	01-May-2025 to 01-Jun-2025					
+Sanctioned Load (kW)	15					
+Tariff Rate	210					
+Imported Units	700					
+Exported Units	400					
+Retail Rate (₹/unit)	6					
+Feed-in Tariff (₹/unit)	3					
+Cost of Import (Retail)	4200					
+Revenue from Export (Wholesale)	1200					
+Fixed Charges	3150					
+Tax (on 9% of Import Cost)	378					
+FAC	0					
+Arrears	0					
+Total Bill Amount	6528					
+						
+
+
+Time-of-Use (TOU) Metering: A billing mechanism where electricity usage is charged based on the time of day it is consumed. Peak, mid-peak, and off-peak hours have different rates to reflect grid demand.  Consumers are incentivized to use electricity during off-peak times to reduce their bills.                                                                                                                                                         						
+						
+Bill 1:						
+Consumer Name	M M RAMANAND					
+Billing Period	01-Apr-2025 to 01-May-2025					
+Sanctioned Load (kW)	15					
+Tariff Rate	210					
+Peak Usage (units @ ₹8/unit)	120	at 8 Rs.				
+Mid-Peak Usage (units @ ₹6/unit)	150	at 6 Rs.				
+Off-Peak Usage (units @ ₹4/unit)	230	at 4 Rs.				
+Energy Charges	2780					
+Fixed Charges	3150					
+Tax (on 9% of Energy Charges)	250.2					
+FAC	0					
+Arrears	0					
+Total Bill Amount	6180.2					
+						

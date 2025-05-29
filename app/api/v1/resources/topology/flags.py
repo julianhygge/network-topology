@@ -83,7 +83,7 @@ async def create_flag(
 async def get_flags_by_house(
     house_id: UUID4,
     _: UUID = HousesRetrievePermissionDep,
-    service: FlagServiceType = GetFlagServiceDep,
+    service: IService = GetFlagServiceDep,
 ) -> List[FlagResponse]:
     """Retrieve all flags for a specific house.
 

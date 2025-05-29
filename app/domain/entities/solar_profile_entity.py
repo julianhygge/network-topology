@@ -24,3 +24,6 @@ class SolarProfileEntity:
     updated_at: datetime
     created_by: UUID
     updated_by: UUID
+    imported_units: list[float] | None = None
+    exported_units: list[float] | None = None
+    net_usage: list[float] | None = None

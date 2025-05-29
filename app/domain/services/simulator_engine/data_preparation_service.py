@@ -63,6 +63,9 @@ class DataPreparationService(IDataPreparationService):
         profile_load_values: List[float] = []
         profile_solar_values: List[float] = []
         profile_solar_offset_values: List[float] = []
+        profile_imported_units: List[float] = []
+        profile_exported_units: List[float] = []
+        profile_net_usage: List[float] = []
 
         num_points = min(len(loads_data_tuples), len(solar_data_tuples))
 
@@ -71,10 +74,25 @@ class DataPreparationService(IDataPreparationService):
             load_value = loads_data_tuples[i][1]
             solar_value = solar_data_tuples[i][1]
 
+            net_energy_at_point = solar_value - load_value
+            imported_units_at_point = 0.0
+            exported_units_at_point = 0.0
+            net_usage_at_point = 0.0
+
+            if net_energy_at_point < 0:
+                imported_units_at_point = abs(net_energy_at_point)
+            elif net_energy_at_point > 0:
+                exported_units_at_point = net_energy_at_point
+
+            net_usage_at_point = load_value - solar_value
+
             profile_timestamps.append(timestamp)
             profile_load_values.append(load_value)
             profile_solar_values.append(solar_value)
-            profile_solar_offset_values.append(solar_value - load_value)
+            profile_solar_offset_values.append(net_energy_at_point)
+            profile_imported_units.append(imported_units_at_point)
+            profile_exported_units.append(exported_units_at_point)
+            profile_net_usage.append(net_usage_at_point)
 
         return HouseProfile(
             house_id=house.id,
@@ -83,6 +101,9 @@ class DataPreparationService(IDataPreparationService):
             load_values=profile_load_values,
             solar_values=profile_solar_values,
             solar_offset_values=profile_solar_offset_values,
+            imported_units=profile_imported_units,
+            exported_units=profile_exported_units,
+            net_usage=profile_net_usage,
         )
 
     def _create_house_profile_csv_content(
@@ -91,7 +112,17 @@ class DataPreparationService(IDataPreparationService):
         """Creates CSV content for a given house profile."""
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["timestamp", "load", "solar", "solar_offset"])
+        writer.writerow(
+            [
+                "timestamp",
+                "load",
+                "solar",
+                "solar_offset",
+                "imported_units",
+                "exported_units",
+                "net_usage",
+            ]
+        )
 
         for i in range(len(house_profile.timestamps)):
             writer.writerow(
@@ -100,6 +131,9 @@ class DataPreparationService(IDataPreparationService):
                     house_profile.load_values[i],
                     house_profile.solar_values[i],
                     house_profile.solar_offset_values[i],
+                    house_profile.imported_units[i],
+                    house_profile.exported_units[i],
+                    house_profile.net_usage[i],
                 ]
             )
         return output.getvalue()

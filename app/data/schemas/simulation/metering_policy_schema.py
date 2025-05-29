@@ -13,6 +13,7 @@ class GrossMeteringPolicy(BaseModel):
     )
     import_retail_price_per_kwh = DoubleField()
     export_wholesale_price_per_kwh = DoubleField()
+    fixed_charge_tariff_rate_per_kw = DoubleField(null=True)
 
     class Meta:
         schema = "simulation_engine"
@@ -26,6 +27,7 @@ class NetMeteringPolicy(BaseModel):
         primary_key=True
     )
     retail_price_per_kwh = DoubleField()
+    fixed_charge_tariff_rate_per_kw = DoubleField(null=True)
 
     class Meta:
         schema = "simulation_engine"

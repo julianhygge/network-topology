@@ -1,21 +1,53 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.params import Depends
-from uuid import UUID
+
 from app.api.authorization.authorization import permission
-from app.api.authorization.enums import Resources, Permission
-from app.api.v1.dependencies.container_instance import get_simulation_algorithm_service, \
-    get_net_metering_algorithm_service, get_simulation_runs_service, get_net_metering_policy_service, \
-    get_gross_metering_policy_service, get_tou_rate_policy_service, get_simulation_selected_policy_service, \
-    get_house_bill_service
-from app.api.v1.models.requests.simulation_request import SimulationRunsRequestModel, NetMeteringRequestModel, \
-    GrossMeteringRequestModel, TimeOfUseRequestModel, SimulationSelectedRequestModel, HouseBillRequestModel, \
-    SimulationRunsUpdateModel, NetMeteringUpdateModel, GrossMeteringUpdateModel, TimeOfUseUpdateModel, \
-    SimulationSelectedUpdateModel, HouseBillUpdateModel
-from app.api.v1.models.responses.simulation_response import SimulationAlgorithmResponse, \
-    SimulationAlgorithmListResponse, NetMeteringAlgorithmListResponse, NetMeteringAlgorithmResponse, \
-    NetMeteringPolicyResponse, SimulationRunsResponse, GrossMeteringPolicyResponse, TimeOfUseResponse, \
-    SimulationSelectedResponse, HouseBillResponse
-from app.domain.interfaces.i_service import IService
+from app.api.authorization.enums import Permission, Resources
+from app.api.v1.dependencies.container_instance import (
+    get_bill_simulation_service,
+    get_gross_metering_policy_service,
+    get_house_bill_service,
+    get_net_metering_algorithm_service,
+    get_net_metering_policy_service,
+    get_simulation_algorithm_service,
+    get_simulation_runs_service,
+    get_simulation_selected_policy_service,
+    get_tou_rate_policy_service,
+)
+from app.api.v1.models.requests.simulation_request import (
+    GrossMeteringRequestModel,
+    GrossMeteringUpdateModel,
+    HouseBillRequestModel,
+    HouseBillUpdateModel,
+    NetMeteringRequestModel,
+    NetMeteringUpdateModel,
+    SimulationRunsRequestModel,
+    SimulationRunsUpdateModel,
+    SimulationSelectedRequestModel,
+    SimulationSelectedUpdateModel,
+    TimeOfUseRequestModel,
+    TimeOfUseUpdateModel,
+)
+from app.api.v1.models.responses.simulation_response import (
+    GrossMeteringPolicyResponse,
+    HouseBillResponse,
+    NetMeteringAlgorithmListResponse,
+    NetMeteringAlgorithmResponse,
+    NetMeteringPolicyResponse,
+    SimulationAlgorithmListResponse,
+    SimulationAlgorithmResponse,
+    SimulationRunsResponse,
+    SimulationSelectedResponse,
+    TimeOfUseResponse,
+)
+from app.domain.interfaces.i_service import (
+    IService,  # May not be needed if BillSimulationService is directly typed
+)
+from app.domain.services.simulator_engine.bill_simulation_service import (
+    BillSimulationService,
+)
 
 simulation_router = APIRouter(tags=["Simulation"])
 GetSimulationAlgorithmServiceDep = Depends(get_simulation_algorithm_service)
@@ -24,8 +56,14 @@ GetSimulationRunServiceDep = Depends(get_simulation_runs_service)
 GetNetMeteringPolicyServiceDep = Depends(get_net_metering_policy_service)
 GetGrossMeteringPolicyServiceDep = Depends(get_gross_metering_policy_service)
 GetTOURatePolicyServiceDep = Depends(get_tou_rate_policy_service)
-GetSimulationSelectedPolicyServiceDep = Depends(get_simulation_selected_policy_service)
+GetSimulationSelectedPolicyServiceDep = Depends(
+    get_simulation_selected_policy_service
+)
 GetHouseBillServiceDep = Depends(get_house_bill_service)
+GetBillSimulationServiceDep = Depends(
+    get_bill_simulation_service
+)  # Added dependency
+
 SimulationRetrievePermissionDep = Depends(
     permission(Resources.SIMULATION, Permission.RETRIEVE)
 )
@@ -35,23 +73,27 @@ SimulationCreatePermissionDep = Depends(
 SimulationUpdatePermissionDep = Depends(
     permission(Resources.SIMULATION, Permission.UPDATE)
 )
-@simulation_router.get(path="/algorithm", response_model=SimulationAlgorithmListResponse)
+
+
+@simulation_router.get(
+    path="/algorithms", response_model=SimulationAlgorithmListResponse
+)
 async def get_simulation_algorithm(
-        service: IService = GetSimulationAlgorithmServiceDep,
-        _: UUID = SimulationRetrievePermissionDep
+    service: IService = GetSimulationAlgorithmServiceDep,
+    _: UUID = SimulationRetrievePermissionDep,
 ):
     """
-       Retrieve the simulation algorithm type
+    Retrieve the simulation algorithm type
 
-       Args:
-           service: The simulation algorithm service.
-           _: Dependency to check permission.
+    Args:
+        service: The simulation algorithm service.
+        _: Dependency to check permission.
 
-       Returns:
-           All the active simulation algorithm
+    Returns:
+        All the active simulation algorithm
 
-       Raises:
-           HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         body = service.list_all()
@@ -63,23 +105,69 @@ async def get_simulation_algorithm(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@simulation_router.get(path="/net-metering/policy", response_model=NetMeteringAlgorithmListResponse)
-async def get_net_metering_algorithm(
-        service: IService = GetNetMeteringAlgorithmServiceDep,
-        _: UUID = SimulationRetrievePermissionDep
+@simulation_router.post(
+    path="/simulation-runs/{simulation_run_id}/calculate-bills",
+    status_code=202,
+)
+async def trigger_bill_calculation(
+    simulation_run_id: UUID,
+    service: BillSimulationService = GetBillSimulationServiceDep,
+    _: UUID = SimulationUpdatePermissionDep,  # Or SimulationCreatePermissionDep
 ):
     """
-       Retrieve the net metering algorithm type
+    Trigger bill calculation for a given simulation run.
 
-       Args:
-           service: The net metering algorithm service.
-           _: Dependency to check permission.
+    Args:
+        simulation_run_id: The ID of the simulation run.
+        service: The BillSimulationService instance.
+        _: Dependency to check permission.
 
-       Returns:
-           All the active net metring algorithm
+    Returns:
+        A status message indicating the calculation has started.
 
-       Raises:
-           HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs.
+    """
+    try:
+        # The service method is synchronous, but FastAPI can run it in a thread pool
+        # if it's defined as `async def` or if we use `run_in_threadpool`.
+        # For now, keeping it simple. If it's long-running, background tasks would be better.
+        service.calculate_bills_for_simulation_run(
+            simulation_run_id=simulation_run_id
+        )  # type: ignore
+        return {
+            "message": f"Bill calculation started for simulation run {simulation_run_id}"
+        }
+    except HTTPException as http_exc:  # Re-raise HTTPException
+        raise http_exc
+    except Exception as e:
+        # Log the exception e
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error triggering bill calculation: {str(e)}",
+        ) from e
+
+
+@simulation_router.get(
+    path="/net-metering/policies",
+    response_model=NetMeteringAlgorithmListResponse,
+)
+async def get_net_metering_algorithm(
+    service: IService = GetNetMeteringAlgorithmServiceDep,
+    _: UUID = SimulationRetrievePermissionDep,
+):
+    """
+    Retrieve the net metering policies types
+
+    Args:
+        service: The net metering algorithm service.
+        _: Dependency to check permission.
+
+    Returns:
+        All the active net metering policies
+
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         body = service.list_all()
@@ -90,25 +178,28 @@ async def get_net_metering_algorithm(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@simulation_router.post(path="/simulations-runs", response_model=SimulationRunsResponse)
+
+@simulation_router.post(
+    path="/simulations-runs", response_model=SimulationRunsResponse
+)
 async def create_simulation_runs(
-        data: SimulationRunsRequestModel,
-        service: IService = GetSimulationRunServiceDep,
-        user_id: UUID = SimulationCreatePermissionDep
+    data: SimulationRunsRequestModel,
+    service: IService = GetSimulationRunServiceDep,
+    user_id: UUID = SimulationCreatePermissionDep,
 ):
     """
-        Create the simulation run
+    Create the simulation run
 
-        Args:
-            data: data to create simulation runs
-            service: The simulation run service.
-            user_id: Dependency to check permission.
+    Args:
+        data: data to create simulation runs
+        service: The simulation run service.
+        user_id: Dependency to check permission.
 
-        Returns:
-            Newly Created Simulation
+    Returns:
+        Newly Created Simulation
 
-        Raises:
-            HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         data = data.model_dump()
@@ -118,28 +209,30 @@ async def create_simulation_runs(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@simulation_router.put(path="/{simulation_run_id}/simulations-runs",
-                       response_model=SimulationRunsResponse)
+@simulation_router.put(
+    path="/{simulation_run_id}/simulations-runs",
+    response_model=SimulationRunsResponse,
+)
 async def update_simulation_runs(
-        simulation_run_id: UUID,
-        data: SimulationRunsUpdateModel,
-        service: IService = GetSimulationRunServiceDep,
-        user_id: UUID = SimulationUpdatePermissionDep
+    simulation_run_id: UUID,
+    data: SimulationRunsUpdateModel,
+    service: IService = GetSimulationRunServiceDep,
+    user_id: UUID = SimulationUpdatePermissionDep,
 ):
     """
-            Update the simulation run
+    Update the simulation run
 
-            Args:
-                simulation_run_id: Unique ID of Simulation run to update
-                data: data to update simulation runs
-                service: The simulation run service.
-                user_id: Dependency to check permission.
+    Args:
+        simulation_run_id: Unique ID of Simulation run to update
+        data: data to update simulation runs
+        service: The simulation run service.
+        user_id: Dependency to check permission.
 
-            Returns:
-                Newly Updated Simulation
+    Returns:
+        Newly Updated Simulation
 
-            Raises:
-                HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         data = data.model_dump(exclude_unset=True)
@@ -149,25 +242,27 @@ async def update_simulation_runs(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@simulation_router.post(path="/policy/net-metering", response_model=NetMeteringPolicyResponse)
+@simulation_router.post(
+    path="/policy/net-metering", response_model=NetMeteringPolicyResponse
+)
 async def create_net_metering_policy(
-        data: NetMeteringRequestModel,
-        service: IService = GetNetMeteringPolicyServiceDep,
-        user_id: UUID = SimulationCreatePermissionDep
+    data: NetMeteringRequestModel,
+    service: IService = GetNetMeteringPolicyServiceDep,
+    user_id: UUID = SimulationCreatePermissionDep,
 ):
     """
-        Create Net Metering Policy
+    Create Net Metering Policy
 
-        Args:
-            data: data to create simulation runs
-            service: The net metering policy service.
-            user_id: Dependency to check permission.
+    Args:
+        data: data to create simulation runs
+        service: The net metering policy service.
+        user_id: Dependency to check permission.
 
-        Returns:
-            Newly created data from net metering policy table
+    Returns:
+        Newly created data from net metering policy table
 
-        Raises:
-            HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         data = data.model_dump()
@@ -176,28 +271,31 @@ async def create_net_metering_policy(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@simulation_router.put(path="/{simulation_run_id}/net-metering",
-                       response_model=NetMeteringPolicyResponse)
+
+@simulation_router.put(
+    path="/{simulation_run_id}/net-metering",
+    response_model=NetMeteringPolicyResponse,
+)
 async def update_net_metering_policy(
-        simulation_run_id: UUID,
-        data: NetMeteringUpdateModel,
-        service: IService = GetNetMeteringPolicyServiceDep,
-        user_id: UUID = SimulationUpdatePermissionDep
+    simulation_run_id: UUID,
+    data: NetMeteringUpdateModel,
+    service: IService = GetNetMeteringPolicyServiceDep,
+    user_id: UUID = SimulationUpdatePermissionDep,
 ):
     """
-            Update Net Metering Policy
+    Update Net Metering Policy
 
-            Args:
-                simulation_run_id: Unique ID of Simulation run to update
-                data: data to create simulation runs
-                service: The net metering policy service.
-                user_id: Dependency to check permission.
+    Args:
+        simulation_run_id: Unique ID of Simulation run to update
+        data: data to create simulation runs
+        service: The net metering policy service.
+        user_id: Dependency to check permission.
 
-            Returns:
-                Updated data from net metering policy table
+    Returns:
+        Updated data from net metering policy table
 
-            Raises:
-                HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         data = data.model_dump(exclude_unset=True)
@@ -206,25 +304,28 @@ async def update_net_metering_policy(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@simulation_router.post(path="/policy/gross-metering", response_model=GrossMeteringPolicyResponse)
+
+@simulation_router.post(
+    path="/policy/gross-metering", response_model=GrossMeteringPolicyResponse
+)
 async def create_gross_metering_policy(
-        data: GrossMeteringRequestModel,
-        service: IService = GetGrossMeteringPolicyServiceDep,
-        user_id: UUID = SimulationCreatePermissionDep
+    data: GrossMeteringRequestModel,
+    service: IService = GetGrossMeteringPolicyServiceDep,
+    user_id: UUID = SimulationCreatePermissionDep,
 ):
     """
-                Create Gross Metering Policy
+    Create Gross Metering Policy
 
-                Args:
-                    data: data to create gross metering policy
-                    service: The gross metering policy service.
-                    user_id: Dependency to check permission.
+    Args:
+        data: data to create gross metering policy
+        service: The gross metering policy service.
+        user_id: Dependency to check permission.
 
-                Returns:
-                    Newly created data from gross metering policy table
+    Returns:
+        Newly created data from gross metering policy table
 
-                Raises:
-                    HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         data = data.model_dump()
@@ -233,28 +334,31 @@ async def create_gross_metering_policy(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@simulation_router.put(path="/{simulation_run_id}/gross-metering",
-                       response_model=GrossMeteringPolicyResponse)
+
+@simulation_router.put(
+    path="/{simulation_run_id}/gross-metering",
+    response_model=GrossMeteringPolicyResponse,
+)
 async def update_gross_metering_policy(
-        simulation_run_id: UUID,
-        data: GrossMeteringUpdateModel,
-        service: IService = GetGrossMeteringPolicyServiceDep,
-        user_id: UUID = SimulationUpdatePermissionDep
+    simulation_run_id: UUID,
+    data: GrossMeteringUpdateModel,
+    service: IService = GetGrossMeteringPolicyServiceDep,
+    user_id: UUID = SimulationUpdatePermissionDep,
 ):
     """
-                Update Gross Metering Policy
+    Update Gross Metering Policy
 
-                Args:
-                    simulation_run_id: Unique ID of Simulation run to update
-                    data: data to update gross metering policy
-                    service: The gross metering policy service.
-                    user_id: Dependency to check permission.
+    Args:
+        simulation_run_id: Unique ID of Simulation run to update
+        data: data to update gross metering policy
+        service: The gross metering policy service.
+        user_id: Dependency to check permission.
 
-                Returns:
-                    Updated data from gross metering policy table
+    Returns:
+        Updated data from gross metering policy table
 
-                Raises:
-                    HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         data = data.model_dump(exclude_unset=True)
@@ -262,27 +366,28 @@ async def update_gross_metering_policy(
         return GrossMeteringPolicyResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
 
 @simulation_router.post(path="/policy/tou", response_model=TimeOfUseResponse)
 async def create_tou_metering_policy(
-        data: TimeOfUseRequestModel,
-        service: IService = GetTOURatePolicyServiceDep,
-        user_id: UUID = SimulationCreatePermissionDep
+    data: TimeOfUseRequestModel,
+    service: IService = GetTOURatePolicyServiceDep,
+    user_id: UUID = SimulationCreatePermissionDep,
 ):
     """
-                Create Time of Use Rate Policy
+    Create Time of Use Rate Policy
 
-                Args:
-                    data: data to time of use rate policy
-                    service: The time of use rate policy service.
-                    user_id: Dependency to check permission.
+    Args:
+        data: data to time of use rate policy
+        service: The time of use rate policy service.
+        user_id: Dependency to check permission.
 
-                Returns:
-                    Created data from time of use rate policy table
+    Returns:
+        Created data from time of use rate policy table
 
-                Raises:
-                    HTTPException: If an error occurs during retrieval.
-        """
+    Raises:
+        HTTPException: If an error occurs during retrieval.
+    """
     try:
         data = data.model_dump()
         response = service.create(user_id, **data)
@@ -290,27 +395,28 @@ async def create_tou_metering_policy(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+
 @simulation_router.put(path="/{tou_id}/tou", response_model=TimeOfUseResponse)
 async def update_tou_metering_policy(
-        tou_id: UUID,
-        data: TimeOfUseUpdateModel,
-        service: IService = GetTOURatePolicyServiceDep,
-        user_id: UUID = SimulationUpdatePermissionDep
+    tou_id: UUID,
+    data: TimeOfUseUpdateModel,
+    service: IService = GetTOURatePolicyServiceDep,
+    user_id: UUID = SimulationUpdatePermissionDep,
 ):
     """
-                Update time of use rate Policy
+    Update time of use rate Policy
 
-                Args:
-                    tou_id: Unique ID of Simulation run to update
-                    data: data to update time of use rate policy
-                    service: The time of use rate policy service.
-                    user_id: Dependency to check permission.
+    Args:
+        tou_id: Unique ID of Simulation run to update
+        data: data to update time of use rate policy
+        service: The time of use rate policy service.
+        user_id: Dependency to check permission.
 
-                Returns:
-                    Updated data from time of use rate policy table
+    Returns:
+        Updated data from time of use rate policy table
 
-                Raises:
-                    HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         data = data.model_dump(exclude_unset=True)
@@ -319,25 +425,28 @@ async def update_tou_metering_policy(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@simulation_router.post(path="/selected/policies", response_model=SimulationSelectedResponse)
+
+@simulation_router.post(
+    path="/selected/policy", response_model=SimulationSelectedResponse
+)
 async def create_simulation_selected_policy(
-        data: SimulationSelectedRequestModel,
-        service: IService = GetSimulationSelectedPolicyServiceDep,
-        user_id: UUID = SimulationCreatePermissionDep
+    data: SimulationSelectedRequestModel,
+    service: IService = GetSimulationSelectedPolicyServiceDep,
+    user_id: UUID = SimulationCreatePermissionDep,
 ):
     """
-                Create Simulation selected policies
+    Create Simulation selected policy
 
-                Args:
-                    data: data to create simulation selected policies
-                    service: The simulation selected policy service.
-                    user_id: Dependency to check permission.
+    Args:
+        data: data to create simulation selected policy
+        service: The simulation selected policy service.
+        user_id: Dependency to check permission.
 
-                Returns:
-                    Created data from simulation selected table
+    Returns:
+        Created data from simulation selected table
 
-                Raises:
-                    HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         data = data.model_dump()
@@ -347,27 +456,30 @@ async def create_simulation_selected_policy(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@simulation_router.put(path="/{simulation_run_id}/policies", response_model=SimulationSelectedResponse)
+@simulation_router.put(
+    path="/{simulation_run_id}/policies",
+    response_model=SimulationSelectedResponse,
+)
 async def update_simulation_selected_policy(
-        simulation_run_id: UUID,
-        data: SimulationSelectedUpdateModel,
-        service: IService = GetSimulationSelectedPolicyServiceDep,
-        user_id: UUID = SimulationUpdatePermissionDep
+    simulation_run_id: UUID,
+    data: SimulationSelectedUpdateModel,
+    service: IService = GetSimulationSelectedPolicyServiceDep,
+    user_id: UUID = SimulationUpdatePermissionDep,
 ):
     """
-                Update Simulation selected policy table
+    Update Simulation selected policy table
 
-                Args:
-                    simulation_run_id: Unique ID of Simulation run to update
-                    data: data to update selected simulation policy
-                    service: The simulation selection policy service.
-                    user_id: Dependency to check permission.
+    Args:
+        simulation_run_id: Unique ID of Simulation run to update
+        data: data to update selected simulation policy
+        service: The simulation selection policy service.
+        user_id: Dependency to check permission.
 
-                Returns:
-                    Updated data from simulation selection policy table
+    Returns:
+        Updated data from simulation selection policy table
 
-                Raises:
-                    HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         data = data.model_dump(exclude_unset=True)
@@ -377,25 +489,27 @@ async def update_simulation_selected_policy(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@simulation_router.get(path="/{house_bill_id}/house-bill", response_model=HouseBillResponse)
+@simulation_router.get(
+    path="/{house_bill_id}/house-bill", response_model=HouseBillResponse
+)
 async def get_house_bill(
-        house_bill_id: UUID,
-        service: IService = GetHouseBillServiceDep,
-        _: UUID = SimulationRetrievePermissionDep
+    house_bill_id: UUID,
+    service: IService = GetHouseBillServiceDep,
+    _: UUID = SimulationRetrievePermissionDep,
 ):
     """
-                Retrieve house bill
+    Retrieve house bill
 
-                Args:
-                    house_bill_id: Unique ID of house bill table
-                    service: The net metering policy service.
-                    _: Dependency to check permission.
+    Args:
+        house_bill_id: Unique ID of house bill table
+        service: The net metering policy service.
+        _: Dependency to check permission.
 
-                Returns:
-                    Get house bill of particular id
+    Returns:
+        Get house bill of particular id
 
-                Raises:
-                    HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         response = service.read(house_bill_id)
@@ -403,25 +517,26 @@ async def get_house_bill(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+
 @simulation_router.post(path="/house-bill", response_model=HouseBillResponse)
 async def generate_house_bill(
-        data: HouseBillRequestModel,
-        service: IService = GetHouseBillServiceDep,
-        user_id: UUID = SimulationCreatePermissionDep
+    data: HouseBillRequestModel,
+    service: IService = GetHouseBillServiceDep,
+    user_id: UUID = SimulationCreatePermissionDep,
 ):
     """
-                    Generate house bill
+    Generate house bill
 
-                    Args:
-                        data: data to create house bill
-                        service: The house bill service.
-                        user_id: Dependency to check permission.
+    Args:
+        data: data to create house bill
+        service: The house bill service.
+        user_id: Dependency to check permission.
 
-                    Returns:
-                        Newly generated  house bill
+    Returns:
+        Newly generated  house bill
 
-                    Raises:
-                        HTTPException: If an error occurs during retrieval.
+    Raises:
+        HTTPException: If an error occurs during retrieval.
     """
     try:
         data = data.model_dump()
@@ -431,34 +546,33 @@ async def generate_house_bill(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@simulation_router.put(path="/{simulation_run_id}/house-bill", response_model=HouseBillResponse)
+@simulation_router.put(
+    path="/{simulation_run_id}/house-bill", response_model=HouseBillResponse
+)
 async def update_house_bill(
-        simulation_run_id: UUID,
-        data: HouseBillUpdateModel,
-        service: IService = GetHouseBillServiceDep,
-        user_id: UUID = SimulationUpdatePermissionDep
+    simulation_run_id: UUID,
+    data: HouseBillUpdateModel,
+    service: IService = GetHouseBillServiceDep,
+    user_id: UUID = SimulationUpdatePermissionDep,
 ):
     """
-                    Update house bill
+    Update house bill
 
-                    Args:
-                        simulation_run_id: Unique ID of simulation run
-                        data: data to update house bill
-                        service: The house bill service.
-                        user_id: Dependency to check permission.
+    Args:
+        simulation_run_id: Unique ID of simulation run
+        data: data to update house bill
+        service: The house bill service.
+        user_id: Dependency to check permission.
 
-                    Returns:
-                        Updated house bill
+    Returns:
+        Updated house bill
 
-                    Raises:
-                        HTTPException: If an error occurs during retrieval.
-        """
+    Raises:
+        HTTPException: If an error occurs during retrieval.
+    """
     try:
         data = data.model_dump(exclude_unset=True)
         response = service.update(user_id, simulation_run_id, **data)
         return HouseBillResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-
-
-

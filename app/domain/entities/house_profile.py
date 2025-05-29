@@ -17,6 +17,10 @@ class HouseProfile:
         solar_values (List[float]): Solar energy generation values (kWh).
         solar_offset_values (List[float]): Net energy (solar generation - load)
                                            corresponding to each timestamp.
+        imported_units (List[float]): Energy imported from the grid.
+        exported_units (List[float]): Energy exported to the grid.
+        net_usage (List[float]): Net energy consumption (load - solar +
+                                 imported - exported).
     """
 
     house_id: UUID
@@ -25,3 +29,6 @@ class HouseProfile:
     load_values: List[float]
     solar_values: List[float]
     solar_offset_values: List[float]
+    imported_units: List[float]
+    exported_units: List[float]
+    net_usage: List[float]
