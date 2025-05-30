@@ -60,6 +60,7 @@ class SimulationRunsResponse(BaseModel):
     status: str
     simulation_start_timestamp: Optional[datetime]
     simulation_end_timestamp: Optional[datetime]
+    locality_id: UUID
 
 
 class SimulationSelectedResponse(BaseModel):

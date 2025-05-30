@@ -14,6 +14,7 @@ class SimulationRunsRequestModel(BaseModel):
     status: Optional[str] = Field("PENDING")
     simulation_start_timestamp: Optional[datetime] = Field(None)
     simulation_end_timestamp: Optional[datetime] = Field(None)
+    locality_id: UUID = Field(...)
 
 
 class SimulationRunsUpdateModel(BaseModel):
@@ -25,6 +26,7 @@ class SimulationRunsUpdateModel(BaseModel):
     status: Optional[str] = Field(None)
     simulation_start_timestamp: Optional[datetime] = Field(None)
     simulation_end_timestamp: Optional[datetime] = Field(None)
+    locality_id: Optional[UUID] = Field(None)
 
 
 class NetMeteringRequestModel(BaseModel):
