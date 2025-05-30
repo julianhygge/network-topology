@@ -88,7 +88,7 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
         """
         item: Optional[T] = self.repository.read_or_none(item_id)
         if item is None:
-            return None
+            raise NotFoundException(f'Data with ID {item_id} does not exist')
         result = self.repository.to_dicts(item)
         if isinstance(result, dict):
             return cast(Dict[str, Any], result)

@@ -295,8 +295,6 @@ async def get_net_metering_policy(
     """
     try:
         data = service.read_or_none(simulation_run_id)
-        if data is None:
-            raise NotFoundException(f'{simulation_run_id} does not exist')
         return NetMeteringPolicyResponse(**data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
