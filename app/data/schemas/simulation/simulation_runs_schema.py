@@ -15,7 +15,7 @@ from app.data.schemas.master.master_schema import (
     SimulationAlgorithm,
 )
 from app.data.schemas.schema_base import BaseModel
-from app.data.schemas.transactional.topology_schema import Node
+from app.data.schemas.transactional.topology_schema import Node, Locality
 from app.data.schemas.transactional.user_schema import User
 
 
@@ -44,6 +44,11 @@ class SimulationRuns(BaseModel):
     modified_on = DateTimeField(default=datetime.datetime.utcnow)
     simulation_start_timestamp = DateTimeField()
     simulation_end_timestamp = DateTimeField()
+    locality_id = ForeignKeyField(
+        Locality,
+        backref="simulation",
+        column_name="locality_id"
+    )
 
     class Meta:
         schema = "simulation_engine"
