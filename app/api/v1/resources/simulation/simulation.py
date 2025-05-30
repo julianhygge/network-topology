@@ -48,6 +48,7 @@ from app.domain.interfaces.i_service import (
 from app.domain.services.simulator_engine.bill_simulation_service import (
     BillSimulationService,
 )
+from app.exceptions.hygge_exceptions import NotFoundException
 
 simulation_router = APIRouter(tags=["Simulation"])
 GetSimulationAlgorithmServiceDep = Depends(get_simulation_algorithm_service)
@@ -293,7 +294,9 @@ async def get_net_metering_policy(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = service.read(simulation_run_id)
+        data = service.read_or_none(simulation_run_id)
+        if data is None:
+            raise NotFoundException(f'{simulation_run_id} does not exist')
         return NetMeteringPolicyResponse(**data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -385,7 +388,7 @@ async def get_gross_metering_policy(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        response = service.read(simulation_run_id)
+        response = service.read_or_none(simulation_run_id)
         return GrossMeteringPolicyResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -588,7 +591,7 @@ async def get_simulation_selected_policy(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        response = service.read(simulation_run_id)
+        response = service.read_or_none(simulation_run_id)
         return SimulationSelectedResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -681,7 +684,7 @@ async def get_house_bill(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        response = service.read(house_bill_id)
+        response = service.read_or_none(house_bill_id)
         return HouseBillResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

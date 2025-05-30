@@ -68,12 +68,32 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
             A dictionary representation of the record if found, otherwise None.
         """
         item: Optional[T] = self.repository.read(item_id)
+        print(f'item {item}')
         if item is None:
             return None
         result = self.repository.to_dicts(item)
         if isinstance(result, dict):
             return cast(Dict[str, Any], result)
         return None  # Should not happen if item was a model
+
+    def read_or_none(self, item_id: Union[int, UUID]) -> Optional[Dict[str, Any]]:
+        """
+        Reads a record by its ID.
+
+        Args:
+            item_id: The ID of the record.
+
+        Returns:
+            A dictionary representation of the record if found, otherwise None.
+        """
+        item: Optional[T] = self.repository.read_or_none(item_id)
+        if item is None:
+            return None
+        result = self.repository.to_dicts(item)
+        if isinstance(result, dict):
+            return cast(Dict[str, Any], result)
+        return None  # Should not happen if item was a model
+
 
     def update(
         self, user_id: UUID, item_id: Union[int, UUID], **kwargs: Any
