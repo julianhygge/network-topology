@@ -2,6 +2,7 @@
 Module for simulating bills based on energy consumption and generation data.
 """
 
+import datetime  # Added for time comparison
 from typing import Any, Dict, List
 from uuid import UUID
 
@@ -35,6 +36,7 @@ class BillSimulationService:
         selected_policy_repository: IRepository,
         net_metering_policy_repo: IRepository,
         gross_metering_policy_repo: IRepository,
+        tou_rate_policy_params_repository: IRepository,
         house_bill_service: IService,
         net_topology_service: INetTopologyService,
         data_preparation_service: IDataPreparationService,
@@ -46,6 +48,7 @@ class BillSimulationService:
         self._selected_policy_repository = selected_policy_repository
         self._net_metering_policy_repo = net_metering_policy_repo
         self._gross_metering_policy_repo = gross_metering_policy_repo
+        self._tou_rate_policy_params_repo = tou_rate_policy_params_repository
         self._house_bill_service = house_bill_service
         self._net_topology_service = net_topology_service
         self._data_preparation_service = data_preparation_service
@@ -124,6 +127,44 @@ class BillSimulationService:
                 "import_retail_price_kwh": params.import_retail_price_per_kwh,
                 "exp_whole_price_kwh": params.export_wholesale_price_per_kwh,
                 "fixed_charge_per_kw": params.fixed_charge_tariff_rate_per_kw,
+                "fac_charge_per_kwh": policy.fac_charge_per_kwh_imported,
+                "tax_rate": policy.tax_rate_on_energy_charges,
+            }
+        elif policy.net_metering_policy_type_id.policy_code == "TOU_RATE":
+            # Fetch all TOU periods for this simulation run
+            tou_params_list = self._tou_rate_policy_params_repo.filter(
+                simulation_run_id=simulation_run_id
+            )
+
+            if not tou_params_list:
+                logger.warning(
+                    f"TimeOfUseRatePolicy (params) for run id "
+                    f"{simulation_run_id} not found."
+                )
+                return None
+
+            tou_periods_config = [
+                {
+                    "id": str(p.id),
+                    "time_period_label": p.time_period_label,
+                    "start_time": p.start_time,
+                    "end_time": p.end_time,
+                    "import_retail_rate_per_kwh": p.import_retail_rate_per_kwh,
+                    "exp_whole_rate_per_kwh": p.export_wholesale_rate_per_kwh,
+                }
+                for p in tou_params_list
+            ]
+            fixed_charge_per_kw = (
+                0.0  # todo pending we dont have it from designs
+            )
+            return {
+                "simulation_run_id": sim_run.id,
+                "billing_cycle_month": sim_run.billing_cycle_month,
+                "billing_cycle_year": sim_run.billing_cycle_year,
+                "topology_root_node_id": sim_run.topology_root_node_id_id,
+                "policy_type": "TOU_RATE",
+                "tou_periods": tou_periods_config,
+                "fixed_charge_per_kw": fixed_charge_per_kw,
                 "fac_charge_per_kwh": policy.fac_charge_per_kwh_imported,
                 "tax_rate": policy.tax_rate_on_energy_charges,
             }
@@ -272,7 +313,7 @@ class BillSimulationService:
                 )
                 continue
 
-            # here I need to add the year when Shashwat responds
+            # Filter by billing_month and billing_year
             for i, ts in enumerate(timestamps):
                 if ts.month == billing_month:
                     total_imported_units += imported_intervals[i]
@@ -420,32 +461,193 @@ class BillSimulationService:
                 }
                 logger.info(f"  Calculated Bill Details: {bill_details}")
 
+            elif config.get("policy_type") == "TOU_RATE":
+                logger.info(
+                    f"  Calculating bill for house {house_node_id} "
+                    f"under TOU_RATE policy..."
+                )
+
+                tou_periods_config = config["tou_periods"]
+                overall_total_imported_units = 0.0
+                overall_total_exported_units = 0.0
+                tou_energy_data_details = []  # For bill_details
+
+                total_energy_charges_tou = 0.0
+                total_export_credit_tou = 0.0
+
+                for period_config in tou_periods_config:
+                    period_label = period_config["time_period_label"]
+                    start_time: datetime.time = period_config["start_time"]
+                    end_time: datetime.time = period_config["end_time"]
+                    import_rate = period_config["import_retail_rate_per_kwh"]
+                    export_rate = period_config["exp_whole_rate_per_kwh"]
+
+                    current_period_imported_kwh = 0.0
+                    current_period_exported_kwh = 0.0
+
+                    for i, ts in enumerate(timestamps):
+                        # Ensure we are in the correct billing month and year
+                        # skipping year validation until Shashwat responds
+                        if not (ts.month == billing_month):
+                            continue
+
+                        interval_time = ts.time()
+                    # Handle overnight periods (e.g., 22:00 to 06:00)
+                    if (
+                        start_time <= end_time
+                    ):  # Normal period (e.g. 08:00 to 17:00)
+                        if start_time <= interval_time < end_time:
+                            current_period_imported_kwh += imported_intervals[
+                                i
+                            ]
+                            current_period_exported_kwh += exported_intervals[
+                                i
+                            ]
+                    else:  # Overnight period (e.g. 22:00 to 06:00)
+                        if (
+                            interval_time >= start_time
+                            or interval_time < end_time
+                        ):
+                            current_period_imported_kwh += imported_intervals[
+                                i
+                            ]
+                            current_period_exported_kwh += exported_intervals[
+                                i
+                            ]
+
+                    overall_total_imported_units += current_period_imported_kwh
+                    overall_total_exported_units += current_period_exported_kwh
+
+                    import_cost_period = (
+                        current_period_imported_kwh * import_rate
+                    )
+                    export_credit_period = (
+                        current_period_exported_kwh * export_rate
+                    )
+
+                    total_energy_charges_tou += import_cost_period
+                    total_export_credit_tou += export_credit_period
+
+                    tou_energy_data_details.append(
+                        {
+                            "period_label": period_label,
+                            "start_time": start_time.isoformat(),
+                            "end_time": end_time.isoformat(),
+                            "imported_kwh": round(
+                                current_period_imported_kwh, 2
+                            ),
+                            "exported_kwh": round(
+                                current_period_exported_kwh, 2
+                            ),
+                            "import_rate_per_kwh": import_rate,
+                            "export_rate_per_kwh": export_rate,
+                            "import_cost_period": round(import_cost_period, 2),
+                            "export_credit_period": round(
+                                export_credit_period, 2
+                            ),
+                        }
+                    )
+
+                fixed_charges = 0.0
+                if config.get("fixed_charge_per_kw") is not None:
+                    fixed_charges = (
+                        config["fixed_charge_per_kw"] * sanctioned_load_kw
+                    )
+                else:  # PENDING: Hardcode if not available,
+                    logger.warning(
+                        "fixed_charge_per_kw not in config for TOU. Using 0.0"
+                    )
+
+                fac_charges = (
+                    overall_total_imported_units * config["fac_charge_per_kwh"]
+                )
+
+                tax_amount = 0.0
+                if total_energy_charges_tou > 0:
+                    tax_amount = total_energy_charges_tou * config["tax_rate"]
+
+                arrears = 0.0  # Assume 0 for now
+
+                total_bill_amount = (
+                    total_energy_charges_tou
+                    + fixed_charges
+                    + fac_charges
+                    + tax_amount
+                    - total_export_credit_tou
+                    - arrears
+                )
+
+                bill_details = {
+                    "house_node_id": house_node_id,
+                    "billing_cycle_month": billing_month,
+                    "billing_cycle_year": billing_year,
+                    "policy_type": "TOU_RATE",
+                    "overall_total_imported_kwh": round(
+                        overall_total_imported_units, 2
+                    ),
+                    "overall_total_exported_kwh": round(
+                        overall_total_exported_units, 2
+                    ),
+                    "tou_period_details": tou_energy_data_details,
+                    "total_energy_charges": round(total_energy_charges_tou, 2),
+                    "total_export_credit": round(total_export_credit_tou, 2),
+                    "fixed_charge_per_kw": config.get(
+                        "fixed_charge_per_kw"
+                    ),  # PENDING: May be None
+                    "sanctioned_load_kw": sanctioned_load_kw,
+                    "fixed_charges": round(fixed_charges, 2),
+                    "fac_charge_per_kwh": config["fac_charge_per_kwh"],
+                    "fac_charges": round(fac_charges, 2),
+                    "tax_rate": config["tax_rate"],
+                    "tax_amount_on_energy": round(tax_amount, 2),
+                    "arrears": round(arrears, 2),
+                    "total_bill_amount_calculated": round(
+                        total_bill_amount, 2
+                    ),
+                }
+                logger.info(f"  Calculated TOU Bill Details: {bill_details}")
+
             else:
                 logger.warning(
                     f"  Policy {config.get('policy_type')} not yet supported "
                     f"for house {house_node_id}."
                 )
-                continue  # or handle error
+                continue
 
             try:
+                # Common structure for house_bill_record
+                # For TOU, use overall imported/exported
+                net_balance_kwh_val = 0.0  # Initialize with a float
+                if config.get("policy_type") == "TOU_RATE":
+                    net_balance_kwh_val = round(
+                        overall_total_imported_units
+                        - overall_total_exported_units,
+                        2,  # type: ignore
+                    )
+                else:  # For SIMPLE_NET and GROSS_METERING
+                    net_balance_kwh_val = round(
+                        total_imported_units - total_exported_units, 2
+                    )
+
                 house_bill_record = {
                     "simulation_run_id": run_id,
                     "house_node_id": house_node_id,
-                    "total_energy_imported_kwh": bill_details[
-                        "total_imported_kwh"
-                    ],
-                    "total_energy_exported_kwh": bill_details[
-                        "total_exported_kwh"
-                    ],
-                    "net_energy_balance_kwh": round(
-                        total_imported_units - total_exported_units, 2
+                    "total_energy_imported_kwh": (
+                        bill_details.get("total_imported_kwh")
+                        if config.get("policy_type") != "TOU_RATE"
+                        else bill_details.get("overall_total_imported_kwh")
                     ),
+                    "total_energy_exported_kwh": (
+                        bill_details.get("total_exported_kwh")
+                        if config.get("policy_type") != "TOU_RATE"
+                        else bill_details.get("overall_total_exported_kwh")
+                    ),
+                    "net_energy_balance_kwh": net_balance_kwh_val,
                     "calculated_bill_amount": bill_details[
                         "total_bill_amount_calculated"
                     ],
                     "bill_details": bill_details,
                 }
-
                 self._house_bill_service.create(
                     user_id=None, **house_bill_record
                 )

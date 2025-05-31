@@ -248,6 +248,7 @@ Total Bill Amount: 6528
 ## Phase 3: Implement Bill Calculation for "Time of Use (TOU) Rate Metering" Policy
 
    - **Input:** `simulation_run_id` for a run configured with 'TOU_RATE' policy.
+   - **Status:** [x] Implemented
 
 ### Time-of-Use (TOU) Metering Bill Examples:
 
@@ -276,14 +277,15 @@ Total Bill Amount: 6180.2
      - Read all associated records from `tou_rate_policy_params` for this `simulation_run_id`. This gives a list of TOU periods (label, start_time, end_time, import_retail_rate_per_kwh, export_wholesale_rate_per_kwh).
      - Fetch `fixed_charge_tariff_rate_per_kw`, `fac_charge_per_kwh_imported`, `tax_rate_on_energy_charges` from `simulation_selected_policies`.
    - **Status:**
-     - [ ] Not Started.
+     - [x] Implemented in `BillSimulationService._fetch_simulation_configuration()`.
    - **Comments/Questions:**
-     - Handling multiple TOU periods per simulation run is key.
+     - Handling multiple TOU periods per simulation run is key. The method now fetches all `tou_rate_policy_params` for the run.
+     - `fixed_charge_tariff_rate_per_kw` is correctly fetched from `policy` (i.e., `SimulationSelectedPolicy` instance).
 
 ### 2. Iterate Through Houses
    - **Description:** Same as step 2 in Phase 1.
    - **Status:**
-     - [ ] Not Started (reuse logic).
+     - [x] Implemented (Logic reused from Phase 1 within `BillSimulationService.calculate_bills_for_simulation_run()`).
 
 ### 3. Aggregate Energy Data Per TOU Period for the Billing Cycle for Each House
    - **Description:** For each house and for each defined TOU period:
@@ -294,10 +296,12 @@ Total Bill Amount: 6180.2
      - Add interval's `Export_Interval` to `Total_Export_Period_X`.
      - Calculate `Overall_Total_Imported_Units` (kWh) for FAC calculation.
    - **Status:**
-     - [ ] Not Started.
+     - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()`.
    - **Comments/Questions:**
      - This is the most complex aggregation step. Requires careful mapping of 15-min interval timestamps to TOU periods.
-     - **Timestamp Handling (User Feedback):** TOU `start_time` and `end_time` are local times for the grid/location zone. Interval data timestamps (from `DataPreparationService`) should be treated as local time for comparison. Ensure consistency in handling these local times.
+     - **Timestamp Handling (User Feedback):** TOU `start_time` and `end_time` are local times. Interval data timestamps (from `DataPreparationService`) are `datetime.datetime` objects. The implementation uses `ts.time()` for comparison with TOU period `start_time` and `end_time` (which are `datetime.time` objects).
+     - Filtering by `billing_cycle_year` has been added to the aggregation loop.
+     - Handles normal (e.g., 08:00-17:00) and overnight (e.g., 22:00-06:00) TOU periods.
 
 ### 4. Calculate Bill Components for "TOU Rate Metering" for Each House
    - **Description:**
@@ -314,25 +318,27 @@ Total Bill Amount: 6180.2
      - `Arrears` (₹): Assume 0.
      - `Total_Bill_Amount` (₹) = `Total_Energy_Charges` + `Fixed_Charges` + `FAC_Charges` + `Tax_Amount` - `Total_Export_Credit` - `Arrears`.
    - **Status:**
-     - [ ] Not Started.
+     - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()`.
    - **Comments/Questions:**
-     - **TOU Export Compensation (User Feedback):** Pending - Awaiting confirmation from supervisor. The `tou_rate_policy_params` table includes `export_wholesale_rate_per_kwh`. For now, proceed assuming it might be needed but await final confirmation before full implementation.
+     - **TOU Export Compensation (User Feedback):** Implemented based on the presence of `export_wholesale_rate_per_kwh` in `tou_rate_policy_params`. `Total_Export_Credit` is calculated and subtracted from the bill.
+     - `fixed_charge_per_kw` is used from the config; if None (which shouldn't happen if `simulation_selected_policies` has it), a warning is logged and 0 is used for fixed charges (marked PENDING in code).
 
 ### 5. Store Bill Results for Each House
    - **Description:** Create a record in `simulation_engine.house_bills`.
      - `total_energy_imported_kwh` = `Overall_Total_Imported_Units`.
      - `total_energy_exported_kwh` = Sum of exports across all periods.
      - `net_energy_balance_kwh` = `Overall_Total_Imported_Units` - Sum of exports.
-     - `bill_details` (JSONB): Store intermediate values as specified for "TOU_RATE", including the breakdown per TOU period.
+     - `bill_details` (JSONB): Store intermediate values as specified for "TOU_RATE", including the breakdown per TOU period (`tou_period_details` list).
    - **Status:**
-     - [ ] Not Started.
+     - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()`.
    - **Comments/Questions:**
-     - JSONB structure needs to accommodate the list of TOU period breakdowns.
+     - JSONB structure includes `tou_period_details` list, capturing per-period data.
+     - `total_energy_imported_kwh` and `total_energy_exported_kwh` in the `house_bills` table now correctly use the `overall_total_imported_units` and `overall_total_exported_units` for TOU policy.
 
 ### 6. Update `simulation_runs` Status
    - **Description:** Same as Phase 1.
    - **Status:**
-     - [ ] Not Started.
+     - [x] Implemented (Logic reused from Phase 1).
 
 ## General Implementation Notes:
 - [ ] **Service Location:** The new bill calculation service will be created under `api/app/domain/services/simulator_engine/`.

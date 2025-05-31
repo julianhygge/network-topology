@@ -388,6 +388,7 @@ class Container(containers.DeclarativeContainer):
         selected_policy_repository=_selected_policy_repository,
         net_metering_policy_repo=_net_metering_policy_repository,
         gross_metering_policy_repo=_gross_metering_policy_repository,
+        tou_rate_policy_params_repository=_tou_rate_policy_repository,  # Added
         house_bill_service=house_bill_service,
         net_topology_service=net_topology_service,
         data_preparation_service=data_preparations_service,
