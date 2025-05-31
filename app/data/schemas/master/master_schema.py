@@ -6,7 +6,8 @@ from peewee import (
     DateTimeField,
     DoubleField,
     ForeignKeyField,
-    PrimaryKeyField, UUIDField,
+    PrimaryKeyField,
+    UUIDField,
 )
 
 from app.data.schemas.schema_base import BaseModel
@@ -77,7 +78,8 @@ class SimulationAlgorithm(BaseModel):
         schema = "master"
         table_name = "simulation_algorithm_types"
 
-class NetMeteringAlgorithm(BaseModel):
+
+class NetMeteringPolicyTypes(BaseModel):
     id = UUIDField(primary_key=True)
     policy_code = CharField()
     display_name = CharField()

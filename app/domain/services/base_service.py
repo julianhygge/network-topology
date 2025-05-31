@@ -6,7 +6,7 @@ from uuid import UUID
 from app.data.interfaces.i_repository import IRepository
 from app.data.schemas.schema_base import BaseModel
 from app.domain.interfaces.i_service import IService
-from app.exceptions.hygge_exceptions import ServiceException, NotFoundException
+from app.exceptions.hygge_exceptions import NotFoundException
 from app.utils.datetime_util import utc_now
 
 T = TypeVar("T", bound=BaseModel)
@@ -51,11 +51,7 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
 
         if isinstance(result, dict):
             return cast(Dict[str, Any], result)
-        # This case should ideally not be reached if create is successful
-        # and to_dicts works as expected for a single model.
-        raise ValueError(
-            "Failed to convert created item to dictionary."
-        )
+        raise ValueError("Failed to convert created item to dictionary.")
 
     def read(self, item_id: Union[int, UUID]) -> Optional[Dict[str, Any]]:
         """
@@ -95,19 +91,14 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
 
         existing_item = self.repository.read_or_none(item_id)
         if existing_item is None:
-            raise NotFoundException(
-                f"No data exist for id {item_id}"
-            )
+            raise NotFoundException(f"No data exist for id {item_id}")
 
-        updated_count = self.repository.update(item_id, kwargs)
+        updated_item = self.repository.update(item_id, kwargs)
 
-        if updated_count:
-            # Re-fetch the item to return its latest state as a dict
-            updated_item = self.repository.read(item_id)
-            if updated_item:
-                result = self.repository.to_dicts(updated_item)
-                if isinstance(result, dict):
-                    return cast(Dict[str, Any], result)
+        if updated_item:
+            result = self.repository.to_dicts(updated_item)
+            if isinstance(result, dict):
+                return cast(Dict[str, Any], result)
         return None
 
     def delete(self, item_id: Union[int, UUID]) -> int:
@@ -139,9 +130,7 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
 
         if isinstance(result, list):
             # Ensure all items in the list are dictionaries
-            return [
-                item for item in result if isinstance(item, dict)
-            ]
+            return [item for item in result if isinstance(item, dict)]
         return []
 
     def list_all(self) -> List[Dict[str, Any]]:
@@ -155,14 +144,10 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
         result = self.repository.to_dicts(list_items)
 
         if isinstance(result, list):
-            return [
-                item for item in result if isinstance(item, dict)
-            ]
+            return [item for item in result if isinstance(item, dict)]
         return []
 
-    def filter(  
-        self, **filters: Any
-    ) -> List[Dict[str, Any]]:
+    def filter(self, **filters: Any) -> List[Dict[str, Any]]:
         """
         Filters records based on Peewee expressions and equality filters.
 
@@ -172,15 +157,11 @@ class BaseService(IService[UUID, Union[int, UUID]], Generic[T]):
         Returns:
             A list of dictionaries representing matching model instances.
         """
-        list_items: List[T] = self.repository.filter(
-            **filters
-        )
+        list_items: List[T] = self.repository.filter(**filters)
         result = self.repository.to_dicts(list_items)
 
         if isinstance(result, list):
-            return [
-                item for item in result if isinstance(item, dict)
-            ]
+            return [item for item in result if isinstance(item, dict)]
         if isinstance(result, dict):
             return [cast(Dict[str, Any], result)]
         return []

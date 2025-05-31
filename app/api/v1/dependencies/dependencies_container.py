@@ -40,12 +40,20 @@ from app.data.repositories.topology.topology_repository import (
 from app.data.schemas.hygge_database import HyggeDatabase
 from app.data.schemas.master.master_schema import (
     ElectricalAppliances,
-    PredefinedTemplates, SimulationAlgorithm, NetMeteringAlgorithm,
+    NetMeteringPolicyTypes,
+    PredefinedTemplates,
+    SimulationAlgorithm,
 )
 from app.data.schemas.simulation.house_bill_schema import HouseBill
-from app.data.schemas.simulation.metering_policy_schema import NetMeteringPolicy, GrossMeteringPolicy, \
-    TimeOfUseRatePolicy
-from app.data.schemas.simulation.simulation_runs_schema import SimulationRuns, SimulationSelectedPolicy
+from app.data.schemas.simulation.metering_policy_schema import (
+    GrossMeteringPolicy,
+    NetMeteringPolicy,
+    TimeOfUseRatePolicy,
+)
+from app.data.schemas.simulation.simulation_runs_schema import (
+    SimulationRuns,
+    SimulationSelectedPolicy,
+)
 from app.data.schemas.solar.solar_schema import SiteRefYearProduction
 from app.data.schemas.transactional.topology_schema import (
     House,
@@ -66,6 +74,9 @@ from app.domain.services.load.load_profile_file_completer import (
     LoadProfileFileCompleterLinear,
     LoadProfileFileCompleterPChip,
     LoadProfileFileCompleterSpline,
+)
+from app.domain.services.simulator_engine.bill_simulation_service import (
+    BillSimulationService,
 )
 from app.domain.services.simulator_engine.data_preparation_service import (
     DataPreparationService,
@@ -90,7 +101,6 @@ from app.domain.services.solar.solar_installtion_service import (
     SolarInstallationService,
 )
 from app.domain.services.solar.solar_profile_service import SolarProfileService
-from app.domain.services.simulator_engine.bill_simulation_service import BillSimulationService
 from app.domain.services.topology.house_service import HouseService
 from app.domain.services.topology.net_topology_service import (
     NetTopologyService,
@@ -176,8 +186,8 @@ class Container(containers.DeclarativeContainer):
         BaseRepository[SimulationAlgorithm], SimulationAlgorithm
     )
 
-    _net_metering_algorithm_repository = providers.Singleton(
-        BaseRepository[NetMeteringAlgorithm], NetMeteringAlgorithm
+    _policy_types_repository = providers.Singleton(
+        BaseRepository[NetMeteringPolicyTypes], NetMeteringPolicyTypes
     )
 
     _simulation_runs_repository = providers.Singleton(
@@ -195,7 +205,7 @@ class Container(containers.DeclarativeContainer):
         BaseRepository[TimeOfUseRatePolicy], TimeOfUseRatePolicy
     )
 
-    _simulation_selected_policy_repository = providers.Singleton(
+    _selected_policy_repository = providers.Singleton(
         BaseRepository[SimulationSelectedPolicy], SimulationSelectedPolicy
     )
 
@@ -305,8 +315,8 @@ class Container(containers.DeclarativeContainer):
         BaseService, repository=_simulation_algorithm_repository
     )
 
-    net_metering_algorithm_service = providers.Singleton(
-        BaseService, repository=_net_metering_algorithm_repository
+    policy_type_service = providers.Singleton(
+        BaseService, repository=_policy_types_repository
     )
 
     simulation_runs_service = providers.Singleton(
@@ -324,7 +334,7 @@ class Container(containers.DeclarativeContainer):
     )
 
     simulation_selected_policy_service = providers.Singleton(
-        BaseService, repository=_simulation_selected_policy_repository
+        BaseService, repository=_selected_policy_repository
     )
 
     house_bill_service = providers.Singleton(
@@ -374,15 +384,11 @@ class Container(containers.DeclarativeContainer):
 
     bill_simulation_service = providers.Singleton(
         BillSimulationService,
-        simulation_runs_service=simulation_runs_service,
-        simulation_selected_policy_service=simulation_selected_policy_service,
-        net_metering_policy_service=net_metering_policy_service,
-        net_metering_algorithm_service=net_metering_algorithm_service,
-        # gross_metering_policy_service, # Add when phase 2 is implemented
-        # tou_rate_policy_service, # Add when phase 3 is implemented
+        simulation_runs_repository=_simulation_runs_repository,
+        selected_policy_repository=_selected_policy_repository,
+        net_metering_policy_repo=_net_metering_policy_repository,
         house_bill_service=house_bill_service,
         net_topology_service=net_topology_service,
-        house_service=house_service,
         data_preparation_service=data_preparations_service,
     )
 

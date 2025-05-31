@@ -1,5 +1,13 @@
-from peewee import ForeignKeyField, DoubleField, UUIDField, CharField, TimeField
 import uuid
+
+from peewee import (
+    CharField,
+    DoubleField,
+    ForeignKeyField,
+    TimeField,
+    UUIDField,
+)
+
 from app.data.schemas.schema_base import BaseModel
 from app.data.schemas.simulation.simulation_runs_schema import SimulationRuns
 
@@ -9,7 +17,7 @@ class GrossMeteringPolicy(BaseModel):
         SimulationRuns,
         backref="gross",
         column_name="simulation_run_id",
-        primary_key=True
+        primary_key=True,
     )
     import_retail_price_per_kwh = DoubleField()
     export_wholesale_price_per_kwh = DoubleField()
@@ -19,12 +27,13 @@ class GrossMeteringPolicy(BaseModel):
         schema = "simulation_engine"
         table_name = "gross_metering_policy_params"
 
+
 class NetMeteringPolicy(BaseModel):
     simulation_run_id = ForeignKeyField(
         SimulationRuns,
         backref="net_metering",
         column_name="simulation_run_id",
-        primary_key=True
+        primary_key=True,
     )
     retail_price_per_kwh = DoubleField()
     fixed_charge_tariff_rate_per_kw = DoubleField(null=True)
@@ -33,12 +42,11 @@ class NetMeteringPolicy(BaseModel):
         schema = "simulation_engine"
         table_name = "net_metering_policy_params"
 
+
 class TimeOfUseRatePolicy(BaseModel):
     id = UUIDField(primary_key=True, default=uuid.uuid4)
     simulation_run_id = ForeignKeyField(
-        SimulationRuns,
-        backref="tou",
-        column_name="simulation_run_id"
+        SimulationRuns, backref="tou", column_name="simulation_run_id"
     )
     time_period_label = CharField()
     start_time = TimeField()
