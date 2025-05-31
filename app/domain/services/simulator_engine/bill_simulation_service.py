@@ -34,6 +34,7 @@ class BillSimulationService:
         simulation_runs_repository: IRepository,
         selected_policy_repository: IRepository,
         net_metering_policy_repo: IRepository,
+        gross_metering_policy_repo: IRepository,
         house_bill_service: IService,
         net_topology_service: INetTopologyService,
         data_preparation_service: IDataPreparationService,
@@ -44,6 +45,7 @@ class BillSimulationService:
         self._sim_runs_repo = simulation_runs_repository
         self._selected_policy_repository = selected_policy_repository
         self._net_metering_policy_repo = net_metering_policy_repo
+        self._gross_metering_policy_repo = gross_metering_policy_repo
         self._house_bill_service = house_bill_service
         self._net_topology_service = net_topology_service
         self._data_preparation_service = data_preparation_service
@@ -98,6 +100,32 @@ class BillSimulationService:
                 "fac_charge_per_kwh": policy.fac_charge_per_kwh_imported,
                 "tax_rate": policy.tax_rate_on_energy_charges,
                 "retail_price_per_kwh": params.retail_price_per_kwh,
+            }
+        elif (
+            policy.net_metering_policy_type_id.policy_code == "GROSS_METERING"
+        ):
+            params = self._gross_metering_policy_repo.read_or_none(
+                simulation_run_id
+            )
+
+            if not params:
+                logger.warning(
+                    f"GrossMeteringPolicy (params) for run id "
+                    f"{simulation_run_id} not found."
+                )
+                return None
+
+            return {
+                "simulation_run_id": sim_run.id,
+                "billing_cycle_month": sim_run.billing_cycle_month,
+                "billing_cycle_year": sim_run.billing_cycle_year,
+                "topology_root_node_id": sim_run.topology_root_node_id_id,
+                "policy_type": "GROSS_METERING",
+                "import_retail_price_kwh": params.import_retail_price_per_kwh,
+                "exp_whole_price_kwh": params.export_wholesale_price_per_kwh,
+                "fixed_charge_per_kw": params.fixed_charge_tariff_rate_per_kw,
+                "fac_charge_per_kwh": policy.fac_charge_per_kwh_imported,
+                "tax_rate": policy.tax_rate_on_energy_charges,
             }
 
     def _get_houses_in_topology(self, substation_id: UUID) -> List[Node]:
@@ -322,6 +350,76 @@ class BillSimulationService:
                 }
                 logger.info(f"  Calculated Bill Details: {bill_details}")
 
+            elif config.get("policy_type") == "GROSS_METERING":
+                logger.info(
+                    f"  Calculating bill for house {house_node_id} "
+                    f"under GROSS_METERING policy..."
+                )
+
+                import_retail_price = config["import_retail_price_kwh"]
+                export_wholesale_price = config["exp_whole_price_kwh"]
+
+                imported_energy_charges = (
+                    total_imported_units * import_retail_price
+                )
+                exported_energy_credit = (
+                    total_exported_units * export_wholesale_price
+                )
+
+                fixed_charges = 0.0
+                if config.get("fixed_charge_per_kw") is not None:
+                    fixed_charges = (
+                        config["fixed_charge_per_kw"] * sanctioned_load_kw
+                    )
+
+                fac_charges = (
+                    total_imported_units * config["fac_charge_per_kwh"]
+                )
+
+                tax_amount = 0.0
+                # Tax is typically on net positive energy charges
+                # or total imported
+                # Assuming tax on imported energy charges for gross metering
+                if imported_energy_charges > 0:
+                    tax_amount = imported_energy_charges * config["tax_rate"]
+
+                arrears = 0.0  # Assume 0 for now
+
+                total_bill_amount = (
+                    imported_energy_charges
+                    + fixed_charges
+                    + fac_charges
+                    + tax_amount
+                    - exported_energy_credit
+                )
+
+                bill_details = {
+                    "house_node_id": house_node_id,
+                    "billing_cycle_month": billing_month,
+                    "billing_cycle_year": billing_year,
+                    "policy_type": "GROSS_METERING",
+                    "total_imported_kwh": round(total_imported_units, 2),
+                    "total_exported_kwh": round(total_exported_units, 2),
+                    "import_retail_price_per_kwh": import_retail_price,
+                    "exp_whole_price_kwh": export_wholesale_price,
+                    "imported_energy_charges": round(
+                        imported_energy_charges, 2
+                    ),
+                    "exported_energy_credit": round(exported_energy_credit, 2),
+                    "fixed_charge_per_kw": config.get("fixed_charge_per_kw"),
+                    "sanctioned_load_kw": sanctioned_load_kw,
+                    "fixed_charges": round(fixed_charges, 2),
+                    "fac_charge_per_kwh": config["fac_charge_per_kwh"],
+                    "fac_charges": round(fac_charges, 2),
+                    "tax_rate": config["tax_rate"],
+                    "tax_amount_on_energy": round(tax_amount, 2),
+                    "arrears": round(arrears, 2),
+                    "total_bill_amount_calculated": round(
+                        total_bill_amount, 2
+                    ),
+                }
+                logger.info(f"  Calculated Bill Details: {bill_details}")
+
             else:
                 logger.warning(
                     f"  Policy {config.get('policy_type')} not yet supported "
@@ -339,7 +437,9 @@ class BillSimulationService:
                     "total_energy_exported_kwh": bill_details[
                         "total_exported_kwh"
                     ],
-                    "net_energy_balance_kwh": bill_details["net_usage_kwh"],
+                    "net_energy_balance_kwh": round(
+                        total_imported_units - total_exported_units, 2
+                    ),
                     "calculated_bill_amount": bill_details[
                         "total_bill_amount_calculated"
                     ],

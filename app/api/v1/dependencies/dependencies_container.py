@@ -387,6 +387,7 @@ class Container(containers.DeclarativeContainer):
         simulation_runs_repository=_simulation_runs_repository,
         selected_policy_repository=_selected_policy_repository,
         net_metering_policy_repo=_net_metering_policy_repository,
+        gross_metering_policy_repo=_gross_metering_policy_repository,
         house_bill_service=house_bill_service,
         net_topology_service=net_topology_service,
         data_preparation_service=data_preparations_service,
