@@ -762,7 +762,7 @@ async def update_house_bill(
     path="/houses/{house_id}/energy-summary",
     response_model=EnergySummaryResponse,
 )
-async def get_house_energy_summary_endpoint(
+async def get_house_energy_summary(
     house_id: UUID,
     start_date: date,
     end_date: date,
@@ -788,7 +788,7 @@ async def get_house_energy_summary_endpoint(
     path="/nodes/{node_id}/energy-summary",
     response_model=EnergySummaryResponse,
 )
-async def get_node_energy_summary_endpoint(
+async def get_node_energy_summary(
     node_id: UUID,
     start_date: date,
     end_date: date,
@@ -797,7 +797,7 @@ async def get_node_energy_summary_endpoint(
 ):
     """
     Retrieve the total imported and exported energy for all houses under a
-    specific node (e.g., transformer, substation, or a house itself)
+    specific node (Locality, substation, substation, or a house itself)
     for a given date range.
     """
     try:
