@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION=3.9.9
+ARG PYTHON_VERSION=3.11.0
 FROM python:${PYTHON_VERSION}-alpine3.15
 
 ARG ENVIRONMENT
@@ -8,6 +8,7 @@ WORKDIR /app
 
 COPY requirements.txt .
 
+# Instalamos dependencias necesarias para compilar pandas y otras librerías
 RUN apk update && \
     apk add --no-cache \
     gcc \
@@ -23,18 +24,17 @@ RUN apk update && \
     cairo \
     pango \
     gdk-pixbuf \
-    libffi \
     fontconfig \
     ttf-freefont \
-    chrony && \
+    chrony \
+    openblas-dev \
+    gfortran \
+    tzdata && \
     fc-cache -fv && \
-    pip install --trusted-host pypi.python.org -r requirements.txt psycopg2-binary && \
-    rm -rf /var/cache/apk/*  # Clean up
-
-# Configurar zona horaria a India Standard Time (IST)
-RUN apk add --no-cache tzdata && \
     cp /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && \
-    echo "Asia/Kolkata" > /etc/timezone
+    echo "Asia/Kolkata" > /etc/timezone && \
+    pip install --no-cache-dir --trusted-host pypi.python.org -r requirements.txt && \
+    rm -rf /var/cache/apk/*
 
 RUN mkdir -p /var/log/application/
 ENV PYTHONPATH /app

@@ -60,9 +60,7 @@ GetSimulationSelectedPolicyServiceDep = Depends(
     get_simulation_selected_policy_service
 )
 GetHouseBillServiceDep = Depends(get_house_bill_service)
-GetBillSimulationServiceDep = Depends(
-    get_bill_simulation_service
-)  
+GetBillSimulationServiceDep = Depends(get_bill_simulation_service)
 
 SimulationRetrievePermissionDep = Depends(
     permission(Resources.SIMULATION, Permission.RETRIEVE)
@@ -176,6 +174,36 @@ async def get_net_metering_algorithm(
             items=[NetMeteringAlgorithmResponse(**item) for item in body]
         )
         return response
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@simulation_router.get(
+    path="/{locality_id}/simulations-runs",
+    response_model=List[SimulationRunsResponse],
+)
+async def get_simulation_runs_by_locality(
+    locality_id: UUID,
+    service: IService = GetSimulationRunServiceDep,
+    _: UUID = SimulationRetrievePermissionDep,
+):
+    """
+    Create the simulation run
+
+    Args:
+        locality_id: Unique Id of locality
+        service: The simulation run service.
+        _: Dependency to check permission.
+
+    Returns:
+        Newly Created Simulation
+
+    Raises:
+        HTTPException: If an error occurs during retrieval.
+    """
+    try:
+        response = service.filter(locality_id=locality_id)
+        return [SimulationRunsResponse(**item) for item in response]
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -489,6 +517,36 @@ async def get_tou_metering_policy(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+@simulation_router.get(
+    path="/{simulation_run_id}/policy/tou",
+    response_model=List[TimeOfUseResponse],
+)
+async def get_tou_metering_policy(
+    simulation_run_id: UUID,
+    service: IService = GetTOURatePolicyServiceDep,
+    _: UUID = SimulationRetrievePermissionDep,
+):
+    """
+    Create Time of Use Rate Policy
+
+    Args:
+        simulation_run_id: Unique ID of simulation run
+        service: The time of use rate policy service.
+        _: Dependency to check permission.
+
+    Returns:
+        Created data from time of use rate policy table
+
+    Raises:
+        HTTPException: If an error occurs during retrieval.
+    """
+    try:
+        response = service.filter(simulation_run_id=simulation_run_id)
+        return [TimeOfUseResponse(**item) for item in response]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 @simulation_router.post(path="/policy/tou", response_model=TimeOfUseResponse)
 async def create_tou_metering_policy(
     data: TimeOfUseRequestModel,
@@ -690,7 +748,7 @@ async def get_house_bill(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        response = service.read(house_bill_id)
+        response = service.read_or_none(house_bill_id)
         return HouseBillResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

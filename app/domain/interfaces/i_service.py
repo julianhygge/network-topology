@@ -28,6 +28,12 @@ class IService(ABC, Generic[UserIdGeneric, ItemIdGeneric]):
         """
 
     @abstractmethod
+    def read_or_none(self, item_id: ItemIdGeneric) -> Optional[Dict[str, Any]]:
+        """
+        Abstract method to read a record by its ID.
+        """
+
+    @abstractmethod
     def update(
         self, user_id: UserIdGeneric, item_id: ItemIdGeneric, **kwargs: Any
     ) -> Optional[Dict[str, Any]]:
