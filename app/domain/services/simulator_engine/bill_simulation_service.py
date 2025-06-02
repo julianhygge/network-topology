@@ -7,9 +7,7 @@ from typing import Any, Dict, List
 from uuid import UUID
 
 from app.data.interfaces.i_repository import IRepository
-from app.domain.entities.house_profile import (
-    HouseProfile,  # For 15-min interval data
-)
+from app.domain.entities.house_profile import HouseProfile
 from app.domain.entities.node import Node
 from app.domain.interfaces.i_service import IService
 from app.domain.interfaces.net_topology.i_net_topology_service import (
@@ -18,7 +16,16 @@ from app.domain.interfaces.net_topology.i_net_topology_service import (
 from app.domain.interfaces.simulator_engine.i_data_preparation_service import (
     IDataPreparationService,
 )
-from app.exceptions.hygge_exceptions import NotFoundException
+from app.domain.services.simulator_engine.billing_strategies import (
+    GrossMeteringStrategy,
+    IBillingPolicyStrategy,
+    SimpleNetMeteringStrategy,
+    TimeOfUseRateStrategy,
+)
+from app.exceptions.hygge_exceptions import (
+    NotFoundException,
+    ServiceException,
+)
 from app.utils.datetime_util import (
     end_of_day,
     end_of_month,
@@ -60,21 +67,40 @@ class BillSimulationService:
         self._net_topology_service = net_topology_service
         self._data_preparation_service = data_preparation_service
 
+        self._billing_strategies: Dict[str, IBillingPolicyStrategy] = {
+            "SIMPLE_NET": SimpleNetMeteringStrategy(),
+            "GROSS_METERING": GrossMeteringStrategy(),
+            "TOU_RATE": TimeOfUseRateStrategy(),
+        }
+
+    def _get_billing_strategy(
+        self, policy_code: str
+    ) -> IBillingPolicyStrategy:
+        """
+        Retrieves the billing strategy for the given policy code.
+        """
+        strategy = self._billing_strategies.get(policy_code)
+        if not strategy:
+            logger.error(f"Unsupported billing policy code: {policy_code}")
+            raise ServiceException(
+                f"Unsupported billing policy code: {policy_code}"
+            )
+        return strategy
+
     def _fetch_simulation_configuration(
         self,
         simulation_run_id: UUID,
     ) -> Dict[str, Any] | None:
         """
-        Fetches the configuration for a given simulation run for Net Metering.
+        Fetches the configuration for a given simulation run.
 
         Args:
             simulation_run_id: The ID of the simulation run.
 
         Returns:
-            A dictionary containing the simulation configuration
-            or None if not found or not a Net Metering policy.
+            A dictionary containing the simulation configuration,
+            including policy-specific parameters, or None if data is missing.
         """
-
         sim_run = self._sim_runs_repo.read_or_none(simulation_run_id)
         if not sim_run:
             logger.warning(
@@ -82,99 +108,91 @@ class BillSimulationService:
             )
             return None
 
-        policy = self._selected_policy_repository.read(simulation_run_id)
-
-        if not policy:
-            logger.warning(f"Policy for run {simulation_run_id} not found.")
+        policy_details = self._selected_policy_repository.read(
+            simulation_run_id
+        )
+        if not policy_details:
+            logger.warning(
+                f"SelectedPolicy for run {simulation_run_id} not found."
+            )
             return None
 
-        if policy.net_metering_policy_type_id.policy_code == "SIMPLE_NET":
+        policy_code = policy_details.net_metering_policy_type_id.policy_code
+        policy_specific_params = {}
+
+        if policy_code == "SIMPLE_NET":
             params = self._net_metering_policy_repo.read_or_none(
                 simulation_run_id
             )
-
             if not params:
                 logger.warning(
-                    f"NetMeteringPolicy (params) with id"
-                    f"{policy.net_metering_policy_type_id} not found."
+                    f"NetMeteringPolicy for run {simulation_run_id} not found."
                 )
                 return None
-
-            return {
-                "simulation_run_id": sim_run.id,
-                "billing_cycle_month": sim_run.billing_cycle_month,
-                "billing_cycle_year": sim_run.billing_cycle_year,
-                "topology_root_node_id": sim_run.topology_root_node_id_id,
-                "policy_type": "SIMPLE_NET",
+            policy_specific_params = {
                 "fixed_charge_per_kw": params.fixed_charge_tariff_rate_per_kw,
-                "fac_charge_per_kwh": policy.fac_charge_per_kwh_imported,
-                "tax_rate": policy.tax_rate_on_energy_charges,
                 "retail_price_per_kwh": params.retail_price_per_kwh,
             }
-        elif (
-            policy.net_metering_policy_type_id.policy_code == "GROSS_METERING"
-        ):
+        elif policy_code == "GROSS_METERING":
             params = self._gross_metering_policy_repo.read_or_none(
                 simulation_run_id
             )
-
             if not params:
                 logger.warning(
-                    f"GrossMeteringPolicy (params) for run id "
-                    f"{simulation_run_id} not found."
+                    f"GrossMeteringPolicy for run {simulation_run_id} not found."
                 )
                 return None
-
-            return {
-                "simulation_run_id": sim_run.id,
-                "billing_cycle_month": sim_run.billing_cycle_month,
-                "billing_cycle_year": sim_run.billing_cycle_year,
-                "topology_root_node_id": sim_run.topology_root_node_id_id,
-                "policy_type": "GROSS_METERING",
+            policy_specific_params = {
                 "import_retail_price_kwh": params.import_retail_price_per_kwh,
                 "exp_whole_price_kwh": params.export_wholesale_price_per_kwh,
                 "fixed_charge_per_kw": params.fixed_charge_tariff_rate_per_kw,
-                "fac_charge_per_kwh": policy.fac_charge_per_kwh_imported,
-                "tax_rate": policy.tax_rate_on_energy_charges,
             }
-        elif policy.net_metering_policy_type_id.policy_code == "TOU_RATE":
-            # Fetch all TOU periods for this simulation run
+        elif policy_code == "TOU_RATE":
             tou_params_list = self._tou_rate_policy_params_repo.filter(
                 simulation_run_id=simulation_run_id
             )
-
             if not tou_params_list:
                 logger.warning(
-                    f"TimeOfUseRatePolicy (params) for run id "
-                    f"{simulation_run_id} not found."
+                    f"TimeOfUseRatePolicy for {simulation_run_id} not found."
                 )
                 return None
-
-            tou_periods_config = [
+            policy_specific_params["tou_periods"] = [
                 {
-                    "id": str(p.id),
+                    "id": str(
+                        p.id
+                    ),  # Keep for potential future use or detailed logging
                     "time_period_label": p.time_period_label,
-                    "start_time": p.start_time,
-                    "end_time": p.end_time,
+                    "start_time": p.start_time,  # Keep as datetime.time
+                    "end_time": p.end_time,  # Keep as datetime.time
                     "import_retail_rate_per_kwh": p.import_retail_rate_per_kwh,
                     "exp_whole_rate_per_kwh": p.export_wholesale_rate_per_kwh,
                 }
                 for p in tou_params_list
             ]
-            fixed_charge_per_kw = (
-                0.0  # todo pending we dont have it from designs
+            # fixed_charge_per_kw for TOU
+            # might be part of selected_policy_details or a default
+            # For now, assuming it might be missing
+            # or needs a default if not in specific TOU params.
+            # The strategy will handle if it's None.
+            policy_specific_params["fixed_charge_per_kw"] = getattr(
+                policy_details, "fixed_charge_tariff_rate_per_kw", 0.0
             )
-            return {
-                "simulation_run_id": sim_run.id,
-                "billing_cycle_month": sim_run.billing_cycle_month,
-                "billing_cycle_year": sim_run.billing_cycle_year,
-                "topology_root_node_id": sim_run.topology_root_node_id_id,
-                "policy_type": "TOU_RATE",
-                "tou_periods": tou_periods_config,
-                "fixed_charge_per_kw": fixed_charge_per_kw,
-                "fac_charge_per_kwh": policy.fac_charge_per_kwh_imported,
-                "tax_rate": policy.tax_rate_on_energy_charges,
-            }
+
+        # Common parameters applicable to all policies
+        common_params = {
+            "fac_charge_per_kwh": policy_details.fac_charge_per_kwh_imported,
+            "tax_rate": policy_details.tax_rate_on_energy_charges,
+        }
+        policy_specific_params.update(common_params)
+
+        return {
+            "simulation_run_id": sim_run.id,
+            "billing_cycle_month": sim_run.billing_cycle_month,
+            "billing_cycle_year": sim_run.billing_cycle_year,
+            "topology_root_node_id": sim_run.topology_root_node_id_id,
+            "policy_type": policy_code,
+            "policy_config": policy_specific_params,
+        }
 
     def _get_houses_in_topology(self, substation_id: UUID) -> List[Node]:
         """
@@ -265,404 +283,145 @@ class BillSimulationService:
 
             # 3. Aggregate Energy Data for the Billing Cycle for Each House
             billing_month = config["billing_cycle_month"]
-            billing_year = config["billing_cycle_year"]
+            billing_year = config[
+                "billing_cycle_year"
+            ]  # This will be used for record keeping
 
             logger.info(
-                f"  Fetching 15-min interval data for house {house_node_id} "
-                f"for {billing_month}/{billing_year}..."
+                f"  Fetching energy data for house {house_node_id} "
+                f"for {billing_month}/{config['billing_cycle_year']}"
             )
 
+            # Get raw 15-min interval data for the house
+            # This data is needed by TOU strategy directly.
+            # For other strategies, we'll use the aggregated summary.
             try:
                 house_profile: HouseProfile | None = (
                     self._data_preparation_service.get_house_profile(
                         house=house_entity
-                    )  # Pass the House entity
+                    )
                 )
             except Exception as e:
                 logger.error(
                     f"  Error getting profile for house {house_node_id}: {e}"
                 )
-                # TODO: Log this error and decide if to continue
-                # or fail the run
-                continue
+                continue  # Skip this house
 
             if not house_profile:
                 logger.error(
                     f"  Error getting HouseProfile for house {house_node_id}."
                 )
-                # TODO: Decide how to handle this error for the specific house.
-                # Maybe log and continue to the next house
-                # or mark this house's bill as failed.
-                continue
+                continue  # Skip this house
 
-            total_imported_units = 0.0
-            total_exported_units = 0.0
+            house_profile_data_dict = {
+                "timestamps": getattr(house_profile, "timestamps", []),
+                "imported_intervals": getattr(
+                    house_profile, "imported_units", []
+                ),
+                "exported_intervals": getattr(
+                    house_profile, "exported_units", []
+                ),
+            }
 
-            timestamps = getattr(
-                house_profile, "timestamps", []
-            )  # List[datetime.datetime]
-            imported_intervals = getattr(
-                house_profile, "imported_units", []
-            )  # List[float]
-            exported_intervals = getattr(
-                house_profile, "exported_units", []
-            )  # List[float]
-
-            if not (
-                len(timestamps)
-                == len(imported_intervals)
-                == len(exported_intervals)
-            ):
-                logger.error(
-                    f"  Error: Mismatch in lengths for house {house_node_id}."
-                )
-                continue
-
+            # Get aggregated energy summary for the billing period
+            # This uses the hardcoded year 2023 as per existing logic
             try:
                 (
                     start_of_billing_month_dt,
                     end_of_billing_month_dt,
-                ) = self._get_billing_period_datetimes(  # Call to new method
-                    billing_year, billing_month
+                ) = self._get_billing_period_datetimes(
+                    billing_year,
+                    billing_month,
                 )
             except ValueError as ve:
                 logger.error(
                     f"Invalid billing_month/billing_year:"
                     f"{billing_month}/{billing_year}. Error: {ve}"
                 )
-                continue  # Skip this house if date is invalid
+                continue
 
-            energy_summary = self._get_house_energy_summary_for_period(
+            e_summary = self._get_house_energy_summary_for_period(
                 house_entity,
-                start_of_billing_month_dt,
-                end_of_billing_month_dt,
+                start_of_billing_month_dt,  # Based on actual billing_year
+                end_of_billing_month_dt,  # Based on actual billing_year
             )
-            total_imported_units = energy_summary["total_imported_units"]
-            total_exported_units = energy_summary["total_exported_units"]
-
             logger.info(
-                f"  Aggregated for {billing_month}/{billing_year} - "
-                f"Total Imported: {total_imported_units:.2f} kWh, "
-                f"Total Exported: {total_exported_units:.2f} kWh"
+                f"Aggregated for {billing_month}/{billing_year}"
+                f"Total Imported: {e_summary['total_imported_units']:.2f} kWh"
+                f"Total Exported: {e_summary['total_exported_units']:.2f} kWh"
             )
 
-            # 4. Calculate Bill Components (logic will depend on policy_type)
-            # 4. Calculate Bill Components for "Simple Net Metering"
-            bill_details: Dict[str, Any] = {}
+            # 4. Select and Use Billing Strategy
+            policy_type = config["policy_type"]
+            policy_specific_config = config["policy_config"]
 
-            if config.get("policy_type") == "SIMPLE_NET":
-                logger.info(f"  Calculating bill for house {house_node_id}...")
-
-                net_usage_kwh = total_imported_units - total_exported_units
-                retail_rate = config["retail_price_per_kwh"]
-
-                energy_charges = 0.0
-                if net_usage_kwh > 0:
-                    energy_charges = net_usage_kwh * retail_rate
-
-                # Credit_Amount_calc is pending for future iteration.
-                # credit_amount_calc = 0.0
-                # if net_usage_kwh < 0:
-                # credit_amount_calc = abs(net_usage_kwh) * retail_rate
-
-                fixed_charges = (
-                    config["fixed_charge_per_kw"] * sanctioned_load_kw
+            try:
+                strategy = self._get_billing_strategy(policy_type)
+                bill_details = strategy.calculate_bill_components(
+                    policy_config=policy_specific_config,
+                    energy_summary=e_summary,  # For non-TOU strategies
+                    sanctioned_load_kw=sanctioned_load_kw,
+                    house_node_id=house_node_id,
+                    billing_month=billing_month,
+                    billing_year=billing_year,
+                    house_profile_data=house_profile_data_dict,
                 )
-                fac_charges = (
-                    total_imported_units * config["fac_charge_per_kwh"]
+            except Exception as e:
+                logger.error(
+                    f"Error calculating bill components for house:"
+                    f"{house_node_id} using {policy_type}: {e}"
                 )
+                continue  # Skip this house
 
-                tax_amount = 0.0
-                if energy_charges > 0:
-                    tax_amount = energy_charges * config["tax_rate"]
-
-                arrears = 0.0  # Assume 0 for now for this phase
-
-                total_bill_amount = (
-                    energy_charges
-                    + fixed_charges
-                    + fac_charges
-                    + tax_amount
-                    - arrears
-                )
-                # Initial implementation does not subtract Credit_Amount_calc
-
-                bill_details = {
-                    "house_node_id": house_node_id,
-                    "billing_cycle_month": billing_month,
-                    "billing_cycle_year": billing_year,
-                    "policy_type": "SIMPLE_NET",
-                    "total_imported_kwh": round(total_imported_units, 2),
-                    "total_exported_kwh": round(total_exported_units, 2),
-                    "net_usage_kwh": round(net_usage_kwh, 2),
-                    "retail_rate_per_kwh": retail_rate,
-                    "energy_charges": round(energy_charges, 2),
-                    # "credit_amount_calculated": round(credit_amount_calc, 2),
-                    "fixed_charge_per_kw": config["fixed_charge_per_kw"],
-                    "sanctioned_load_kw": sanctioned_load_kw,
-                    "fixed_charges": round(fixed_charges, 2),
-                    "fac_charge_per_kwh": config["fac_charge_per_kwh"],
-                    "fac_charges": round(fac_charges, 2),
-                    "tax_rate": config["tax_rate"],
-                    "tax_amount_on_energy": round(tax_amount, 2),
-                    "arrears": round(arrears, 2),
-                    "total_bill_amount_calculated": round(
-                        total_bill_amount, 2
-                    ),
-                }
-                logger.info(f"  Calculated Bill Details: {bill_details}")
-
-            elif config.get("policy_type") == "GROSS_METERING":
-                logger.info(
-                    f"  Calculating bill for house {house_node_id} "
-                    f"under GROSS_METERING policy..."
-                )
-
-                import_retail_price = config["import_retail_price_kwh"]
-                export_wholesale_price = config["exp_whole_price_kwh"]
-
-                imported_energy_charges = (
-                    total_imported_units * import_retail_price
-                )
-                exported_energy_credit = (
-                    total_exported_units * export_wholesale_price
-                )
-
-                fixed_charges = 0.0
-                if config.get("fixed_charge_per_kw") is not None:
-                    fixed_charges = (
-                        config["fixed_charge_per_kw"] * sanctioned_load_kw
-                    )
-
-                fac_charges = (
-                    total_imported_units * config["fac_charge_per_kwh"]
-                )
-
-                tax_amount = 0.0
-                # Tax is typically on net positive energy charges
-                # or total imported
-                # Assuming tax on imported energy charges for gross metering
-                if imported_energy_charges > 0:
-                    tax_amount = imported_energy_charges * config["tax_rate"]
-
-                arrears = 0.0  # Assume 0 for now
-
-                total_bill_amount = (
-                    imported_energy_charges
-                    + fixed_charges
-                    + fac_charges
-                    + tax_amount
-                    - exported_energy_credit
-                )
-
-                bill_details = {
-                    "house_node_id": house_node_id,
-                    "billing_cycle_month": billing_month,
-                    "billing_cycle_year": billing_year,
-                    "policy_type": "GROSS_METERING",
-                    "total_imported_kwh": round(total_imported_units, 2),
-                    "total_exported_kwh": round(total_exported_units, 2),
-                    "import_retail_price_per_kwh": import_retail_price,
-                    "exp_whole_price_kwh": export_wholesale_price,
-                    "imported_energy_charges": round(
-                        imported_energy_charges, 2
-                    ),
-                    "exported_energy_credit": round(exported_energy_credit, 2),
-                    "fixed_charge_per_kw": config.get("fixed_charge_per_kw"),
-                    "sanctioned_load_kw": sanctioned_load_kw,
-                    "fixed_charges": round(fixed_charges, 2),
-                    "fac_charge_per_kwh": config["fac_charge_per_kwh"],
-                    "fac_charges": round(fac_charges, 2),
-                    "tax_rate": config["tax_rate"],
-                    "tax_amount_on_energy": round(tax_amount, 2),
-                    "arrears": round(arrears, 2),
-                    "total_bill_amount_calculated": round(
-                        total_bill_amount, 2
-                    ),
-                }
-                logger.info(f"  Calculated Bill Details: {bill_details}")
-
-            elif config.get("policy_type") == "TOU_RATE":
-                logger.info(
-                    f"  Calculating bill for house {house_node_id} "
-                    f"under TOU_RATE policy..."
-                )
-
-                tou_periods_config = config["tou_periods"]
-                overall_total_imported_units = 0.0
-                overall_total_exported_units = 0.0
-                tou_energy_data_details = []  # For bill_details
-
-                total_energy_charges_tou = 0.0
-                total_export_credit_tou = 0.0
-
-                for period_config in tou_periods_config:
-                    period_label = period_config["time_period_label"]
-                    start_time: datetime.time = period_config["start_time"]
-                    end_time: datetime.time = period_config["end_time"]
-                    import_rate = period_config["import_retail_rate_per_kwh"]
-                    export_rate = period_config["exp_whole_rate_per_kwh"]
-
-                    current_period_imported_kwh = 0.0
-                    current_period_exported_kwh = 0.0
-
-                    for i, ts in enumerate(timestamps):
-                        # Ensure we are in the correct billing month and year
-                        # skipping year validation until Shashwat responds
-                        if not (ts.month == billing_month):
-                            continue
-
-                        interval_time = ts.time()
-                    # Handle overnight periods (e.g., 22:00 to 06:00)
-                    if (
-                        start_time <= end_time
-                    ):  # Normal period (e.g. 08:00 to 17:00)
-                        if start_time <= interval_time < end_time:
-                            current_period_imported_kwh += imported_intervals[
-                                i
-                            ]
-                            current_period_exported_kwh += exported_intervals[
-                                i
-                            ]
-                    else:  # Overnight period (e.g. 22:00 to 06:00)
-                        if (
-                            interval_time >= start_time
-                            or interval_time < end_time
-                        ):
-                            current_period_imported_kwh += imported_intervals[
-                                i
-                            ]
-                            current_period_exported_kwh += exported_intervals[
-                                i
-                            ]
-
-                    overall_total_imported_units += current_period_imported_kwh
-                    overall_total_exported_units += current_period_exported_kwh
-
-                    import_cost_period = (
-                        current_period_imported_kwh * import_rate
-                    )
-                    export_credit_period = (
-                        current_period_exported_kwh * export_rate
-                    )
-
-                    total_energy_charges_tou += import_cost_period
-                    total_export_credit_tou += export_credit_period
-
-                    tou_energy_data_details.append(
-                        {
-                            "period_label": period_label,
-                            "start_time": start_time.isoformat(),
-                            "end_time": end_time.isoformat(),
-                            "imported_kwh": round(
-                                current_period_imported_kwh, 2
-                            ),
-                            "exported_kwh": round(
-                                current_period_exported_kwh, 2
-                            ),
-                            "import_rate_per_kwh": import_rate,
-                            "export_rate_per_kwh": export_rate,
-                            "import_cost_period": round(import_cost_period, 2),
-                            "export_credit_period": round(
-                                export_credit_period, 2
-                            ),
-                        }
-                    )
-
-                fixed_charges = 0.0
-                if config.get("fixed_charge_per_kw") is not None:
-                    fixed_charges = (
-                        config["fixed_charge_per_kw"] * sanctioned_load_kw
-                    )
-                else:  # PENDING: Hardcode if not available,
-                    logger.warning(
-                        "fixed_charge_per_kw not in config for TOU. Using 0.0"
-                    )
-
-                fac_charges = (
-                    overall_total_imported_units * config["fac_charge_per_kwh"]
-                )
-
-                tax_amount = 0.0
-                if total_energy_charges_tou > 0:
-                    tax_amount = total_energy_charges_tou * config["tax_rate"]
-
-                arrears = 0.0  # Assume 0 for now
-
-                total_bill_amount = (
-                    total_energy_charges_tou
-                    + fixed_charges
-                    + fac_charges
-                    + tax_amount
-                    - total_export_credit_tou
-                    - arrears
-                )
-
-                bill_details = {
-                    "house_node_id": house_node_id,
-                    "billing_cycle_month": billing_month,
-                    "billing_cycle_year": billing_year,
-                    "policy_type": "TOU_RATE",
-                    "overall_total_imported_kwh": round(
-                        overall_total_imported_units, 2
-                    ),
-                    "overall_total_exported_kwh": round(
-                        overall_total_exported_units, 2
-                    ),
-                    "tou_period_details": tou_energy_data_details,
-                    "total_energy_charges": round(total_energy_charges_tou, 2),
-                    "total_export_credit": round(total_export_credit_tou, 2),
-                    "fixed_charge_per_kw": config.get(
-                        "fixed_charge_per_kw"
-                    ),  # PENDING: May be None
-                    "sanctioned_load_kw": sanctioned_load_kw,
-                    "fixed_charges": round(fixed_charges, 2),
-                    "fac_charge_per_kwh": config["fac_charge_per_kwh"],
-                    "fac_charges": round(fac_charges, 2),
-                    "tax_rate": config["tax_rate"],
-                    "tax_amount_on_energy": round(tax_amount, 2),
-                    "arrears": round(arrears, 2),
-                    "total_bill_amount_calculated": round(
-                        total_bill_amount, 2
-                    ),
-                }
-                logger.info(f"  Calculated TOU Bill Details: {bill_details}")
-
-            else:
-                logger.warning(
-                    f"  Policy {config.get('policy_type')} not yet supported "
-                    f"for house {house_node_id}."
+            if (
+                not bill_details
+                or "total_bill_amount_calculated" not in bill_details
+            ):
+                logger.error(
+                    f"Bill calculation error for house {house_node_id}."
                 )
                 continue
 
+            # 5. Store Bill Results
             try:
-                # Common structure for house_bill_record
-                # For TOU, use overall imported/exported
-                net_balance_kwh_val = 0.0  # Initialize with a float
-                if config.get("policy_type") == "TOU_RATE":
-                    net_balance_kwh_val = round(
-                        overall_total_imported_units
-                        - overall_total_exported_units,
-                        2,  # type: ignore
+                actual_total_imported: float = 0.0
+                actual_total_exported: float = 0.0
+
+                if policy_type == "TOU_RATE":
+                    actual_total_imported = bill_details.get(
+                        "overall_total_imported_kwh", 0.0
+                    )
+                    actual_total_exported = bill_details.get(
+                        "overall_total_exported_kwh", 0.0
                     )
                 else:  # For SIMPLE_NET and GROSS_METERING
-                    net_balance_kwh_val = round(
-                        total_imported_units - total_exported_units, 2
+                    actual_total_imported = bill_details.get(
+                        "total_imported_kwh", 0.0
                     )
+                    actual_total_exported = bill_details.get(
+                        "total_exported_kwh", 0.0
+                    )
+
+                actual_total_imported = (
+                    float(actual_total_imported)
+                    if actual_total_imported is not None
+                    else 0.0
+                )
+                actual_total_exported = (
+                    float(actual_total_exported)
+                    if actual_total_exported is not None
+                    else 0.0
+                )
+
+                net_balance_kwh_val = round(
+                    actual_total_imported - actual_total_exported, 2
+                )
 
                 house_bill_record = {
                     "simulation_run_id": run_id,
                     "house_node_id": house_node_id,
-                    "total_energy_imported_kwh": (
-                        bill_details.get("total_imported_kwh")
-                        if config.get("policy_type") != "TOU_RATE"
-                        else bill_details.get("overall_total_imported_kwh")
-                    ),
-                    "total_energy_exported_kwh": (
-                        bill_details.get("total_exported_kwh")
-                        if config.get("policy_type") != "TOU_RATE"
-                        else bill_details.get("overall_total_exported_kwh")
-                    ),
+                    "total_energy_imported_kwh": actual_total_imported,
+                    "total_energy_exported_kwh": actual_total_exported,
                     "net_energy_balance_kwh": net_balance_kwh_val,
                     "calculated_bill_amount": bill_details[
                         "total_bill_amount_calculated"

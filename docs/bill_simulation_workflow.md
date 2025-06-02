@@ -84,7 +84,7 @@ Total Bill Amount: 6426.54
    - **Status:**
      - [x] Implemented in `BillSimulationService._fetch_simulation_configuration()`.
    - **Comments/Questions:**
-     - The service method fetches and structures this data.
+     - The service method fetches and structures this data, including policy-specific parameters under a `policy_config` key.
      - Mock data or direct DB access can be used for initial development if CRUD services are not ready.
 
 ### 2. Iterate Through Houses in the Topology
@@ -101,48 +101,50 @@ Total Bill Amount: 6426.54
    - **Description:** For the current house and the `billing_cycle_month/year`:
      - `Total_Imported_Units` (kWh) = Sum of `Import_Interval` over all 15-min intervals in the billing cycle.
      - `Total_Exported_Units` (kWh) = Sum of `Export_Interval` over all 15-min intervals in the billing cycle.
+     - **Important Note on Data Year:** The `_get_house_energy_summary_for_period` method in `BillSimulationService` currently uses `start_datetime.replace(year=2023)` and `end_datetime.replace(year=2023)`. This means that regardless of the `billing_cycle_year` set in the simulation run, the actual energy data for aggregation is always fetched from the year 2023. This is a critical assumption for interpreting simulation results.
+     - For TOU policy, raw 15-minute interval data (`timestamps`, `imported_intervals`, `exported_intervals`) is also passed to its strategy, which then filters by the actual `billing_cycle_month` and `billing_cycle_year` from the simulation configuration.
    - **Status:**
-     - [x] Partially Implemented in `BillSimulationService.calculate_bills_for_simulation_run()`.
+     - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()` and `_get_house_energy_summary_for_period()`. The TOU strategy handles its own interval filtering.
    - **Comments/Questions:**
      - The 15-minute interval data from Phase 0 (`HouseProfile` object from `DataPreparationService`) is used as input.
-     - Current code filters data by `billing_cycle_month`.
-     - **TODO/Note:** The code does not yet filter by `billing_cycle_year`. A comment in the code (`# here I need to add the year when Shashwat responds`) indicates this is a pending item.
+     - The hardcoded year 2023 for data aggregation in `_get_house_energy_summary_for_period` is a deliberate choice based on current data availability.
 
-### 4. Calculate Bill Components for "Simple Net Metering" for Each House
-   - **Description:**
-     - `Net_Usage` (kWh) = `Total_Imported_Units` - `Total_Exported_Units`.
-     - `Retail_Rate` = `retail_price_per_kwh`.
-     - `Energy_Charges` (₹):
-       - If `Net_Usage` > 0, then `Energy_Charges` = `Net_Usage` * `Retail_Rate`.
-       - If `Net_Usage` <= 0, then `Energy_Charges` = 0.
-     - `Credit_Amount_calc` (₹): If `Net_Usage` < 0, `Credit_Amount_calc` = `abs(Net_Usage)` * `Retail_Rate`. (This part is pending for future iteration).
-     - `Fixed_Charges` (₹) = `fixed_charge_tariff_rate_per_kw` * `Sanctioned_Load_kW`.
-     - `FAC_Charges` (₹) = `Total_Imported_Units` * `fac_charge_per_kwh_imported`.
-     - `Tax_Amount` (₹): If `Energy_Charges` > 0, `Tax_Amount` = `Energy_Charges` * `tax_rate_on_energy_charges`. Else, `Tax_Amount` = 0.
-     - `Arrears` (₹): Assume 0 for now (Skipped for now as per user feedback).
-     - `Total_Bill_Amount` (₹) = `Energy_Charges` + `Fixed_Charges` + `FAC_Charges` + `Tax_Amount` - `Arrears`. *(Initial implementation will not subtract `Credit_Amount_calc` from the total bill)*.
-       *(Revised based on "Crucial Check for Bill 1" and user feedback)*
+### 4. Calculate Bill Components using Strategy Pattern
+   - **Description:** The `BillSimulationService` now uses a Strategy pattern.
+     - An `IBillingPolicyStrategy` interface defines `calculate_bill_components`.
+     - Concrete strategies (`SimpleNetMeteringStrategy`, `GrossMeteringStrategy`, `TimeOfUseRateStrategy`) implement this interface.
+     - `BillSimulationService` selects the appropriate strategy based on `policy_type` from the configuration.
+     - The selected strategy calculates all bill components (Energy Charges, Fixed Charges, FAC, Tax, Total Bill).
+     - **Simple Net Metering Calculation (handled by `SimpleNetMeteringStrategy`):**
+       - `Net_Usage` (kWh) = `Total_Imported_Units` - `Total_Exported_Units`.
+       - `Retail_Rate` = `policy_config["retail_price_per_kwh"]`.
+       - `Energy_Charges` (₹): If `Net_Usage` > 0, then `Energy_Charges` = `Net_Usage` * `Retail_Rate`. Else 0.
+       - `Fixed_Charges` (₹) = `policy_config["fixed_charge_per_kw"]` * `Sanctioned_Load_kW`.
+       - `FAC_Charges` (₹) = `Total_Imported_Units` * `policy_config["fac_charge_per_kwh"]`.
+       - `Tax_Amount` (₹): If `Energy_Charges` > 0, `Tax_Amount` = `Energy_Charges` * `policy_config["tax_rate"]`. Else 0.
+       - `Arrears` (₹): Assume 0.
+       - `Total_Bill_Amount` (₹) = `Energy_Charges` + `Fixed_Charges` + `FAC_Charges` + `Tax_Amount` - `Arrears`.
    - **Status:**
-     - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()`.
+     - [x] Refactored to use Strategy Pattern. Calculation logic moved to respective strategy classes.
    - **Comments/Questions:**
-     - **Credit Handling (User Feedback):** Pending for future iteration, as reflected in the code (commented out `credit_amount_calc`). The initial implementation will not include `Credit_Amount_calc` or its application to reduce other charges. Energy Charges will be 0 if Net Usage <= 0.
-     - If `Net_Usage` <= 0, `Energy_Charges` are 0, and `Tax_Amount` on energy charges is 0.
+     - **Credit Handling (User Feedback):** Remains pending for future iteration within strategies.
+     - The `policy_config` dictionary passed to strategies contains all necessary rates and parameters.
 
 ### 5. Store Bill Results for Each House
    - **Description:** For each house, create a record in `simulation_engine.house_bills`:
      - `simulation_run_id`
      - `house_node_id`
-     - `total_energy_imported_kwh` = `Total_Imported_Units`
-     - `total_energy_exported_kwh` = `Total_Exported_Units`
-     - `net_energy_balance_kwh` = `Net_Usage`
-     - `calculated_bill_amount` = `Total_Bill_Amount`
-     - `bill_details` (JSONB): Store all intermediate calculated values as specified.
+     - `total_energy_imported_kwh` = Value from `bill_details` (e.g., `overall_total_imported_kwh` for TOU, `total_imported_kwh` for others).
+     - `total_energy_exported_kwh` = Value from `bill_details`.
+     - `net_energy_balance_kwh` = Calculated as `actual_total_imported - actual_total_exported`.
+     - `calculated_bill_amount` = `bill_details["total_bill_amount_calculated"]`.
+     - `bill_details` (JSONB): The complete dictionary returned by the billing strategy.
    - **Status:**
-     - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()`.
+     - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()`. The service now correctly populates these fields using the `bill_details` from the strategy.
    - **Comments/Questions:**
      - The service calls `self._house_bill_service.create()` with the calculated bill record.
-     - The `bill_details` dictionary in the code captures the required intermediate values.
-     - The JSONB structure for `bill_details` needs to be finalized to ensure it captures all necessary information for display and debugging. The example provided is a good start.
+     - The `bill_details` dictionary returned by the strategy is stored directly.
+     - The JSONB structure for `bill_details` is now determined by each strategy, ensuring all relevant calculation steps are captured.
 
 ### 6. Update `simulation_runs` Status
    - **Description:** Set status to 'COMPLETED' (or 'FAILED' if errors occur). Set `simulation_end_timestamp`.
@@ -199,46 +201,43 @@ Total Bill Amount: 6528
    - **Description:** Similar to Simple Net Metering, but:
      - Confirm policy is 'GROSS_METERING'.
      - Read `gross_metering_policy_params`. Get `import_retail_price_per_kwh` and `export_wholesale_price_per_kwh`.
-     - Fetch `fixed_charge_tariff_rate_per_kw` (from `gross_metering_policy_params`), `fac_charge_per_kwh_imported`, `tax_rate_on_energy_charges` (from `simulation_selected_policies`).
+     - Fetch `fixed_charge_tariff_rate_per_kw` (from `gross_metering_policy_params` via `policy_config`), `fac_charge_per_kwh_imported`, `tax_rate_on_energy_charges` (from `simulation_selected_policies` via `policy_config`).
    - **Status:**
      - [x] Implemented in `BillSimulationService._fetch_simulation_configuration()`.
    - **Comments/Questions:**
-     - The method now handles "GROSS_METERING" policy type.
-     - It fetches `import_retail_price_per_kwh`, `export_wholesale_price_per_kwh`, and `fixed_charge_tariff_rate_per_kw` from `_gross_metering_policy_repo`.
-     - Common parameters like `fac_charge_per_kwh_imported` and `tax_rate_on_energy_charges` are fetched from the `policy` object (presumably `SelectedPolicySchema`).
-     - A `_gross_metering_policy_repo` has been added to the service's `__init__`.
+     - The method handles "GROSS_METERING" policy type and structures parameters into `policy_config`.
 
 ### 2. Iterate Through Houses & Aggregate Energy Data
    - **Description:** Same as step 2 & 3 in Phase 1.
      - Identify houses, fetch `Sanctioned_Load_kW`.
-     - Aggregate `Total_Imported_Units` and `Total_Exported_Units` for the billing cycle.
+     - Aggregate `Total_Imported_Units` and `Total_Exported_Units` for the billing cycle (using 2023 data as noted above).
    - **Status:**
      - [x] Implemented (Logic reused from Phase 1 within `BillSimulationService.calculate_bills_for_simulation_run()`).
 
-### 3. Calculate Bill Components for "Gross Metering" for Each House
+### 3. Calculate Bill Components for "Gross Metering" for Each House (Handled by `GrossMeteringStrategy`)
    - **Description:**
-     - `Import_Retail_Rate` = `config["import_retail_price_per_kwh"]`.
-     - `Export_Wholesale_Rate` = `config["export_wholesale_price_per_kwh"]`.
+     - `Import_Retail_Rate` = `policy_config["import_retail_price_kwh"]`.
+     - `Export_Wholesale_Rate` = `policy_config["exp_whole_price_kwh"]`.
      - `Imported_Energy_Charges` (₹) = `Total_Imported_Units` * `Import_Retail_Rate`.
      - `Exported_Energy_Credit` (₹) = `Total_Exported_Units` * `Export_Wholesale_Rate`.
-     - `Fixed_Charges` (₹): Calculated if `config["fixed_charge_per_kw"]` is available, as `config["fixed_charge_per_kw"]` * `Sanctioned_Load_kW`.
-     - `FAC_Charges` (₹) = `Total_Imported_Units` * `config["fac_charge_per_kwh"]`.
-     - `Tax_Amount` (₹): Calculated on `Imported_Energy_Charges` if > 0, as `Imported_Energy_Charges` * `config["tax_rate"]`.
-     - `Arrears` (₹): Assume 0 for now.
+     - `Fixed_Charges` (₹): Calculated if `policy_config["fixed_charge_per_kw"]` is available, as `policy_config["fixed_charge_per_kw"]` * `Sanctioned_Load_kW`.
+     - `FAC_Charges` (₹) = `Total_Imported_Units` * `policy_config["fac_charge_per_kwh"]`.
+     - `Tax_Amount` (₹): Calculated on `Imported_Energy_Charges` if > 0, as `Imported_Energy_Charges` * `policy_config["tax_rate"]`.
+     - `Arrears` (₹): Assume 0.
      - `Total_Bill_Amount` (₹) = `Imported_Energy_Charges` + `Fixed_Charges` + `FAC_Charges` + `Tax_Amount` - `Exported_Energy_Credit` - `Arrears`.
    - **Status:**
-     - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()`.
+     - [x] Implemented in `GrossMeteringStrategy.calculate_bill_components()`.
    - **Comments/Questions:**
-     - The calculation logic is now present in an `elif` block for `policy_type == "GROSS_METERING"`.
+     - The calculation logic is now encapsulated in the `GrossMeteringStrategy`.
 
 ### 4. Store Bill Results for Each House
    - **Description:** Create a record in `simulation_engine.house_bills`.
-     - `bill_details` (JSONB): Store intermediate values as specified for "GROSS_METERING".
+     - `bill_details` (JSONB): The dictionary returned by `GrossMeteringStrategy`.
    - **Status:**
      - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()`.
    - **Comments/Questions:**
-     - The `bill_details` dictionary is populated with Gross Metering specific fields.
-     - The `net_energy_balance_kwh` field in `house_bill_record` for Gross Metering might need review, as "net usage" is less central than in Net Metering. Currently, it uses `bill_details["net_usage_kwh"]` which is not explicitly calculated for Gross Metering in the same way. For Gross Metering, it should probably be `total_imported_kwh - total_exported_kwh` if needed for consistency, or a different field if "net balance" has a different meaning here. *Self-correction: The `house_bill_record` structure was updated to use `bill_details["total_imported_kwh"]` and `bill_details["total_exported_kwh"]` directly, and `net_energy_balance_kwh` was set using `bill_details["net_usage_kwh"]`. This part of the `house_bill_record` might need adjustment for Gross Metering as `net_usage_kwh` is not a primary component of its bill_details. For now, the code uses `bill_details["net_usage_kwh"]` which is not defined in the gross metering `bill_details` block. This will cause a KeyError. It should be `total_imported_units - total_exported_units` or similar if this field is to be populated.*
+     - The `bill_details` dictionary from the strategy is stored.
+     - `net_energy_balance_kwh` in `house_bills` is populated as `actual_total_imported - actual_total_exported`.
 
 ### 5. Update `simulation_runs` Status
    - **Description:** Same as Phase 1.
@@ -248,7 +247,7 @@ Total Bill Amount: 6528
 ## Phase 3: Implement Bill Calculation for "Time of Use (TOU) Rate Metering" Policy
 
    - **Input:** `simulation_run_id` for a run configured with 'TOU_RATE' policy.
-   - **Status:** [x] Implemented
+   - **Status:** [x] Implemented (Refactored to use `TimeOfUseRateStrategy`)
 
 ### Time-of-Use (TOU) Metering Bill Examples:
 
@@ -275,65 +274,60 @@ Total Bill Amount: 6180.2
    - **Description:** Similar to other policies, but:
      - Confirm policy is 'TOU_RATE'.
      - Read all associated records from `tou_rate_policy_params` for this `simulation_run_id`. This gives a list of TOU periods (label, start_time, end_time, import_retail_rate_per_kwh, export_wholesale_rate_per_kwh).
-     - Fetch `fixed_charge_tariff_rate_per_kw`, `fac_charge_per_kwh_imported`, `tax_rate_on_energy_charges` from `simulation_selected_policies`.
+     - Fetch `fixed_charge_tariff_rate_per_kw`, `fac_charge_per_kwh_imported`, `tax_rate_on_energy_charges` from `simulation_selected_policies` (via `policy_config`).
    - **Status:**
      - [x] Implemented in `BillSimulationService._fetch_simulation_configuration()`.
    - **Comments/Questions:**
-     - Handling multiple TOU periods per simulation run is key. The method now fetches all `tou_rate_policy_params` for the run.
-     - `fixed_charge_tariff_rate_per_kw` is correctly fetched from `policy` (i.e., `SimulationSelectedPolicy` instance).
+     - The method fetches all `tou_rate_policy_params` and common parameters into `policy_config`.
 
 ### 2. Iterate Through Houses
    - **Description:** Same as step 2 in Phase 1.
    - **Status:**
      - [x] Implemented (Logic reused from Phase 1 within `BillSimulationService.calculate_bills_for_simulation_run()`).
 
-### 3. Aggregate Energy Data Per TOU Period for the Billing Cycle for Each House
-   - **Description:** For each house and for each defined TOU period:
-     - Initialize `Total_Import_Period_X` (kWh) = 0, `Total_Export_Period_X` (kWh) = 0.
-     - Iterate through all 15-minute intervals in the billing cycle.
-     - Determine which TOU period each interval falls into.
-     - Add interval's `Import_Interval` to `Total_Import_Period_X`.
-     - Add interval's `Export_Interval` to `Total_Export_Period_X`.
-     - Calculate `Overall_Total_Imported_Units` (kWh) for FAC calculation.
+### 3. Aggregate Energy Data Per TOU Period for the Billing Cycle for Each House (Handled by `TimeOfUseRateStrategy`)
+   - **Description:** The `TimeOfUseRateStrategy` receives raw 15-minute interval data (`timestamps`, `imported_intervals`, `exported_intervals`) via `house_profile_data`.
+     - It iterates through these intervals.
+     - For each interval, it determines which TOU period it falls into based on `start_time` and `end_time` from `policy_config["tou_periods"]`.
+     - It aggregates `Import_Interval` and `Export_Interval` for each TOU period.
+     - It calculates `Overall_Total_Imported_Units` and `Overall_Total_Exported_Units`.
+     - **Important:** The strategy filters data based on the actual `billing_cycle_month` and `billing_cycle_year` from the simulation configuration, ensuring correct data for the specified billing period is used for TOU calculations. The underlying 15-minute data itself is still sourced based on the 2023 hardcoding in `DataPreparationService` if that's where `get_house_profile` gets its base data.
    - **Status:**
-     - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()`.
+     - [x] Implemented in `TimeOfUseRateStrategy.calculate_bill_components()`.
    - **Comments/Questions:**
-     - This is the most complex aggregation step. Requires careful mapping of 15-min interval timestamps to TOU periods.
-     - **Timestamp Handling (User Feedback):** TOU `start_time` and `end_time` are local times. Interval data timestamps (from `DataPreparationService`) are `datetime.datetime` objects. The implementation uses `ts.time()` for comparison with TOU period `start_time` and `end_time` (which are `datetime.time` objects).
-     - Filtering by `billing_cycle_year` has been added to the aggregation loop.
-     - Handles normal (e.g., 08:00-17:00) and overnight (e.g., 22:00-06:00) TOU periods.
+     - Mapping of 15-min intervals to TOU periods is handled within the strategy.
+     - Handles normal and overnight TOU periods.
 
-### 4. Calculate Bill Components for "TOU Rate Metering" for Each House
+### 4. Calculate Bill Components for "TOU Rate Metering" for Each House (Handled by `TimeOfUseRateStrategy`)
    - **Description:**
      - `Total_Energy_Charges` (₹) = 0.
      - `Total_Export_Credit` (₹) = 0.
-     - For each TOU period X:
+     - For each TOU period X (from `policy_config["tou_periods"]`):
        - `Import_Cost_Period_X` (₹) = `Total_Import_Period_X` * `import_retail_rate_per_kwh_Period_X`.
-       - `Export_Credit_Period_X` (₹) = `Total_Export_Period_X` * `export_wholesale_rate_per_kwh_Period_X`. (If applicable)
+       - `Export_Credit_Period_X` (₹) = `Total_Export_Period_X` * `export_wholesale_rate_per_kwh_Period_X`.
        - `Total_Energy_Charges` += `Import_Cost_Period_X`.
-       - `Total_Export_Credit` += `Export_Credit_Period_X`. (If applicable)
-     - `Fixed_Charges` (₹) = `fixed_charge_tariff_rate_per_kw` * `Sanctioned_Load_kW`.
-     - `FAC_Charges` (₹) = `Overall_Total_Imported_Units` * `fac_charge_per_kwh_imported`.
-     - `Tax_Amount` (₹) = `Total_Energy_Charges` * `tax_rate_on_energy_charges`.
+       - `Total_Export_Credit` += `Export_Credit_Period_X`.
+     - `Fixed_Charges` (₹) = `policy_config["fixed_charge_per_kw"]` * `Sanctioned_Load_kW`.
+     - `FAC_Charges` (₹) = `Overall_Total_Imported_Units` * `policy_config["fac_charge_per_kwh"]`.
+     - `Tax_Amount` (₹) = `Total_Energy_Charges` * `policy_config["tax_rate"]`.
      - `Arrears` (₹): Assume 0.
      - `Total_Bill_Amount` (₹) = `Total_Energy_Charges` + `Fixed_Charges` + `FAC_Charges` + `Tax_Amount` - `Total_Export_Credit` - `Arrears`.
    - **Status:**
-     - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()`.
+     - [x] Implemented in `TimeOfUseRateStrategy.calculate_bill_components()`.
    - **Comments/Questions:**
-     - **TOU Export Compensation (User Feedback):** Implemented based on the presence of `export_wholesale_rate_per_kwh` in `tou_rate_policy_params`. `Total_Export_Credit` is calculated and subtracted from the bill.
-     - `fixed_charge_per_kw` is used from the config; if None (which shouldn't happen if `simulation_selected_policies` has it), a warning is logged and 0 is used for fixed charges (marked PENDING in code).
+     - TOU Export Compensation is handled by the strategy.
+     - `fixed_charge_per_kw` is used from `policy_config`.
 
 ### 5. Store Bill Results for Each House
    - **Description:** Create a record in `simulation_engine.house_bills`.
-     - `total_energy_imported_kwh` = `Overall_Total_Imported_Units`.
-     - `total_energy_exported_kwh` = Sum of exports across all periods.
-     - `net_energy_balance_kwh` = `Overall_Total_Imported_Units` - Sum of exports.
-     - `bill_details` (JSONB): Store intermediate values as specified for "TOU_RATE", including the breakdown per TOU period (`tou_period_details` list).
+     - `total_energy_imported_kwh` = `bill_details["overall_total_imported_kwh"]`.
+     - `total_energy_exported_kwh` = `bill_details["overall_total_exported_kwh"]`.
+     - `net_energy_balance_kwh` = `actual_total_imported - actual_total_exported`.
+     - `bill_details` (JSONB): The dictionary returned by `TimeOfUseRateStrategy`, including `tou_period_details`.
    - **Status:**
      - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()`.
    - **Comments/Questions:**
-     - JSONB structure includes `tou_period_details` list, capturing per-period data.
-     - `total_energy_imported_kwh` and `total_energy_exported_kwh` in the `house_bills` table now correctly use the `overall_total_imported_units` and `overall_total_exported_units` for TOU policy.
+     - `bill_details` from the strategy is stored.
 
 ### 6. Update `simulation_runs` Status
    - **Description:** Same as Phase 1.
