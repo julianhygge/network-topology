@@ -19,7 +19,13 @@ from app.domain.interfaces.simulator_engine.i_data_preparation_service import (
     IDataPreparationService,
 )
 from app.exceptions.hygge_exceptions import NotFoundException
-from app.utils.datetime_util import utc_now_iso
+from app.utils.datetime_util import (
+    end_of_day,
+    end_of_month,
+    start_of_day,
+    start_of_month,
+    utc_now_iso,
+)
 from app.utils.logger import logger
 
 
@@ -229,8 +235,6 @@ class BillSimulationService:
             logger.error(
                 f"Error fetching configuration for simulation run {run_id}."
             )
-            # Update simulation_runs status to 'FAILED'
-            # (when CRUD is available)
             return
 
         topology_root_node_id = config.get("topology_root_node_id")
@@ -315,25 +319,23 @@ class BillSimulationService:
                 continue
 
             try:
-                start_of_billing_month = datetime.date(
-                    billing_year, billing_month, 1
+                (
+                    start_of_billing_month_dt,
+                    end_of_billing_month_dt,
+                ) = self._get_billing_period_datetimes(  # Call to new method
+                    billing_year, billing_month
                 )
-                if billing_month == 12:
-                    end_of_billing_month = datetime.date(
-                        billing_year, billing_month, 31
-                    )
-                else:
-                    end_of_billing_month = datetime.date(
-                        billing_year, billing_month + 1, 1
-                    ) - datetime.timedelta(days=1)
             except ValueError as ve:
                 logger.error(
-                    f"Invalid billing_month/billing_year: {billing_month}/{billing_year}. Error: {ve}"
+                    f"Invalid billing_month/billing_year:"
+                    f"{billing_month}/{billing_year}. Error: {ve}"
                 )
                 continue  # Skip this house if date is invalid
 
             energy_summary = self._get_house_energy_summary_for_period(
-                house_entity, start_of_billing_month, end_of_billing_month
+                house_entity,
+                start_of_billing_month_dt,
+                end_of_billing_month_dt,
             )
             total_imported_units = energy_summary["total_imported_units"]
             total_exported_units = energy_summary["total_exported_units"]
@@ -707,11 +709,38 @@ class BillSimulationService:
             f"Bill calculation finished for simulation_run_id: {run_id}."
         )
 
+    def _get_billing_period_datetimes(
+        self, billing_year: int, billing_month: int
+    ) -> tuple[datetime.datetime, datetime.datetime]:
+        """
+        Calculates the start and end datetimes
+        for a given billing month and year.
+        Start datetime will be the first day of the month at 00:00:00.
+        End datetime will be the last day of the month at 23:59:59.
+
+        Args:
+            billing_year: The year of the billing cycle.
+            billing_month: The month of the billing cycle.
+
+        Returns:
+            A tuple containing the start and end datetime objects (UTC aware).
+
+        Raises:
+            ValueError: If the billing_month or billing_year is invalid.
+        """
+        if not 1 <= billing_month <= 12:
+            raise ValueError("Billing month must be between 1 and 12.")
+        base_date = datetime.datetime(billing_year, billing_month, 1)
+
+        start_dt = start_of_month(base_date)
+        end_dt = end_of_month(base_date)
+        return start_dt, end_dt
+
     def _get_house_energy_summary_for_period(
         self,
         house_entity: Node,
-        start_datetime: datetime.datetime,
-        end_datetime: datetime.datetime,
+        start_datetime: datetime.datetime,  # Expected to be UTC aware
+        end_datetime: datetime.datetime,  # Expected to be UTC aware
     ) -> Dict[str, float]:
         """
         Aggregates total imported and exported energy for a specific house
@@ -719,21 +748,28 @@ class BillSimulationService:
 
         Args:
             house_entity: The Node object representing the house.
-            start_datetime: The start datetime of the period (inclusive).
-            end_datetime: The end datetime of the period (exclusive).
+            start_datetime: The start datetime of the period (00:00).
+            end_datetime: The end datetime of the period (23:59).
 
         Returns:
-            A dictionary with "total_imported_units" and
-            "total_exported_units".
+            A dict with "total_imported_units" and "total_exported_units".
             Returns {"total_imported_units": 0.0, "total_exported_units": 0.0}
             if data is not found or an error occurs.
         """
-        start_datetime = start_datetime.replace(year=2023)
-        end_datetime = end_datetime.replace(year=2023)
+        # The year replacement is a specific business logic for this
+        # simulation.
+        # It's applied here as per existing logic.
+
+        start_dt_processed = start_datetime.replace(year=2023)
+        start_dt_processed = start_of_day(start_dt_processed)
+
+        end_dt_processed = end_datetime.replace(year=2023)
+        end_dt_processed = end_of_day(end_dt_processed)
+
         house_node_id = str(house_entity.id)
         logger.debug(
             f"Fetching 15-min interval data for house {house_node_id} "
-            f"for period {start_datetime} to {end_datetime}..."
+            f"for period {start_dt_processed} to {end_dt_processed}..."
         )
 
         try:
@@ -787,15 +823,26 @@ class BillSimulationService:
             }
 
         for i, ts_datetime_val in enumerate(timestamps):
-            # ts_date = (
-            #     ts_datetime.date()
-            # )  # Convert timestamp to date for comparison
-            if start_datetime <= ts_datetime_val < end_datetime:
+            # Ensure the timestamp from data is UTC aware for comparison
+            if (
+                ts_datetime_val.tzinfo is None
+                or ts_datetime_val.tzinfo.utcoffset(ts_datetime_val) is None
+            ):
+                ts_datetime_val = ts_datetime_val.replace(
+                    tzinfo=datetime.timezone.utc
+                )
+            else:
+                ts_datetime_val = ts_datetime_val.astimezone(
+                    datetime.timezone.utc
+                )
+
+            if start_dt_processed <= ts_datetime_val < end_dt_processed:
                 total_imported_units += imported_intervals[i]
                 total_exported_units += exported_intervals[i]
 
         logger.debug(
-            f"Aggregated for period {start_datetime} to {end_datetime} for house {house_node_id} - "
+            f"Aggregated for period {start_dt_processed} to {end_dt_processed}"
+            f"for house {house_node_id} - "
             f"Total Imported: {total_imported_units:.2f} kWh, "
             f"Total Exported: {total_exported_units:.2f} kWh"
         )
@@ -894,7 +941,7 @@ class BillSimulationService:
                             node_id
                         )
                     )
-                else:  # if not substation and no children houses, it might be an empty transformer
+                else:
                     logger.warning(
                         f"No houses found under non-house node {node_id}"
                     )
@@ -918,7 +965,7 @@ TODO:
   (Phase 1, Step 4).
 - Implement logic to store bill results (Phase 1, Step 5).
 - Implement logic to update simulation_runs status (Phase 1, Step 6).
-- Add comprehensive error handling and logging.
+- Add error handling and logging.
 - Add unit tests.
-- Verify/add `get_houses_by_parent_node_id` in INetTopologyService and its implementation.
+
 """
