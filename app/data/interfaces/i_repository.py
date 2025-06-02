@@ -10,7 +10,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 from uuid import UUID
 
-
 from app.data.schemas.schema_base import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
@@ -62,7 +61,9 @@ class IRepository(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def update(self, id_value: Union[int, UUID], data: Dict[str, Any]) -> int:
+    def update(
+        self, id_value: Union[int, UUID], data: Dict[str, Any]
+    ) -> T | None:
         """
         Abstract method to update a record by its ID.
 

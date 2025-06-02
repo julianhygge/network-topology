@@ -11,7 +11,7 @@ from peewee import (
 )
 
 from app.data.schemas.master.master_schema import (
-    NetMeteringAlgorithm,
+    NetMeteringPolicyTypes,
     SimulationAlgorithm,
 )
 from app.data.schemas.schema_base import BaseModel
@@ -63,7 +63,7 @@ class SimulationSelectedPolicy(BaseModel):
         primary_key=True,
     )
     net_metering_policy_type_id = ForeignKeyField(
-        NetMeteringAlgorithm,
+        NetMeteringPolicyTypes,
         backref="simulation_policy",
         column_name="net_metering_policy_type_id",
     )

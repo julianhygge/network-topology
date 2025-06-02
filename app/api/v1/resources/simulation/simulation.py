@@ -1,7 +1,6 @@
 from uuid import UUID
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.params import Depends
 
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
@@ -113,7 +112,7 @@ async def get_simulation_algorithm(
 async def trigger_bill_calculation(
     simulation_run_id: UUID,
     service: BillSimulationService = GetBillSimulationServiceDep,
-    _: UUID = SimulationUpdatePermissionDep,  # Or SimulationCreatePermissionDep
+    _: UUID = SimulationCreatePermissionDep,
 ):
     """
     Trigger bill calculation for a given simulation run.
@@ -130,14 +129,15 @@ async def trigger_bill_calculation(
         HTTPException: If an error occurs.
     """
     try:
-        # The service method is synchronous, but FastAPI can run it in a thread pool
+        # The service method is synchronous,
+        # but FastAPI can run it in a thread pool
         # if it's defined as `async def` or if we use `run_in_threadpool`.
-        # For now, keeping it simple. If it's long-running, background tasks would be better.
-        service.calculate_bills_for_simulation_run(
-            simulation_run_id=simulation_run_id
-        )  # type: ignore
+        # For now, keeping it simple. If it's long-running,
+        # background tasks would be better.
+        service.calculate_bills_for_simulation_run(run_id=simulation_run_id)
         return {
-            "message": f"Bill calculation started for simulation run {simulation_run_id}"
+            "message": "Bill calculation started"
+            "for simulation run {simulation_run_id}"
         }
     except HTTPException as http_exc:  # Re-raise HTTPException
         raise http_exc
@@ -231,8 +231,8 @@ async def create_simulation_runs(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = data.model_dump()
-        response = service.create(user_id, **data)
+        data_dicts = data.model_dump()
+        response = service.create(user_id, **data_dicts)
         return SimulationRunsResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -264,8 +264,8 @@ async def update_simulation_runs(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = data.model_dump(exclude_unset=True)
-        response = service.update(user_id, simulation_run_id, **data)
+        data_dicts = data.model_dump(exclude_unset=True)
+        response = service.update(user_id, simulation_run_id, **data_dicts)
         return SimulationRunsResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -323,8 +323,8 @@ async def create_net_metering_policy(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = data.model_dump()
-        response = service.create(user_id, **data)
+        data_dicts = data.model_dump()
+        response = service.create(user_id, **data_dicts)
         return NetMeteringPolicyResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -356,8 +356,8 @@ async def update_net_metering_policy(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = data.model_dump(exclude_unset=True)
-        response = service.update(user_id, simulation_run_id, **data)
+        data_dicts = data.model_dump(exclude_unset=True)
+        response = service.update(user_id, simulation_run_id, **data_dicts)
         return NetMeteringPolicyResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -415,8 +415,8 @@ async def create_gross_metering_policy(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = data.model_dump()
-        response = service.create(user_id, **data)
+        data_dicts = data.model_dump()
+        response = service.create(user_id, **data_dicts)
         return GrossMeteringPolicyResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -448,8 +448,8 @@ async def update_gross_metering_policy(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = data.model_dump(exclude_unset=True)
-        response = service.update(user_id, simulation_run_id, **data)
+        data_dicts = data.model_dump(exclude_unset=True)
+        response = service.update(user_id, simulation_run_id, **data_dicts)
         return GrossMeteringPolicyResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -502,8 +502,8 @@ async def create_tou_metering_policy(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = data.model_dump()
-        response = service.create(user_id, **data)
+        data_dicts = data.model_dump()
+        response = service.create(user_id, **data_dicts)
         return TimeOfUseResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -532,8 +532,8 @@ async def update_tou_metering_policy(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = data.model_dump(exclude_unset=True)
-        response = service.update(user_id, tou_id, **data)
+        data_dicts = data.model_dump(exclude_unset=True)
+        response = service.update(user_id, tou_id, **data_dicts)
         return TimeOfUseResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -619,8 +619,8 @@ async def create_simulation_selected_policy(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = data.model_dump()
-        response = service.create(user_id, **data)
+        data_dicts = data.model_dump()
+        response = service.create(user_id, **data_dicts)
         return SimulationSelectedResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -652,8 +652,8 @@ async def update_simulation_selected_policy(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = data.model_dump(exclude_unset=True)
-        response = service.update(user_id, simulation_run_id, **data)
+        data_dicts = data.model_dump(exclude_unset=True)
+        response = service.update(user_id, simulation_run_id, **data_dicts)
         return SimulationSelectedResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -709,8 +709,8 @@ async def generate_house_bill(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = data.model_dump()
-        response = service.create(user_id, **data)
+        data_dicts = data.model_dump()
+        response = service.create(user_id, **data_dicts)
         return HouseBillResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -741,8 +741,8 @@ async def update_house_bill(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        data = data.model_dump(exclude_unset=True)
-        response = service.update(user_id, simulation_run_id, **data)
+        data_dicts = data.model_dump(exclude_unset=True)
+        response = service.update(user_id, simulation_run_id, **data_dicts)
         return HouseBillResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
