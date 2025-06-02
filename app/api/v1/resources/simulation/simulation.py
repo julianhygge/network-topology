@@ -1,4 +1,4 @@
-from datetime import date
+import datetime
 from typing import List
 from uuid import UUID
 
@@ -764,18 +764,18 @@ async def update_house_bill(
 )
 async def get_house_energy_summary(
     house_id: UUID,
-    start_date: date,
-    end_date: date,
+    start_datetime: datetime.datetime,
+    end_datetime: datetime.datetime,
     service: BillSimulationService = GetBillSimulationServiceDep,
     _: UUID = SimulationRetrievePermissionDep,
 ):
     """
     Retrieve the total imported and exported energy for a specific house
-    for a given date range.
+    for a given datetime range.
     """
     try:
         summary = service.get_house_energy_summary(
-            house_id, start_date, end_date
+            house_id, start_datetime, end_datetime
         )
         return EnergySummaryResponse(**summary)
     except HTTPException as http_exc:
@@ -790,19 +790,19 @@ async def get_house_energy_summary(
 )
 async def get_node_energy_summary(
     node_id: UUID,
-    start_date: date,
-    end_date: date,
+    start_datetime: datetime.datetime,
+    end_datetime: datetime.datetime,
     service: BillSimulationService = GetBillSimulationServiceDep,
     _: UUID = SimulationRetrievePermissionDep,
 ):
     """
     Retrieve the total imported and exported energy for all houses under a
     specific node (Locality, substation, substation, or a house itself)
-    for a given date range.
+    for a given datetime range.
     """
     try:
         summary = service.get_node_energy_summary(
-            node_id, start_date, end_date
+            node_id, start_datetime, end_datetime
         )
         return EnergySummaryResponse(**summary)
     except HTTPException as http_exc:
