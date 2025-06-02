@@ -433,3 +433,38 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             }
             for item in solar_profile
         ]
+
+    def get_node_by_id(self, node_id: UUID) -> Node | None:
+        """
+        Retrieves a node by its ID.
+
+        Args:
+            node_id: The UUID of the node.
+
+        Returns:
+            The Node entity if found, otherwise None.
+        """
+        node = self.node_repo.read_or_none(node_id)
+        if not node:
+            raise NotFoundException(f"Node with id {node_id} not found")
+        return node
+
+    def get_houses_by_parent_node_id(self, parent_node_id: UUID) -> List[Node]:
+        """
+        Get all house nodes that are descendants of a given parent node.
+
+        Args:
+            parent_node_id: The UUID of the parent node.
+
+        Returns:
+            A list of Node entities representing houses.
+            Returns an empty list if the parent node is not found
+            or has no descendant houses.
+        """
+        parent_node = self.node_repo.read_or_none(parent_node_id)
+        if not parent_node:
+            return []
+
+        houses: List[Node] = []
+        self._get_house_nodes(parent_node, houses)
+        return houses

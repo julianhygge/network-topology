@@ -2,7 +2,8 @@
 Module for simulating bills based on energy consumption and generation data.
 """
 
-import datetime  # Added for time comparison
+import datetime
+from datetime import date
 from typing import Any, Dict, List
 from uuid import UUID
 
@@ -18,6 +19,7 @@ from app.domain.interfaces.net_topology.i_net_topology_service import (
 from app.domain.interfaces.simulator_engine.i_data_preparation_service import (
     IDataPreparationService,
 )
+from app.exceptions.hygge_exceptions import NotFoundException
 from app.utils.datetime_util import utc_now_iso
 from app.utils.logger import logger
 
@@ -313,11 +315,29 @@ class BillSimulationService:
                 )
                 continue
 
-            # Filter by billing_month and billing_year
-            for i, ts in enumerate(timestamps):
-                if ts.month == billing_month:
-                    total_imported_units += imported_intervals[i]
-                    total_exported_units += exported_intervals[i]
+            try:
+                start_of_billing_month = datetime.date(
+                    billing_year, billing_month, 1
+                )
+                if billing_month == 12:
+                    end_of_billing_month = datetime.date(
+                        billing_year, billing_month, 31
+                    )
+                else:
+                    end_of_billing_month = datetime.date(
+                        billing_year, billing_month + 1, 1
+                    ) - datetime.timedelta(days=1)
+            except ValueError as ve:
+                logger.error(
+                    f"Invalid billing_month/billing_year: {billing_month}/{billing_year}. Error: {ve}"
+                )
+                continue  # Skip this house if date is invalid
+
+            energy_summary = self._get_house_energy_summary_for_period(
+                house_entity, start_of_billing_month, end_of_billing_month
+            )
+            total_imported_units = energy_summary["total_imported_units"]
+            total_exported_units = energy_summary["total_exported_units"]
 
             logger.info(
                 f"  Aggregated for {billing_month}/{billing_year} - "
@@ -688,6 +708,204 @@ class BillSimulationService:
             f"Bill calculation finished for simulation_run_id: {run_id}."
         )
 
+    def _get_house_energy_summary_for_period(
+        self,
+        house_entity: Node,
+        start_date: date,
+        end_date: date,
+    ) -> Dict[str, float]:
+        """
+        Aggregates total imported and exported energy for a specific house
+        over a given date range.
+
+        Args:
+            house_entity: The Node object representing the house.
+            start_date: The start date of the period (inclusive).
+            end_date: The end date of the period (inclusive).
+
+        Returns:
+            A dictionary with "total_imported_units" and
+            "total_exported_units".
+            Returns {"total_imported_units": 0.0, "total_exported_units": 0.0}
+            if data is not found or an error occurs.
+        """
+        start_date = start_date.replace(year=2023)
+        end_date = end_date.replace(year=2023)
+        house_node_id = str(house_entity.id)
+        logger.debug(
+            f"Fetching 15-min interval data for house {house_node_id} "
+            f"for period {start_date} to {end_date}..."
+        )
+
+        try:
+            house_profile: HouseProfile | None = (
+                self._data_preparation_service.get_house_profile(
+                    house=house_entity
+                )
+            )
+        except Exception as e:
+            logger.error(
+                f"Error getting profile for house {house_node_id}: {e}"
+            )
+            return {
+                "total_imported_units": 0.0,
+                "total_exported_units": 0.0,
+            }
+
+        if not house_profile:
+            logger.error(
+                f"Error getting HouseProfile for house {house_node_id}."
+            )
+            return {
+                "total_imported_units": 0.0,
+                "total_exported_units": 0.0,
+            }
+
+        total_imported_units = 0.0
+        total_exported_units = 0.0
+
+        timestamps = getattr(
+            house_profile, "timestamps", []
+        )  # List[datetime.datetime]
+        imported_intervals = getattr(
+            house_profile, "imported_units", []
+        )  # List[float]
+        exported_intervals = getattr(
+            house_profile, "exported_units", []
+        )  # List[float]
+
+        if not (
+            len(timestamps)
+            == len(imported_intervals)
+            == len(exported_intervals)
+        ):
+            logger.error(
+                f"Data mismatch in lengths for house {house_node_id}."
+            )
+            return {
+                "total_imported_units": 0.0,
+                "total_exported_units": 0.0,
+            }
+
+        for i, ts_datetime in enumerate(timestamps):
+            ts_date = (
+                ts_datetime.date()
+            )  # Convert timestamp to date for comparison
+            if start_date <= ts_date < end_date:
+                total_imported_units += imported_intervals[i]
+                total_exported_units += exported_intervals[i]
+
+        logger.debug(
+            f"Aggregated for period {start_date} to {end_date} for house {house_node_id} - "
+            f"Total Imported: {total_imported_units:.2f} kWh, "
+            f"Total Exported: {total_exported_units:.2f} kWh"
+        )
+        return {
+            "total_imported_units": round(total_imported_units, 2),
+            "total_exported_units": round(total_exported_units, 2),
+        }
+
+    def get_house_energy_summary(
+        self, house_id: UUID, start_date: date, end_date: date
+    ) -> Dict[str, float]:
+        """
+        Provides total imported and exported units for a specific house
+        for a given date range.
+
+        Args:
+            house_id: The UUID of the house.
+            start_date: The start date of the period.
+            end_date: The end date of the period.
+
+        Returns:
+            A dictionary with "total_imported_units" and
+            "total_exported_units".
+
+        Raises:
+            NotFoundException: If the house is not found.
+        """
+        logger.info(
+            f"Getting energy summary for house {house_id} "
+            f"for period {start_date} to {end_date}."
+        )
+        house_entity = self._net_topology_service.get_node_by_id(house_id)
+        if not house_entity or house_entity.node_type != "HOUSE":
+            raise NotFoundException(f"House with id {house_id} not found.")
+
+        return self._get_house_energy_summary_for_period(
+            house_entity, start_date, end_date
+        )
+
+    def get_node_energy_summary(
+        self, node_id: UUID, start_date: date, end_date: date
+    ) -> Dict[str, float]:
+        """
+        Provides total imported and exported units for all houses under a
+        specific node (e.g., transformer, substation, or a house itself)
+        for a given date range.
+
+        Args:
+            node_id: The UUID of the node.
+            start_date: The start date of the period.
+            end_date: The end date of the period.
+
+        Returns:
+            A dictionary with "total_imported_units" and
+            "total_exported_units" aggregated for all houses under the node.
+
+        Raises:
+            NotFoundException: If the node is not found.
+        """
+        logger.info(
+            f"Getting energy summary for node {node_id} and its children "
+            f"for period {start_date} to {end_date}."
+        )
+        node_entity = self._net_topology_service.get_node_by_id(node_id)
+        if not node_entity:
+            raise NotFoundException(f"Node with id {node_id} not found.")
+
+        total_imported_for_node = 0.0
+        total_exported_for_node = 0.0
+
+        if node_entity.node_type == "HOUSE":
+            summary = self._get_house_energy_summary_for_period(
+                node_entity, start_date, end_date
+            )
+            total_imported_for_node = summary["total_imported_units"]
+            total_exported_for_node = summary["total_exported_units"]
+        else:
+            # For transformers or substations, get all descendant houses
+            houses_under_node: List[Node] = (
+                self._net_topology_service.get_houses_by_parent_node_id(
+                    node_id
+                )
+            )
+            if (
+                not houses_under_node
+            ):  # if it's a substation, use the other method
+                if node_entity.node_type == "SUBSTATION":
+                    houses_under_node = (
+                        self._net_topology_service.get_houses_by_substation_id(
+                            node_id
+                        )
+                    )
+                else:  # if not substation and no children houses, it might be an empty transformer
+                    logger.warning(
+                        f"No houses found under non-house node {node_id}"
+                    )
+
+            for house_entity in houses_under_node:
+                summary = self._get_house_energy_summary_for_period(
+                    house_entity, start_date, end_date
+                )
+                total_imported_for_node += summary["total_imported_units"]
+                total_exported_for_node += summary["total_exported_units"]
+
+        return {
+            "total_imported_units": round(total_imported_for_node, 2),
+            "total_exported_units": round(total_exported_for_node, 2),
+        }
+
 
 """
 TODO:
@@ -697,4 +915,5 @@ TODO:
 - Implement logic to update simulation_runs status (Phase 1, Step 6).
 - Add comprehensive error handling and logging.
 - Add unit tests.
+- Verify/add `get_houses_by_parent_node_id` in INetTopologyService and its implementation.
 """

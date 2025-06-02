@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List
 from uuid import UUID
 
@@ -41,6 +42,9 @@ from app.api.v1.models.responses.simulation_response import (
     SimulationRunsResponse,
     SimulationSelectedResponse,
     TimeOfUseResponse,
+)
+from app.api.v1.models.responses.simulation_responses import (
+    EnergySummaryResponse,
 )
 from app.domain.interfaces.i_service import (
     IService,  # May not be needed if BillSimulationService is directly typed
@@ -174,36 +178,6 @@ async def get_net_metering_algorithm(
             items=[NetMeteringAlgorithmResponse(**item) for item in body]
         )
         return response
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-
-
-@simulation_router.get(
-    path="/{locality_id}/simulations-runs",
-    response_model=List[SimulationRunsResponse],
-)
-async def get_simulation_runs_by_locality(
-    locality_id: UUID,
-    service: IService = GetSimulationRunServiceDep,
-    _: UUID = SimulationRetrievePermissionDep,
-):
-    """
-    Create the simulation run
-
-    Args:
-        locality_id: Unique Id of locality
-        service: The simulation run service.
-        _: Dependency to check permission.
-
-    Returns:
-        Newly Created Simulation
-
-    Raises:
-        HTTPException: If an error occurs during retrieval.
-    """
-    try:
-        response = service.filter(locality_id=locality_id)
-        return [SimulationRunsResponse(**item) for item in response]
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -517,36 +491,6 @@ async def get_tou_metering_policy(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@simulation_router.get(
-    path="/{simulation_run_id}/policy/tou",
-    response_model=List[TimeOfUseResponse],
-)
-async def get_tou_metering_policy(
-    simulation_run_id: UUID,
-    service: IService = GetTOURatePolicyServiceDep,
-    _: UUID = SimulationRetrievePermissionDep,
-):
-    """
-    Create Time of Use Rate Policy
-
-    Args:
-        simulation_run_id: Unique ID of simulation run
-        service: The time of use rate policy service.
-        _: Dependency to check permission.
-
-    Returns:
-        Created data from time of use rate policy table
-
-    Raises:
-        HTTPException: If an error occurs during retrieval.
-    """
-    try:
-        response = service.filter(simulation_run_id=simulation_run_id)
-        return [TimeOfUseResponse(**item) for item in response]
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-
-
 @simulation_router.post(path="/policy/tou", response_model=TimeOfUseResponse)
 async def create_tou_metering_policy(
     data: TimeOfUseRequestModel,
@@ -812,3 +756,56 @@ async def update_house_bill(
         return HouseBillResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@simulation_router.get(
+    path="/houses/{house_id}/energy-summary",
+    response_model=EnergySummaryResponse,
+)
+async def get_house_energy_summary_endpoint(
+    house_id: UUID,
+    start_date: date,
+    end_date: date,
+    service: BillSimulationService = GetBillSimulationServiceDep,
+    _: UUID = SimulationRetrievePermissionDep,
+):
+    """
+    Retrieve the total imported and exported energy for a specific house
+    for a given date range.
+    """
+    try:
+        summary = service.get_house_energy_summary(
+            house_id, start_date, end_date
+        )
+        return EnergySummaryResponse(**summary)
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@simulation_router.get(
+    path="/nodes/{node_id}/energy-summary",
+    response_model=EnergySummaryResponse,
+)
+async def get_node_energy_summary_endpoint(
+    node_id: UUID,
+    start_date: date,
+    end_date: date,
+    service: BillSimulationService = GetBillSimulationServiceDep,
+    _: UUID = SimulationRetrievePermissionDep,
+):
+    """
+    Retrieve the total imported and exported energy for all houses under a
+    specific node (e.g., transformer, substation, or a house itself)
+    for a given date range.
+    """
+    try:
+        summary = service.get_node_energy_summary(
+            node_id, start_date, end_date
+        )
+        return EnergySummaryResponse(**summary)
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
