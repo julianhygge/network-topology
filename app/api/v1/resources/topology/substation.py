@@ -16,7 +16,7 @@ from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
     get_data_preparation_service,
     get_net_topology_service,
-    get_substation_service,
+    get_substation_service, get_net_topology_export_import_service,
 )
 from app.api.v1.models.requests.substation import (
     SubstationRequestModel,
@@ -40,6 +40,7 @@ from app.domain.interfaces.net_topology.i_substation_service import (
 from app.domain.interfaces.simulator_engine.i_data_preparation_service import (
     IDataPreparationService,
 )
+from app.domain.services.simulator_engine.net_topology_export_import_service import NetTopologyExportImportService
 from app.exceptions.hygge_exceptions import NotFoundException
 from app.utils.logger import logger
 
@@ -60,6 +61,7 @@ GetDataPreparationServiceDep = Depends(get_data_preparation_service)
 SubstationsDeletePermissionDep = Depends(
     permission(Resources.SUBSTATIONS, Permission.DELETE)
 )
+GetNetTopologyExportImportService = Depends(get_net_topology_export_import_service)
 
 
 @substation_router.get("/{substation_id}", response_model=SubstationTopology)
@@ -428,4 +430,23 @@ async def get_house_profiles_zip_file(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate ZIP file.",
+        ) from e
+
+@substation_router.get("/{substation_id}/export/json")
+async def get_network_topology_export_file(
+        substation_id: UUID,
+        _: str = SubstationsRetrievePermissionDep,
+        service: NetTopologyExportImportService = GetNetTopologyExportImportService
+):
+    try:
+        json_data, filename = service.export_network_topology(substation_id)
+        return StreamingResponse(
+            io.BytesIO(json_data.encode('utf-8')),
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate json file.",
         ) from e

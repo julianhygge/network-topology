@@ -31,6 +31,7 @@ from app.domain.services.base_service import BaseService
 from app.domain.services.simulator_engine.bill_simulation_service import (
     BillSimulationService,
 )
+from app.domain.services.simulator_engine.net_topology_export_import_service import NetTopologyExportImportService
 from app.domain.services.solar.load_profile_builder_service import (
     LoadProfileBuilderService,
 )
@@ -205,3 +206,6 @@ def get_house_bill_service() -> IService:
 def get_bill_simulation_service() -> BillSimulationService:
     """Get Bill Simulation Service instance"""
     return c.bill_simulation_service()
+
+def get_net_topology_export_import_service() -> NetTopologyExportImportService:
+    return c.network_topology_export_import_service()

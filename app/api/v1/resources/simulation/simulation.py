@@ -195,7 +195,7 @@ async def get_simulation_runs_by_locality(
     Create the simulation run
 
     Args:
-        locality_id: Unique Id of locality
+        locality_id: Unique ID of locality
         service: The simulation run service.
         _: Dependency to check permission.
 
