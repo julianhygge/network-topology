@@ -16,9 +16,11 @@ from app.domain.interfaces.net_topology.i_net_topology_service import (
 from app.domain.interfaces.simulator_engine.i_data_preparation_service import (
     IDataPreparationService,
 )
+from app.domain.interfaces.simulator_engine.i_policy_strategy import (
+    IBillingPolicyStrategy,
+)
 from app.domain.services.simulator_engine.billing_strategies import (
     GrossMeteringStrategy,
-    IBillingPolicyStrategy,
     SimpleNetMeteringStrategy,
     TimeOfUseRateStrategy,
 )
@@ -28,9 +30,8 @@ from app.exceptions.hygge_exceptions import (
 )
 from app.utils.datetime_util import (
     end_of_day,
-    end_of_month,
+    get_billing_period_datetimes,
     start_of_day,
-    start_of_month,
     utc_now_iso,
 )
 from app.utils.logger import logger
@@ -62,15 +63,24 @@ class BillSimulationService:
         self._selected_policy_repository = selected_policy_repository
         self._net_metering_policy_repo = net_metering_policy_repo
         self._gross_metering_policy_repo = gross_metering_policy_repo
-        self._tou_rate_policy_params_repo = tou_rate_policy_params_repository
+        self._tou_rate_policy_repo = tou_rate_policy_params_repository
         self._house_bill_service = house_bill_service
         self._net_topology_service = net_topology_service
         self._data_preparation_service = data_preparation_service
 
         self._billing_strategies: Dict[str, IBillingPolicyStrategy] = {
-            "SIMPLE_NET": SimpleNetMeteringStrategy(),
-            "GROSS_METERING": GrossMeteringStrategy(),
-            "TOU_RATE": TimeOfUseRateStrategy(),
+            "SIMPLE_NET": SimpleNetMeteringStrategy(
+                net_metering_policy_repo=self._net_metering_policy_repo,
+                selected_policy_repository=self._selected_policy_repository,
+            ),
+            "GROSS_METERING": GrossMeteringStrategy(
+                gross_metering_policy_repo=self._gross_metering_policy_repo,
+                selected_policy_repository=self._selected_policy_repository,
+            ),
+            "TOU_RATE": TimeOfUseRateStrategy(
+                tou_rate_policy_params_repo=self._tou_rate_policy_repo,
+                selected_policy_repository=self._selected_policy_repository,
+            ),
         }
 
     def _get_billing_strategy(
@@ -118,72 +128,29 @@ class BillSimulationService:
             return None
 
         policy_code = policy_details.net_metering_policy_type_id.policy_code
-        policy_specific_params = {}
-
-        if policy_code == "SIMPLE_NET":
-            params = self._net_metering_policy_repo.read_or_none(
-                simulation_run_id
-            )
-            if not params:
-                logger.warning(
-                    f"NetMeteringPolicy for run {simulation_run_id} not found."
-                )
-                return None
-            policy_specific_params = {
-                "fixed_charge_per_kw": params.fixed_charge_tariff_rate_per_kw,
-                "retail_price_per_kwh": params.retail_price_per_kwh,
-            }
-        elif policy_code == "GROSS_METERING":
-            params = self._gross_metering_policy_repo.read_or_none(
-                simulation_run_id
-            )
-            if not params:
-                logger.warning(
-                    f"GrossMeteringPolicy for run {simulation_run_id} not found."
-                )
-                return None
-            policy_specific_params = {
-                "import_retail_price_kwh": params.import_retail_price_per_kwh,
-                "exp_whole_price_kwh": params.export_wholesale_price_per_kwh,
-                "fixed_charge_per_kw": params.fixed_charge_tariff_rate_per_kw,
-            }
-        elif policy_code == "TOU_RATE":
-            tou_params_list = self._tou_rate_policy_params_repo.filter(
-                simulation_run_id=simulation_run_id
-            )
-            if not tou_params_list:
-                logger.warning(
-                    f"TimeOfUseRatePolicy for {simulation_run_id} not found."
-                )
-                return None
-            policy_specific_params["tou_periods"] = [
-                {
-                    "id": str(
-                        p.id
-                    ),  # Keep for potential future use or detailed logging
-                    "time_period_label": p.time_period_label,
-                    "start_time": p.start_time,  # Keep as datetime.time
-                    "end_time": p.end_time,  # Keep as datetime.time
-                    "import_retail_rate_per_kwh": p.import_retail_rate_per_kwh,
-                    "exp_whole_rate_per_kwh": p.export_wholesale_rate_per_kwh,
-                }
-                for p in tou_params_list
-            ]
-            # fixed_charge_per_kw for TOU
-            # might be part of selected_policy_details or a default
-            # For now, assuming it might be missing
-            # or needs a default if not in specific TOU params.
-            # The strategy will handle if it's None.
-            policy_specific_params["fixed_charge_per_kw"] = getattr(
-                policy_details, "fixed_charge_tariff_rate_per_kw", 0.0
-            )
 
         # Common parameters applicable to all policies
         common_params = {
             "fac_charge_per_kwh": policy_details.fac_charge_per_kwh_imported,
             "tax_rate": policy_details.tax_rate_on_energy_charges,
         }
-        policy_specific_params.update(common_params)
+
+        try:
+            strategy = self._get_billing_strategy(policy_code)
+
+            # Delegate fetching policy-specific parameters to the strategy
+            # Repositories are now injected via constructor
+            policy_specific_params = strategy.get_policy_config(
+                simulation_run_id=simulation_run_id,
+                common_params=common_params,
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Error getting policy config from strategy {policy_code}"
+                f"for run {simulation_run_id}: {e}"
+            )
+            return None
 
         return {
             "simulation_run_id": sim_run.id,
@@ -200,15 +167,13 @@ class BillSimulationService:
         Uses NetTopologyService to get houses.
 
         Args:
-            topology_root_node_id: The root node ID of the topology
+            substation_id: The root node ID of the topology
                                    (e.g., substation ID), as a string
 
         Returns:
             A list of Node (House) entity objects.
         """
-        logger.info(
-            f"Fetching houses for topology_root_node_id: {substation_id}"
-        )
+        logger.info(f"Fetching houses for substation_id: {substation_id}")
 
         try:
             houses_in_substation: List[Node] = (
@@ -223,15 +188,7 @@ class BillSimulationService:
             return []
 
         if not houses_in_substation:
-            logger.warning(
-                f"No houses found for substation_id: {substation_id}"
-            )
             return []
-
-        logger.info(
-            f"Found {len(houses_in_substation)}"
-            f"houses for substation {substation_id}"
-        )
         return houses_in_substation
 
     def calculate_bills_for_simulation_run(self, run_id: UUID) -> None:
@@ -239,7 +196,7 @@ class BillSimulationService:
         Calculates bills for all houses in a given simulation run.
 
         Args:
-            simulation_run_id: The ID of the simulation run.
+            run_id: The ID of the simulation run.
         """
         logger.info(
             f"Starting bill calculation for simulation_run_id: {run_id}"
@@ -283,9 +240,7 @@ class BillSimulationService:
 
             # 3. Aggregate Energy Data for the Billing Cycle for Each House
             billing_month = config["billing_cycle_month"]
-            billing_year = config[
-                "billing_cycle_year"
-            ]  # This will be used for record keeping
+            billing_year = config["billing_cycle_year"]
 
             logger.info(
                 f"  Fetching energy data for house {house_node_id} "
@@ -295,23 +250,12 @@ class BillSimulationService:
             # Get raw 15-min interval data for the house
             # This data is needed by TOU strategy directly.
             # For other strategies, we'll use the aggregated summary.
-            try:
-                house_profile: HouseProfile | None = (
-                    self._data_preparation_service.get_house_profile(
-                        house=house_entity
-                    )
-                )
-            except Exception as e:
-                logger.error(
-                    f"  Error getting profile for house {house_node_id}: {e}"
-                )
-                continue  # Skip this house
 
-            if not house_profile:
-                logger.error(
-                    f"  Error getting HouseProfile for house {house_node_id}."
+            house_profile: HouseProfile | None = (
+                self._data_preparation_service.get_house_profile(
+                    house=house_entity
                 )
-                continue  # Skip this house
+            )
 
             house_profile_data_dict = {
                 "timestamps": getattr(house_profile, "timestamps", []),
@@ -323,32 +267,18 @@ class BillSimulationService:
                 ),
             }
 
-            # Get aggregated energy summary for the billing period
-            # This uses the hardcoded year 2023 as per existing logic
-            try:
-                (
-                    start_of_billing_month_dt,
-                    end_of_billing_month_dt,
-                ) = self._get_billing_period_datetimes(
-                    billing_year,
-                    billing_month,
-                )
-            except ValueError as ve:
-                logger.error(
-                    f"Invalid billing_month/billing_year:"
-                    f"{billing_month}/{billing_year}. Error: {ve}"
-                )
-                continue
+            (
+                start_of_billing_month_dt,
+                end_of_billing_month_dt,
+            ) = get_billing_period_datetimes(
+                billing_year,
+                billing_month,
+            )
 
             e_summary = self._get_house_energy_summary_for_period(
                 house_entity,
-                start_of_billing_month_dt,  # Based on actual billing_year
-                end_of_billing_month_dt,  # Based on actual billing_year
-            )
-            logger.info(
-                f"Aggregated for {billing_month}/{billing_year}"
-                f"Total Imported: {e_summary['total_imported_units']:.2f} kWh"
-                f"Total Exported: {e_summary['total_exported_units']:.2f} kWh"
+                start_of_billing_month_dt,
+                end_of_billing_month_dt,
             )
 
             # 4. Select and Use Billing Strategy
@@ -373,70 +303,18 @@ class BillSimulationService:
                 )
                 continue  # Skip this house
 
-            if (
-                not bill_details
-                or "total_bill_amount_calculated" not in bill_details
-            ):
-                logger.error(
-                    f"Bill calculation error for house {house_node_id}."
-                )
-                continue
-
-            # 5. Store Bill Results
+            # 5. Store Bill Results using Strategy
             try:
-                actual_total_imported: float = 0.0
-                actual_total_exported: float = 0.0
-
-                if policy_type == "TOU_RATE":
-                    actual_total_imported = bill_details.get(
-                        "overall_total_imported_kwh", 0.0
-                    )
-                    actual_total_exported = bill_details.get(
-                        "overall_total_exported_kwh", 0.0
-                    )
-                else:  # For SIMPLE_NET and GROSS_METERING
-                    actual_total_imported = bill_details.get(
-                        "total_imported_kwh", 0.0
-                    )
-                    actual_total_exported = bill_details.get(
-                        "total_exported_kwh", 0.0
-                    )
-
-                actual_total_imported = (
-                    float(actual_total_imported)
-                    if actual_total_imported is not None
-                    else 0.0
-                )
-                actual_total_exported = (
-                    float(actual_total_exported)
-                    if actual_total_exported is not None
-                    else 0.0
-                )
-
-                net_balance_kwh_val = round(
-                    actual_total_imported - actual_total_exported, 2
-                )
-
-                house_bill_record = {
-                    "simulation_run_id": run_id,
-                    "house_node_id": house_node_id,
-                    "total_energy_imported_kwh": actual_total_imported,
-                    "total_energy_exported_kwh": actual_total_exported,
-                    "net_energy_balance_kwh": net_balance_kwh_val,
-                    "calculated_bill_amount": bill_details[
-                        "total_bill_amount_calculated"
-                    ],
-                    "bill_details": bill_details,
-                }
-                self._house_bill_service.create(
-                    user_id=None, **house_bill_record
-                )
-                logger.info(
-                    f"  Successfully stored bill for house {house_node_id}."
+                strategy.store_bill_details(
+                    run_id=run_id,
+                    house_node_id=house_node_id,
+                    bill_details=bill_details,
+                    house_bill_service=self._house_bill_service,
                 )
             except Exception as e:
                 logger.error(
-                    f"  Error storing bill for house {house_node_id}: {e}"
+                    f"  Error storing bill for house {house_node_id}"
+                    f"via strategy {policy_type}: {e}"
                 )
 
         # 6. Update simulation_runs Status
@@ -467,33 +345,6 @@ class BillSimulationService:
         logger.info(
             f"Bill calculation finished for simulation_run_id: {run_id}."
         )
-
-    def _get_billing_period_datetimes(
-        self, billing_year: int, billing_month: int
-    ) -> tuple[datetime.datetime, datetime.datetime]:
-        """
-        Calculates the start and end datetimes
-        for a given billing month and year.
-        Start datetime will be the first day of the month at 00:00:00.
-        End datetime will be the last day of the month at 23:59:59.
-
-        Args:
-            billing_year: The year of the billing cycle.
-            billing_month: The month of the billing cycle.
-
-        Returns:
-            A tuple containing the start and end datetime objects (UTC aware).
-
-        Raises:
-            ValueError: If the billing_month or billing_year is invalid.
-        """
-        if not 1 <= billing_month <= 12:
-            raise ValueError("Billing month must be between 1 and 12.")
-        base_date = datetime.datetime(billing_year, billing_month, 1)
-
-        start_dt = start_of_month(base_date)
-        end_dt = end_of_month(base_date)
-        return start_dt, end_dt
 
     def _get_house_energy_summary_for_period(
         self,
@@ -558,15 +409,9 @@ class BillSimulationService:
         total_imported_units = 0.0
         total_exported_units = 0.0
 
-        timestamps = getattr(
-            house_profile, "timestamps", []
-        )  # List[datetime.datetime]
-        imported_intervals = getattr(
-            house_profile, "imported_units", []
-        )  # List[float]
-        exported_intervals = getattr(
-            house_profile, "exported_units", []
-        )  # List[float]
+        timestamps = getattr(house_profile, "timestamps", [])
+        imported_intervals = getattr(house_profile, "imported_units", [])
+        exported_intervals = getattr(house_profile, "exported_units", [])
 
         if not (
             len(timestamps)
@@ -582,29 +427,10 @@ class BillSimulationService:
             }
 
         for i, ts_datetime_val in enumerate(timestamps):
-            # Ensure the timestamp from data is UTC aware for comparison
-            if (
-                ts_datetime_val.tzinfo is None
-                or ts_datetime_val.tzinfo.utcoffset(ts_datetime_val) is None
-            ):
-                ts_datetime_val = ts_datetime_val.replace(
-                    tzinfo=datetime.timezone.utc
-                )
-            else:
-                ts_datetime_val = ts_datetime_val.astimezone(
-                    datetime.timezone.utc
-                )
-
             if start_dt_processed <= ts_datetime_val < end_dt_processed:
                 total_imported_units += imported_intervals[i]
                 total_exported_units += exported_intervals[i]
 
-        logger.debug(
-            f"Aggregated for period {start_dt_processed} to {end_dt_processed}"
-            f"for house {house_node_id} - "
-            f"Total Imported: {total_imported_units:.2f} kWh, "
-            f"Total Exported: {total_exported_units:.2f} kWh"
-        )
         return {
             "total_imported_units": round(total_imported_units, 2),
             "total_exported_units": round(total_exported_units, 2),
@@ -720,9 +546,6 @@ class BillSimulationService:
 
 """
 TODO:
-- Implement detailed bill calculation logic for "Simple Net Metering"
-  (Phase 1, Step 4).
-- Implement logic to store bill results (Phase 1, Step 5).
 - Implement logic to update simulation_runs status (Phase 1, Step 6).
 - Add error handling and logging.
 - Add unit tests.

@@ -259,3 +259,31 @@ def start_of_a_non_leap_year() -> datetime.datetime:
         microsecond=0,
     )
     return start_of_year
+
+
+def get_billing_period_datetimes(
+    billing_year: int, billing_month: int
+) -> tuple[datetime.datetime, datetime.datetime]:
+    """
+    Calculates the start and end datetimes
+    for a given billing month and year.
+    Start datetime will be the first day of the month at 00:00:00.
+    End datetime will be the last day of the month at 23:59:59.
+
+    Args:
+        billing_year: The year of the billing cycle.
+        billing_month: The month of the billing cycle.
+
+    Returns:
+        A tuple containing the start and end datetime objects (UTC aware).
+
+    Raises:
+        ValueError: If the billing_month or billing_year is invalid.
+    """
+    if not 1 <= billing_month <= 12:
+        raise ValueError("Billing month must be between 1 and 12.")
+    base_date = datetime.datetime(billing_year, billing_month, 1)
+
+    start_dt = start_of_month(base_date)
+    end_dt = end_of_month(base_date)
+    return start_dt, end_dt
