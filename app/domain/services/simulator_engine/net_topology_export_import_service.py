@@ -55,7 +55,6 @@ class NetTopologyExportImportService:
 
         return json_str, filename
 
-        return grid_structure
 
     def build_house_structure(self, node):
 
