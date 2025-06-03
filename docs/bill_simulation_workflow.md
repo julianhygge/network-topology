@@ -101,7 +101,7 @@ Total Bill Amount: 6426.54
    - **Description:** For the current house and the `billing_cycle_month/year`:
      - `Total_Imported_Units` (kWh) = Sum of `Import_Interval` over all 15-min intervals in the billing cycle.
      - `Total_Exported_Units` (kWh) = Sum of `Export_Interval` over all 15-min intervals in the billing cycle.
-     - **Important Note on Data Year:** The `_get_house_energy_summary_for_period` method in `BillSimulationService` currently uses `start_datetime.replace(year=2023)` and `end_datetime.replace(year=2023)`. This means that regardless of the `billing_cycle_year` set in the simulation run, the actual energy data for aggregation is always fetched from the year 2023. This is a critical assumption for interpreting simulation results.
+     - **Important Note on Data Year and Timezone Handling:** The `_get_house_energy_summary_for_period` method in `BillSimulationService` currently uses `start_datetime.replace(year=2023)` and `end_datetime.replace(year=2023)`. This means that regardless of the `billing_cycle_year` set in the simulation run, the actual energy data for aggregation is always fetched from the year 2023. This is a critical assumption for interpreting simulation results. All datetime comparisons within this service (e.g., `start_dt_processed <= ts_datetime_val < end_dt_processed`) are performed using timezone-naive datetime objects, treating all datetimes as local time to avoid "can't compare offset-naive and offset-aware datetimes" errors.
      - For TOU policy, raw 15-minute interval data (`timestamps`, `imported_intervals`, `exported_intervals`) is also passed to its strategy, which then filters by the actual `billing_cycle_month` and `billing_cycle_year` from the simulation configuration.
    - **Status:**
      - [x] Implemented in `BillSimulationService.calculate_bills_for_simulation_run()` and `_get_house_energy_summary_for_period()`. The TOU strategy handles its own interval filtering.
@@ -345,10 +345,10 @@ Total Bill Amount: 6180.2
 
 ## Questions for Clarification:
 1.  - [ ] **Solar Site ID for `_get_solar_by_house_id` (User Feedback: Pending):** How should the correct `site_id` be determined dynamically for each house instead of the hardcoded `2609522`? (Continue with hardcoded value for now).
-2.  - [ ] **Timestamp/Time Zone Handling for TOU (User Feedback: Clarified):**
+2.  - [x] **Timestamp/Time Zone Handling for TOU (User Feedback: Clarified and Implemented):**
     - `tou_rate_policy_params` has `start_time` and `end_time` as `time without time zone` (local to grid zone).
-    - Interval data from `DataPreparationService` (e.g., `load_patterns.timestamp`) should be treated as local time.
-    - Ensure consistent handling of these local times for comparison.
+    - Interval data from `DataPreparationService` (e.g., `load_patterns.timestamp`) is treated as local time.
+    - Consistent handling of these local times for comparison is ensured by converting all datetimes to timezone-naive objects before comparison in `EnergySummaryService`.
 3.  - [ ] **TOU Export Compensation (User Feedback: Pending):** The `tou_rate_policy_params` table includes `export_wholesale_rate_per_kwh`. Should the TOU policy calculation include credits/revenue from exported energy? (Awaiting confirmation from supervisor).
 4.  - [ ] **Arrears (User Feedback: Skipped for now):** For now, arrears are assumed to be 0.
 5.  - [ ] **Definition of `transactional.houses.connection_kw` (Sanctioned Load) (User Feedback: Pending):** Is this field reliably populated? (To be hardcoded if necessary for now, awaiting confirmation from supervisor).

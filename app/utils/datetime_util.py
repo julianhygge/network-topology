@@ -86,40 +86,53 @@ def _ensure_aware(dt: datetime.datetime) -> datetime.datetime:
     return dt.astimezone(UTC)
 
 
+def ensure_naive(dt: datetime.datetime) -> datetime.datetime:
+    """Ensures the datetime object is timezone-naive by removing tzinfo."""
+    if dt.tzinfo is not None:
+        return dt.replace(tzinfo=None)
+    return dt
+
+
 def start_of_day(dt: datetime.datetime) -> datetime.datetime:
-    """Returns the start of the day (00:00:00) for the given datetime in UTC."""
+    """Returns the start of the day (00:00:00)
+    for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     return aware_dt.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 def end_of_day(dt: datetime.datetime) -> datetime.datetime:
-    """Returns the end of the day (23:59:59.999999) for the given datetime in UTC."""
+    """Returns the end of the day (23:59:59.999999)
+    for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     return aware_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
 
 
 def start_of_week(dt: datetime.datetime) -> datetime.datetime:
-    """Returns the start of the week (Monday 00:00:00) for the given datetime in UTC."""
+    """Returns the start of the week (Monday 00:00:00)
+    for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     start = aware_dt - datetime.timedelta(days=aware_dt.weekday())
     return start.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 def end_of_week(dt: datetime.datetime) -> datetime.datetime:
-    """Returns the end of the week (Sunday 23:59:59.999999) for the given datetime in UTC."""
+    """Returns the end of the week (Sunday 23:59:59.999999)
+    for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     end = aware_dt + datetime.timedelta(days=(6 - aware_dt.weekday()))
     return end.replace(hour=23, minute=59, second=59, microsecond=999999)
 
 
 def start_of_month(dt: datetime.datetime) -> datetime.datetime:
-    """Returns the start of the month (Day 1, 00:00:00) for the given datetime in UTC."""
+    """Returns the start of the month (Day 1, 00:00:00)
+    for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     return aware_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
 
 def end_of_month(dt: datetime.datetime) -> datetime.datetime:
-    """Returns the end of the month (Last day, 23:59:59.999999) for the given datetime in UTC."""
+    """Returns the end of the month (Last day, 23:59:59.999999)
+    for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     last_day = calendar.monthrange(aware_dt.year, aware_dt.month)[1]
     return aware_dt.replace(
@@ -128,7 +141,8 @@ def end_of_month(dt: datetime.datetime) -> datetime.datetime:
 
 
 def start_of_year(dt: datetime.datetime) -> datetime.datetime:
-    """Returns the start of the year (Jan 1, 00:00:00) for the given datetime in UTC."""
+    """Returns the start of the year (Jan 1, 00:00:00)
+    for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     return aware_dt.replace(
         month=1, day=1, hour=0, minute=0, second=0, microsecond=0
@@ -136,7 +150,8 @@ def start_of_year(dt: datetime.datetime) -> datetime.datetime:
 
 
 def end_of_year(dt: datetime.datetime) -> datetime.datetime:
-    """Returns the end of the year (Dec 31, 23:59:59.999999) for the given datetime in UTC."""
+    """Returns the end of the year (Dec 31, 23:59:59.999999)
+    for the given datetime in UTC."""
     aware_dt = _ensure_aware(dt)
     return aware_dt.replace(
         month=12, day=31, hour=23, minute=59, second=59, microsecond=999999
@@ -146,7 +161,8 @@ def end_of_year(dt: datetime.datetime) -> datetime.datetime:
 def get_end_of_period(
     dt: datetime.datetime, period: Period
 ) -> datetime.datetime:
-    """Calculates the end of the specified period for the given UTC datetime."""
+    """Calculates the end of the specified period
+    for the given UTC datetime."""
     periods = {
         Period.DAILY: end_of_day,
         Period.WEEKLY: end_of_week,
@@ -162,14 +178,17 @@ def get_end_of_period(
 
 def get_start_of_period(period: Period, offset: int = 0) -> datetime.datetime:
     """
-    Calculates the start of the specified period relative to the current UTC time.
+    Calculates the start of the specified period
+    relative to the current UTC time.
 
     Args:
         period: The period type (daily, weekly, monthly, yearly).
-        offset: The number of periods to offset from the current period (0 for current).
+        offset: The number of periods to offset
+        from the current period (0 for current).
 
     Returns:
-        A timezone-aware UTC datetime object representing the start of the period.
+        A timezone-aware UTC datetime object
+        representing the start of the period.
     """
     now_aware = utc_now()
     start_dt = None

@@ -17,6 +17,7 @@ from app.domain.interfaces.simulator_engine.i_data_preparation_service import (
 from app.exceptions.hygge_exceptions import NotFoundException
 from app.utils.datetime_util import (
     end_of_day,
+    ensure_naive,
     start_of_day,
 )
 from app.utils.logger import logger
@@ -64,9 +65,11 @@ class EnergySummaryService:
 
         start_dt_processed = start_datetime.replace(year=2023)
         start_dt_processed = start_of_day(start_dt_processed)
+        start_dt_processed = ensure_naive(start_dt_processed)
 
         end_dt_processed = end_datetime.replace(year=2023)
         end_dt_processed = end_of_day(end_dt_processed)
+        end_dt_processed = ensure_naive(end_dt_processed)
 
         house_node_id = str(house_entity.id)
         logger.debug(
@@ -119,6 +122,7 @@ class EnergySummaryService:
             }
 
         for i, ts_datetime_val in enumerate(timestamps):
+            ts_datetime_val = ensure_naive(ts_datetime_val)
             if start_dt_processed <= ts_datetime_val < end_dt_processed:
                 total_imported_units += imported_intervals[i]
                 total_exported_units += exported_intervals[i]
