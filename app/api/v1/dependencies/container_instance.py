@@ -31,6 +31,9 @@ from app.domain.services.base_service import BaseService
 from app.domain.services.simulator_engine.bill_simulation_service import (
     BillSimulationService,
 )
+from app.domain.services.simulator_engine.energy_summary_service import (
+    EnergySummaryService,
+)
 from app.domain.services.solar.load_profile_builder_service import (
     LoadProfileBuilderService,
 )
@@ -205,3 +208,8 @@ def get_house_bill_service() -> IService:
 def get_bill_simulation_service() -> BillSimulationService:
     """Get Bill Simulation Service instance"""
     return c.bill_simulation_service()
+
+
+def get_energy_summary_service() -> EnergySummaryService:
+    """Get Energy Summary Service instance"""
+    return c.energy_summary_service()

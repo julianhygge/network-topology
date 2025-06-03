@@ -8,6 +8,7 @@ from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
     get_bill_simulation_service,
+    get_energy_summary_service,
     get_gross_metering_policy_service,
     get_house_bill_service,
     get_net_metering_algorithm_service,
@@ -46,11 +47,12 @@ from app.api.v1.models.responses.simulation_response import (
 from app.api.v1.models.responses.simulation_responses import (
     EnergySummaryResponse,
 )
-from app.domain.interfaces.i_service import (
-    IService,  # May not be needed if BillSimulationService is directly typed
-)
+from app.domain.interfaces.i_service import IService
 from app.domain.services.simulator_engine.bill_simulation_service import (
     BillSimulationService,
+)
+from app.domain.services.simulator_engine.energy_summary_service import (
+    EnergySummaryService,
 )
 
 simulation_router = APIRouter(tags=["Simulation"])
@@ -65,6 +67,7 @@ GetSimulationSelectedPolicyServiceDep = Depends(
 )
 GetHouseBillServiceDep = Depends(get_house_bill_service)
 GetBillSimulationServiceDep = Depends(get_bill_simulation_service)
+GetEnergySummaryServiceDep = Depends(get_energy_summary_service)
 
 SimulationRetrievePermissionDep = Depends(
     permission(Resources.SIMULATION, Permission.RETRIEVE)
@@ -766,7 +769,7 @@ async def get_house_energy_summary(
     house_id: UUID,
     start_datetime: datetime.datetime,
     end_datetime: datetime.datetime,
-    service: BillSimulationService = GetBillSimulationServiceDep,
+    service: EnergySummaryService = GetEnergySummaryServiceDep,
     _: UUID = SimulationRetrievePermissionDep,
 ):
     """
@@ -792,7 +795,7 @@ async def get_node_energy_summary(
     node_id: UUID,
     start_datetime: datetime.datetime,
     end_datetime: datetime.datetime,
-    service: BillSimulationService = GetBillSimulationServiceDep,
+    service: EnergySummaryService = GetEnergySummaryServiceDep,
     _: UUID = SimulationRetrievePermissionDep,
 ):
     """

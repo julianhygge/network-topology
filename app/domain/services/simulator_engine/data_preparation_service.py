@@ -106,8 +106,9 @@ class DataPreparationService(IDataPreparationService):
             net_usage=profile_net_usage,
         )
 
+    @staticmethod
     def _create_house_profile_csv_content(
-        self, house_profile: HouseProfile
+            house_profile: HouseProfile
     ) -> str:
         """Creates CSV content for a given house profile."""
         output = io.StringIO()
@@ -188,12 +189,12 @@ class DataPreparationService(IDataPreparationService):
                 f"No CSV files generated for substation {substation_id}"
             )
 
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+        z_buffer = io.BytesIO()
+        with zipfile.ZipFile(z_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
             for file_path in csv_file_paths:
-                zipf.write(file_path, os.path.basename(file_path))
-        zip_buffer.seek(0)
-        return zip_buffer.getvalue()
+                zf.write(file_path, os.path.basename(file_path))
+        z_buffer.seek(0)
+        return z_buffer.getvalue()
 
     def get_houses_profile_by_substation_id(
         self, substation_id: UUID
@@ -302,8 +303,9 @@ class DataPreparationService(IDataPreparationService):
             for item in solar_references
         ]
 
+    @staticmethod
     def _calculate_efficiency_factor(
-        self, tilt_type: str, years_since_installation: float
+            tilt_type: str, years_since_installation: float
     ) -> float:
         """
         Calculate efficiency factor based on tilt type and system age.

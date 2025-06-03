@@ -81,6 +81,9 @@ from app.domain.services.simulator_engine.bill_simulation_service import (
 from app.domain.services.simulator_engine.data_preparation_service import (
     DataPreparationService,
 )
+from app.domain.services.simulator_engine.energy_summary_service import (
+    EnergySummaryService,
+)
 from app.domain.services.solar.consumption_pattern_service import (
     ConsumptionPatternService,
 )
@@ -382,16 +385,23 @@ class Container(containers.DeclarativeContainer):
         solar_profile_repository=_solar_profile_repo,
     )
 
+    energy_summary_service = providers.Singleton(
+        EnergySummaryService,
+        net_topology_service=net_topology_service,
+        data_preparation_service=data_preparations_service,
+    )
+
     bill_simulation_service = providers.Singleton(
         BillSimulationService,
         simulation_runs_repository=_simulation_runs_repository,
         selected_policy_repository=_selected_policy_repository,
         net_metering_policy_repo=_net_metering_policy_repository,
         gross_metering_policy_repo=_gross_metering_policy_repository,
-        tou_rate_policy_params_repository=_tou_rate_policy_repository,  # Added
+        tou_rate_policy_params_repository=_tou_rate_policy_repository,
         house_bill_service=house_bill_service,
         net_topology_service=net_topology_service,
         data_preparation_service=data_preparations_service,
+        energy_summary_service=energy_summary_service,
     )
 
     flag_service = providers.Singleton(BaseService, _flag_repo)
