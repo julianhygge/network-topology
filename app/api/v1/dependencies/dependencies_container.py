@@ -406,5 +406,6 @@ class Container(containers.DeclarativeContainer):
         solar_profile_repository=_solar_profile_repo,
         predefined_templates_repository=_predefined_templates_repository,
         load_profiles_repository=_load_profiles_repository,
+
         
     )

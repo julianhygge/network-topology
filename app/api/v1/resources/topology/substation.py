@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
@@ -450,4 +450,21 @@ async def get_network_topology_export_file(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate json file.",
+        ) from e
+
+
+@substation_router.post("/{substation_id}/import/json")
+async def upload_json_file(
+        substation_id: UUID,
+        file: UploadFile = File(...),
+        user_id: str = SubstationsCreatePermissionDep,
+        service: NetTopologyExportImportService = GetNetTopologyExportImportService
+):
+    try:
+        await service.import_json_file(user_id, substation_id, file)
+        return f'File Uploaded successfully'
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to upload file.",
         ) from e
