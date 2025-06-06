@@ -140,7 +140,7 @@ class NetTopologyExportImportService:
 
 
 
-    async def import_json_file(self, user_id, substation_id, file):
+    async def import_json_file(self, user_id, file):
         try:
             content = await file.read()
             json_data = json.loads(content.decode('utf-8'))
@@ -150,19 +150,20 @@ class NetTopologyExportImportService:
             if "Grid" not in json_data:
                 raise ValueError("Invalid JSON structure")
 
-            new_node = self._process_substation_import(user_id, substation_id)
+            new_node = self._process_substation_import(user_id)
 
 
-            self._process_transformer(user_id, new_node, grid_data, substation_id)
+            self._process_transformer(user_id, new_node, grid_data, new_node)
         except Exception as e:
             raise ValueError(f"Invalid JSON format: {str(e)}")
 
-    def _process_substation_import(self, user_id, substation_id):
+    def _process_substation_import(self, user_id):
 
         # Create new substation and node
+        new_substation_id = str(uuid.uuid4())
 
         substation_data = {
-            "id": substation_id,
+            "id": new_substation_id,
             "locality_id": "94522a0a-c8f1-40f8-a2e5-9aed2dc55555",
             "name": "Grid-4",
             "created_by": user_id,

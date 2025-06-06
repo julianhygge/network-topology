@@ -453,15 +453,14 @@ async def get_network_topology_export_file(
         ) from e
 
 
-@substation_router.post("/{substation_id}/import/json")
+@substation_router.post("/import/json")
 async def upload_json_file(
-        substation_id: UUID,
         file: UploadFile = File(...),
         user_id: str = SubstationsCreatePermissionDep,
         service: NetTopologyExportImportService = GetNetTopologyExportImportService
 ):
     try:
-        await service.import_json_file(user_id, substation_id, file)
+        await service.import_json_file(user_id, file)
         return f'File Uploaded successfully'
     except Exception as e:
         raise HTTPException(
