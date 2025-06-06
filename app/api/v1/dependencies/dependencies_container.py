@@ -84,6 +84,7 @@ from app.domain.services.simulator_engine.data_preparation_service import (
 from app.domain.services.simulator_engine.energy_summary_service import (
     EnergySummaryService,
 )
+from app.domain.services.simulator_engine.net_topology_export_import_service import NetTopologyExportImportService
 from app.domain.services.solar.consumption_pattern_service import (
     ConsumptionPatternService,
 )
@@ -405,3 +406,16 @@ class Container(containers.DeclarativeContainer):
     )
 
     flag_service = providers.Singleton(BaseService, _flag_repo)
+
+    network_topology_export_import_service = providers.Singleton(
+        NetTopologyExportImportService,
+        node_repository=_node_repo,
+        substation_repository=_substation_repo,
+        transformer_repository=_transformer_repo,
+        house_repository=_house_repo,
+        solar_profile_repository=_solar_profile_repo,
+        predefined_templates_repository=_predefined_templates_repository,
+        load_profiles_repository=_load_profiles_repository,
+
+        
+    )

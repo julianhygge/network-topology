@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
@@ -16,7 +16,7 @@ from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
     get_data_preparation_service,
     get_net_topology_service,
-    get_substation_service,
+    get_substation_service, get_net_topology_export_import_service,
 )
 from app.api.v1.models.requests.substation import (
     SubstationRequestModel,
@@ -40,6 +40,7 @@ from app.domain.interfaces.net_topology.i_substation_service import (
 from app.domain.interfaces.simulator_engine.i_data_preparation_service import (
     IDataPreparationService,
 )
+from app.domain.services.simulator_engine.net_topology_export_import_service import NetTopologyExportImportService
 from app.exceptions.hygge_exceptions import NotFoundException
 from app.utils.logger import logger
 
@@ -60,13 +61,14 @@ GetDataPreparationServiceDep = Depends(get_data_preparation_service)
 SubstationsDeletePermissionDep = Depends(
     permission(Resources.SUBSTATIONS, Permission.DELETE)
 )
+GetNetTopologyExportImportService = Depends(get_net_topology_export_import_service)
 
 
 @substation_router.get("/{substation_id}", response_model=SubstationTopology)
 async def get_substation_topology(
-    substation_id: UUID,
-    _: str = SubstationsRetrievePermissionDep,
-    service: INetTopologyService = GetNetTopologyServiceDep,
+        substation_id: UUID,
+        _: str = SubstationsRetrievePermissionDep,
+        service: INetTopologyService = GetNetTopologyServiceDep,
 ) -> SubstationTopology:
     """
     Retrieve the topology structure for a specific substation.
@@ -95,10 +97,10 @@ async def get_substation_topology(
 
 @substation_router.put("/{substation_id}", response_model=SubstationTopology)
 async def update_substation_topology(
-    substation_id: UUID4,
-    topology_data: SubstationTopologyRequestModel,
-    user_id: str = SubstationsUpdatePermissionDep,
-    service: INetTopologyService = GetNetTopologyServiceDep,
+        substation_id: UUID4,
+        topology_data: SubstationTopologyRequestModel,
+        user_id: str = SubstationsUpdatePermissionDep,
+        service: INetTopologyService = GetNetTopologyServiceDep,
 ) -> SubstationTopology:
     """
     Update the topology structure for a specific substation.
@@ -134,9 +136,9 @@ async def update_substation_topology(
 
 @substation_router.post("/", response_model=SubstationResponseModel)
 async def create(
-    data: SubstationRequestModel,
-    user_id: UUID = SubstationsCreatePermissionDep,
-    service: IService = GetSubstationServiceDep,
+        data: SubstationRequestModel,
+        user_id: UUID = SubstationsCreatePermissionDep,
+        service: IService = GetSubstationServiceDep,
 ) -> SubstationResponseModel:
     """
     Create a new substation.
@@ -159,9 +161,9 @@ async def create(
     "/generate", response_model=SubstationResponseModelList
 )
 async def generate_substations(
-    data: SubstationsRequestModel,
-    user_id: UUID = SubstationsCreatePermissionDep,
-    service: ISubstationService = GetSubstationServiceDep,
+        data: SubstationsRequestModel,
+        user_id: UUID = SubstationsCreatePermissionDep,
+        service: ISubstationService = GetSubstationServiceDep,
 ) -> SubstationResponseModelList:
     """
     Generate multiple substations within a locality.
@@ -192,8 +194,8 @@ async def generate_substations(
 
 @substation_router.get("", response_model=SubstationResponseModelList)
 async def get(
-    _: str = SubstationsRetrievePermissionDep,
-    service: IService = GetSubstationServiceDep,
+        _: str = SubstationsRetrievePermissionDep,
+        service: IService = GetSubstationServiceDep,
 ) -> SubstationResponseModelList:
     """
     Retrieve a list of all substations.
@@ -227,9 +229,9 @@ async def get(
     "/{substation_id}/houses", response_model=HouseResponseModelList
 )
 async def get_houses_by_substation_id(
-    substation_id: UUID,
-    _: str = SubstationsRetrievePermissionDep,
-    service: INetTopologyService = GetNetTopologyServiceDep,
+        substation_id: UUID,
+        _: str = SubstationsRetrievePermissionDep,
+        service: INetTopologyService = GetNetTopologyServiceDep,
 ) -> HouseResponseModelList:
     """
     Retrieve the houses for a given substation ID.
@@ -261,9 +263,9 @@ async def get_houses_by_substation_id(
     "/{substation_id}/houses_profiles", response_model=HouseResponseModelList
 )
 async def get_houses_profiles_by_substation_id(
-    substation_id: UUID,
-    _: str = SubstationsRetrievePermissionDep,
-    service: IDataPreparationService = GetDataPreparationServiceDep,
+        substation_id: UUID,
+        _: str = SubstationsRetrievePermissionDep,
+        service: IDataPreparationService = GetDataPreparationServiceDep,
 ) -> HouseResponseModelList:
     """
     Retrieve the house profiles for a given substation ID.
@@ -299,9 +301,9 @@ async def get_houses_profiles_by_substation_id(
     path="/{substation_id}/delete", status_code=status.HTTP_204_NO_CONTENT
 )
 async def delete(
-    substation_id: UUID,
-    service: IService = GetSubstationServiceDep,
-    _: str = SubstationsDeletePermissionDep,
+        substation_id: UUID,
+        service: IService = GetSubstationServiceDep,
+        _: str = SubstationsDeletePermissionDep,
 ) -> None:
     """
     Delete a substation.
@@ -329,9 +331,9 @@ async def delete(
     response_model=List[str],
 )
 async def create_house_profiles_csv_files(
-    substation_id: UUID,
-    _: str = SubstationsCreatePermissionDep,
-    service: IDataPreparationService = GetDataPreparationServiceDep,
+        substation_id: UUID,
+        _: str = SubstationsCreatePermissionDep,
+        service: IDataPreparationService = GetDataPreparationServiceDep,
 ) -> List[str]:
     """
     Generate CSV files for all house profiles under a specific substation.
@@ -377,9 +379,9 @@ async def create_house_profiles_csv_files(
 
 @substation_router.get("/{substation_id}/profiles/zip")
 async def get_house_profiles_zip_file(
-    substation_id: UUID,
-    _: str = SubstationsRetrievePermissionDep,
-    service: IDataPreparationService = GetDataPreparationServiceDep,
+        substation_id: UUID,
+        _: str = SubstationsRetrievePermissionDep,
+        service: IDataPreparationService = GetDataPreparationServiceDep,
 ):
     """
     Retrieve a ZIP file containing CSVs of all house profiles for a substation.
@@ -410,7 +412,7 @@ async def get_house_profiles_zip_file(
             media_type="application/zip",
             headers={
                 "Content-Disposition": "attachment;"
-                "filename=house_profiles_{substation_id}.zip"
+                                       "filename=house_profiles_{substation_id}.zip"
             },
         )
     except NotFoundException as e:
@@ -428,4 +430,41 @@ async def get_house_profiles_zip_file(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate ZIP file.",
+        ) from e
+
+
+@substation_router.get("/{substation_id}/export/json")
+async def get_network_topology_export_file(
+        substation_id: UUID,
+        _: str = SubstationsRetrievePermissionDep,
+        service: NetTopologyExportImportService = GetNetTopologyExportImportService
+):
+    try:
+        json_data, filename = service.export_network_topology(substation_id)
+        return StreamingResponse(
+            io.BytesIO(json_data.encode('utf-8')),
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate json file.",
+        ) from e
+
+
+@substation_router.post("/{substation_id}/import/json")
+async def upload_json_file(
+        substation_id: UUID,
+        file: UploadFile = File(...),
+        user_id: str = SubstationsCreatePermissionDep,
+        service: NetTopologyExportImportService = GetNetTopologyExportImportService
+):
+    try:
+        await service.import_json_file(user_id, substation_id, file)
+        return f'File Uploaded successfully'
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to upload file.",
         ) from e
