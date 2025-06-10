@@ -6,8 +6,10 @@ from pydantic import BaseModel, Field
 
 
 class SimulationRunsRequestModel(BaseModel):
+    simulation_container_id: UUID = Field(...)
+    description: str = Field(...)
     run_name: Optional[str] = Field(None)
-    topology_root_node_id: UUID = Field(...)
+    topology_root_node_id: Optional[UUID] = Field(None)
     simulation_algorithm_type_id: UUID = Field(...)
     billing_cycle_month: Optional[int] = Field(None)
     billing_cycle_year: Optional[int] = Field(None)
@@ -27,6 +29,7 @@ class SimulationRunsUpdateModel(BaseModel):
     simulation_start_timestamp: Optional[datetime] = Field(None)
     simulation_end_timestamp: Optional[datetime] = Field(None)
     locality_id: Optional[UUID] = Field(None)
+    description: Optional[str] = Field(None)
 
 
 class NetMeteringRequestModel(BaseModel):
@@ -100,3 +103,11 @@ class HouseBillUpdateModel(BaseModel):
     net_energy_balance_kwh: Optional[float] = Field(None)
     calculated_bill_amount: Optional[float] = Field(None)
     bill_details: Optional[Dict[str, Any]] = Field(None)
+
+class SimulationContainerRequestModel(BaseModel):
+    name: str = Field(...)
+    time_step_min: int = Field(...)
+    power_unit: str = Field(...)
+    description: Optional[str] = Field(None)
+    location_name: Optional[str] = Field(None)
+    algorithm_name: Optional[str] = Field(None)

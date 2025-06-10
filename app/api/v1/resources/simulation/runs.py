@@ -16,10 +16,12 @@ from app.api.v1.models.requests.simulation_request import (
 from app.api.v1.models.responses.simulation_response import (
     SimulationRunsResponse,
 )
+from app.api.v1.resources.simulation.container import GetSimulationContainerServiceDep
 from app.domain.interfaces.i_service import IService
 from app.domain.services.simulator_engine.bill_simulation_service import (
     BillSimulationService,
 )
+from app.domain.services.simulator_engine.simulation_container_service import SimulationContainerService
 
 runs_router = APIRouter()
 
@@ -110,7 +112,7 @@ async def get_simulation_runs_by_locality(
 )
 async def create_simulation_runs(
     data: SimulationRunsRequestModel,
-    service: IService = GetSimulationRunServiceDep,
+    service: SimulationContainerService = GetSimulationContainerServiceDep,
     user_id: UUID = SimulationCreatePermissionDep,
 ):
     """

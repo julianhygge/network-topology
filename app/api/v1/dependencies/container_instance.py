@@ -180,6 +180,10 @@ def get_simulation_runs_service() -> IService:
     """Get Net Metering Algorithm instance"""
     return c.simulation_runs_service()
 
+def get_simulation_container_service() -> IService:
+    """Get Simulation Container instance"""
+    return c.simulation_container_service()
+
 
 def get_net_metering_policy_service() -> IService:
     """Get Net Metering policy instance"""

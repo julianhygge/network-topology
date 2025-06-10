@@ -29,6 +29,7 @@ from app.data.repositories.load_profile.load_profile_repository import (
 from app.data.repositories.load_profile.template_patterns_repository import (
     TemplateConsumptionPatternsRepository,
 )
+from app.data.repositories.simulation_run_repository import SimulationRunRepository
 from app.data.repositories.solar.solar_repository import (
     SolarInstallationRepository,
     SolarProfileRepository,
@@ -50,6 +51,7 @@ from app.data.schemas.simulation.metering_policy_schema import (
     NetMeteringPolicy,
     TimeOfUseRatePolicy,
 )
+from app.data.schemas.simulation.simulation_container import SimulationContainer
 from app.data.schemas.simulation.simulation_runs_schema import (
     SimulationRuns,
     SimulationSelectedPolicy,
@@ -85,6 +87,7 @@ from app.domain.services.simulator_engine.energy_summary_service import (
     EnergySummaryService,
 )
 from app.domain.services.simulator_engine.net_topology_export_import_service import NetTopologyExportImportService
+from app.domain.services.simulator_engine.simulation_container_service import SimulationContainerService
 from app.domain.services.solar.consumption_pattern_service import (
     ConsumptionPatternService,
 )
@@ -194,8 +197,10 @@ class Container(containers.DeclarativeContainer):
         BaseRepository[NetMeteringPolicyTypes], NetMeteringPolicyTypes
     )
 
-    _simulation_runs_repository = providers.Singleton(
-        BaseRepository[SimulationRuns], SimulationRuns
+    _simulation_runs_repository = providers.Singleton(SimulationRunRepository)
+
+    _simulation_container_repository = providers.Singleton(
+        BaseRepository[SimulationContainer], SimulationContainer
     )
 
     _net_metering_policy_repository = providers.Singleton(
@@ -326,9 +331,12 @@ class Container(containers.DeclarativeContainer):
     simulation_runs_service = providers.Singleton(
         BaseService, repository=_simulation_runs_repository
     )
+
+
     net_metering_policy_service = providers.Singleton(
         BaseService, repository=_net_metering_policy_repository
     )
+
     gross_metering_policy_service = providers.Singleton(
         BaseService, repository=_gross_metering_policy_repository
     )
@@ -417,5 +425,10 @@ class Container(containers.DeclarativeContainer):
         predefined_templates_repository=_predefined_templates_repository,
         load_profiles_repository=_load_profiles_repository,
 
-        
+    )
+
+    simulation_container_service = providers.Singleton(
+        SimulationContainerService,
+        simulation_container_repository=_simulation_container_repository,
+        simulation_run_repository=_simulation_runs_repository
     )

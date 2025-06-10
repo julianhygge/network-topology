@@ -53,7 +53,7 @@ class TimeOfUseResponse(BaseModel):
 class SimulationRunsResponse(BaseModel):
     id: UUID
     run_name: Optional[str]
-    topology_root_node_id: UUID
+    topology_root_node_id: Optional[UUID]
     simulation_algorithm_type_id: UUID
     billing_cycle_month: Optional[int]
     billing_cycle_year: Optional[int]
@@ -61,6 +61,9 @@ class SimulationRunsResponse(BaseModel):
     simulation_start_timestamp: Optional[datetime]
     simulation_end_timestamp: Optional[datetime]
     locality_id: UUID
+    run_sequence_identifier: str
+    simulation_container_id: UUID
+    description: Optional[str]
 
 
 class SimulationSelectedResponse(BaseModel):
@@ -79,3 +82,30 @@ class HouseBillResponse(BaseModel):
     net_energy_balance_kwh: float
     calculated_bill_amount: float
     bill_details: Dict[str, Any]
+
+class SimulationContainerResponse(BaseModel):
+    id: UUID
+    name: str
+    description: str
+    location_name: str
+    time_step_min: int
+    algorithm_name: str
+    power_unit: str
+    created_on: datetime
+    modified_on: datetime
+
+
+class SimulationContainerStatusResponse(BaseModel):
+    id: UUID
+    name: str
+    description: str
+    location_name: str
+    time_step_min: int
+    algorithm_name: str
+    power_unit: str
+    created_on: datetime
+    modified_on: datetime
+    status: Optional[Dict] = None
+
+class SimulationContainerResponseList(BaseModel):
+    items: List[SimulationContainerStatusResponse]

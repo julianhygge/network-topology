@@ -15,6 +15,7 @@ from app.data.schemas.master.master_schema import (
     SimulationAlgorithm,
 )
 from app.data.schemas.schema_base import BaseModel
+from app.data.schemas.simulation.simulation_container import SimulationContainer
 from app.data.schemas.transactional.topology_schema import Node, Locality
 from app.data.schemas.transactional.user_schema import User
 
@@ -49,6 +50,13 @@ class SimulationRuns(BaseModel):
         backref="simulation",
         column_name="locality_id"
     )
+    simulation_container_id = ForeignKeyField(
+        SimulationContainer,
+        on_delete="CASCADE",
+        column_name="simulation_container_id"
+    )
+    description = CharField()
+    run_sequence_identifier = CharField()
 
     class Meta:
         schema = "simulation_engine"
