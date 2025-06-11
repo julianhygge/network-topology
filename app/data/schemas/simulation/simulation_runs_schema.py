@@ -15,7 +15,7 @@ from app.data.schemas.master.master_schema import (
     SimulationAlgorithm,
 )
 from app.data.schemas.schema_base import BaseModel
-from app.data.schemas.simulation.simulation_container import SimulationContainer
+from app.data.schemas.simulation.simulation_container_schema import SimulationContainer
 from app.data.schemas.transactional.topology_schema import Node, Locality
 from app.data.schemas.transactional.user_schema import User
 

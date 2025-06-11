@@ -71,7 +71,7 @@ async def get_simulation_container_list(
 )
 async def create_simulation_container(
     data: SimulationContainerRequestModel,
-    service: IService = GetSimulationContainerServiceDep,
+    service: SimulationContainerService = GetSimulationContainerServiceDep,
     user_id: UUID = SimulationContainerCreatePermissionDep,
 ):
     """
@@ -90,7 +90,7 @@ async def create_simulation_container(
     """
     try:
         data_dicts = data.model_dump()
-        response = service.create(user_id, **data_dicts)
+        response = service.create_simulation_container(user_id, **data_dicts)
         return SimulationContainerResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

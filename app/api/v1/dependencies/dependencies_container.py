@@ -51,7 +51,7 @@ from app.data.schemas.simulation.metering_policy_schema import (
     NetMeteringPolicy,
     TimeOfUseRatePolicy,
 )
-from app.data.schemas.simulation.simulation_container import SimulationContainer
+from app.data.schemas.simulation.simulation_container_schema import SimulationContainer
 from app.data.schemas.simulation.simulation_runs_schema import (
     SimulationRuns,
     SimulationSelectedPolicy,

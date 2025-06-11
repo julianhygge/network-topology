@@ -31,7 +31,14 @@ class SimulationContainerService(BaseService):
         return sim_container_list
 
 
-
+    def create_simulation_container(self, user_id, **data):
+        data["created_by"] = user_id
+        created_item = self._sim_container_repo.create(data)
+        result = self.repository.to_dicts(created_item)
+        print(result)
+        if isinstance(result, dict):
+            return cast(Dict[str, Any], result)
+        raise ValueError("Failed to convert created item to dictionary.")
 
 
     def create(self, user_id: UserIdGeneric, **kwargs: Any) -> Dict[str, Any]:
