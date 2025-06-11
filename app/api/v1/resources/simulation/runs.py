@@ -1,6 +1,6 @@
 from typing import List
 from uuid import UUID
-
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.authorization.authorization import permission
@@ -78,11 +78,11 @@ async def trigger_bill_calculation(
 
 
 @runs_router.get(
-    path="/{locality_id}/simulations-runs",
+    path="/{container_id}/simulations-runs",
     response_model=List[SimulationRunsResponse],
 )
 async def get_simulation_runs_by_locality(
-    locality_id: UUID,
+    container_id: UUID,
     service: IService = GetSimulationRunServiceDep,
     _: UUID = SimulationRetrievePermissionDep,
 ):
@@ -90,7 +90,7 @@ async def get_simulation_runs_by_locality(
     Create the simulation run
 
     Args:
-        locality_id: Unique Id of locality
+        container_id: Unique ID of simulation container
         service: The simulation run service.
         _: Dependency to check permission.
 
@@ -101,7 +101,8 @@ async def get_simulation_runs_by_locality(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-        response = service.filter(locality_id=locality_id)
+        response = service.filter(simulation_container_id=container_id)
+        response.sort(key=lambda x: x.get("created_on", datetime.min))
         return [SimulationRunsResponse.model_validate(i) for i in response]
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

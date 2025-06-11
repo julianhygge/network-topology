@@ -16,7 +16,7 @@ class SimulationRunsRequestModel(BaseModel):
     status: Optional[str] = Field("PENDING")
     simulation_start_timestamp: Optional[datetime] = Field(None)
     simulation_end_timestamp: Optional[datetime] = Field(None)
-    locality_id: UUID = Field(...)
+    locality_id: Optional[UUID] = Field(None)
 
 
 class SimulationRunsUpdateModel(BaseModel):
