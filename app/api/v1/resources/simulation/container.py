@@ -16,6 +16,7 @@ from app.api.v1.models.responses.simulation_response import (
 )
 
 from app.domain.interfaces.i_service import IService
+from app.domain.interfaces.simulator_engine.I_simulation_container_service import ISimulationContainerService
 from app.domain.services.simulator_engine.simulation_container_service import SimulationContainerService
 
 container_router = APIRouter()
@@ -37,7 +38,7 @@ SimulationContainerRetrievePermissionDep = Depends(
     response_model=SimulationContainerResponseList
 )
 async def get_simulation_container_list(
-    service: SimulationContainerService = GetSimulationContainerServiceDep,
+    service: ISimulationContainerService = GetSimulationContainerServiceDep,
     _: UUID = SimulationContainerRetrievePermissionDep,
 ):
     """
@@ -71,7 +72,7 @@ async def get_simulation_container_list(
 )
 async def create_simulation_container(
     data: SimulationContainerRequestModel,
-    service: SimulationContainerService = GetSimulationContainerServiceDep,
+    service: ISimulationContainerService = GetSimulationContainerServiceDep,
     user_id: UUID = SimulationContainerCreatePermissionDep,
 ):
     """

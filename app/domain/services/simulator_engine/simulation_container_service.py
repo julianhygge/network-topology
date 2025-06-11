@@ -3,10 +3,11 @@ from typing import Any, Dict, cast
 from app.data.interfaces.i_repository import IRepository
 from app.data.interfaces.i_simulation_run_repository import ISimulationRunRepository
 from app.domain.interfaces.i_service import UserIdGeneric
+from app.domain.interfaces.simulator_engine.I_simulation_container_service import ISimulationContainerService
 from app.domain.services.base_service import BaseService
 
 
-class SimulationContainerService(BaseService):
+class SimulationContainerService(BaseService, ISimulationContainerService):
     def __init__(
             self,
             simulation_container_repository: IRepository,
