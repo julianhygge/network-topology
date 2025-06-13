@@ -10,7 +10,7 @@ class SimulationRunsRequestModel(BaseModel):
     description: str = Field(...)
     run_name: Optional[str] = Field(None)
     topology_root_node_id: Optional[UUID] = Field(None)
-    simulation_algorithm_type_id: UUID = Field(...)
+    simulation_algorithm_type_id: Optional[UUID] = Field(None)
     billing_cycle_month: Optional[int] = Field(None)
     billing_cycle_year: Optional[int] = Field(None)
     status: Optional[str] = Field("PENDING")
