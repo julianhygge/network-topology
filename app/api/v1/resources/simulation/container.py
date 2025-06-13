@@ -1,4 +1,3 @@
-from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,16 +7,17 @@ from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
     get_simulation_container_service,
 )
-from app.api.v1.models.requests.simulation_request import SimulationContainerRequestModel
-
+from app.api.v1.models.requests.simulation_request import (
+    SimulationContainerRequestModel,
+)
 from app.api.v1.models.responses.simulation_response import (
-    SimulationRunsResponse, SimulationContainerResponse, SimulationContainerResponseList,
+    SimulationContainerResponse,
+    SimulationContainerResponseList,
     SimulationContainerStatusResponse,
 )
-
-from app.domain.interfaces.i_service import IService
-from app.domain.interfaces.simulator_engine.I_simulation_container_service import ISimulationContainerService
-from app.domain.services.simulator_engine.simulation_container_service import SimulationContainerService
+from app.domain.interfaces.simulator_engine.I_simulation_container_service import (
+    ISimulationContainerService,
+)
 
 container_router = APIRouter()
 
@@ -27,15 +27,12 @@ SimulationContainerCreatePermissionDep = Depends(
     permission(Resources.SIMULATION, Permission.CREATE)
 )
 SimulationContainerRetrievePermissionDep = Depends(
-    permission(Resources.SIMULATION, Permission.RETRIEVE))
-
-
-
+    permission(Resources.SIMULATION, Permission.RETRIEVE)
+)
 
 
 @container_router.get(
-    path="/container",
-    response_model=SimulationContainerResponseList
+    path="/containers", response_model=SimulationContainerResponseList
 )
 async def get_simulation_container_list(
     service: ISimulationContainerService = GetSimulationContainerServiceDep,
@@ -55,14 +52,14 @@ async def get_simulation_container_list(
         HTTPException: If an error occurs during retrieval.
     """
     try:
-         data = service.get_simulation_container_list()
-         response = SimulationContainerResponseList(
-             items=[
-                 SimulationContainerStatusResponse.model_validate(item)
-                 for item in data
-             ]
-         )
-         return response
+        data = service.get_simulation_container_list()
+        response = SimulationContainerResponseList(
+            items=[
+                SimulationContainerStatusResponse.model_validate(item)
+                for item in data
+            ]
+        )
+        return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -95,5 +92,3 @@ async def create_simulation_container(
         return SimulationContainerResponse(**response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-
-
