@@ -102,7 +102,7 @@ class SimulationContainerStatusResponse(BaseModel):
     description: str
     location_name: str
     time_step_min: int
-    algorithm_name: Optional[Dict] = None
+    algorithm_name: Optional[str] = None
     power_unit: str
     created_on: datetime
     modified_on: datetime
