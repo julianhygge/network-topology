@@ -54,7 +54,7 @@ class SimulationRunsResponse(BaseModel):
     id: UUID
     run_name: Optional[str]
     topology_root_node_id: Optional[UUID]
-    simulation_algorithm_type_id: UUID
+    simulation_algorithm_type_id: Optional[UUID]
     billing_cycle_month: Optional[int]
     billing_cycle_year: Optional[int]
     status: str
