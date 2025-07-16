@@ -116,3 +116,32 @@ async def update_house_bill(
         return HouseBillResponse.model_validate(response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@bills_router.get(
+    path="/{simulation_run_id}/house-bills", response_model=list[HouseBillResponse]
+)
+async def get_house_bills_by_simulation_run(
+    simulation_run_id: UUID,
+    service: IService = GetHouseBillServiceDep,
+    _: UUID = SimulationRetrievePermissionDep,
+):
+    """
+    Retrieve house bills by simulation run ID
+
+    Args:
+        simulation_run_id: Unique ID of simulation run
+        service: The house bill service.
+        _: Dependency to check permission.
+
+    Returns:
+        List of house bills for the given simulation run ID
+
+    Raises:
+        HTTPException: If an error occurs during retrieval.
+    """
+    try:
+        response = service.filter(simulation_run_id=simulation_run_id)
+        return [HouseBillResponse.model_validate(item) for item in response]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e

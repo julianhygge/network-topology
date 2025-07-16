@@ -292,6 +292,7 @@ class BillSimulationService:
                     billing_year=billing_year,
                     house_profile_data=house_profile_data_dict,
                 )
+                bill_details["house_name"] = house_entity.name
             except Exception as e:
                 logger.error(
                     f"Error calculating bill components for house:"
