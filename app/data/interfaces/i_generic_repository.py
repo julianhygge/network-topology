@@ -49,7 +49,7 @@ class IGenericRepository(Generic[T], ABC):
         self,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> List[T]:
         """
         Filters records based on provided criteria, with optional pagination.

@@ -5,7 +5,6 @@ Base interface for services.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
-
 UserIdGeneric = TypeVar("UserIdGeneric")
 ItemIdGeneric = TypeVar("ItemIdGeneric")
 
