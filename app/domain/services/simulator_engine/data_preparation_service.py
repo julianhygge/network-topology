@@ -107,9 +107,7 @@ class DataPreparationService(IDataPreparationService):
         )
 
     @staticmethod
-    def _create_house_profile_csv_content(
-            house_profile: HouseProfile
-    ) -> str:
+    def _create_house_profile_csv_content(house_profile: HouseProfile) -> str:
         """Creates CSV content for a given house profile."""
         output = io.StringIO()
         writer = csv.writer(output)
@@ -305,7 +303,7 @@ class DataPreparationService(IDataPreparationService):
 
     @staticmethod
     def _calculate_efficiency_factor(
-            tilt_type: str, years_since_installation: float
+        tilt_type: str, years_since_installation: float
     ) -> float:
         """
         Calculate efficiency factor based on tilt type and system age.
@@ -315,7 +313,7 @@ class DataPreparationService(IDataPreparationService):
         :return: Efficiency factor (multiplier between 0 and 1+)
         """
         # Base efficiency factor
-        base_efficiency = 1.0
+        base_efficiency = 0.25
 
         # Tilt type adjustment
         if tilt_type == "tracking":
