@@ -18,16 +18,14 @@ from app.data.schemas.schema_base import BaseModel
 from app.data.schemas.simulation.simulation_container_schema import (
     SimulationContainer,
 )
-from app.data.schemas.transactional.topology_schema import Locality, Node
+from app.data.schemas.transactional.topology_schema import Locality
 from app.data.schemas.transactional.user_schema import User
 
 
 class SimulationRuns(BaseModel):
     id = UUIDField(primary_key=True, default=uuid.uuid4)
     run_name = CharField()
-    topology_root_node_id = ForeignKeyField(
-        Node, backref="simulation", column_name="topology_root_node_id"
-    )
+    topology_root_node_id = UUIDField()
     simulation_algorithm_type_id = ForeignKeyField(
         SimulationAlgorithm,
         backref="simulation_algo",

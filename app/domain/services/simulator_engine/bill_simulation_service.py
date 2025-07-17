@@ -152,7 +152,7 @@ class BillSimulationService:
             "simulation_run_id": sim_run.id,
             "billing_cycle_month": sim_run.billing_cycle_month,
             "billing_cycle_year": sim_run.billing_cycle_year,
-            "topology_root_node_id": sim_run.topology_root_node_id_id,
+            "topology_root_node_id": sim_run.topology_root_node_id,
             "policy_type": policy_code,
             "policy_config": policy_specific_params,
         }
