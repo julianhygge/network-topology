@@ -43,7 +43,7 @@ class SimpleNetMeteringStrategy(IBillingPolicyStrategy):
         Calculates bill components for Simple Net Metering.
         """
         logger.info(
-            f"  Calculating bill for house {house_node_id}"
+            f"  Calculating bill for house {house_node_id} "
             f"using SimpleNetMeteringStrategy..."
         )
 
@@ -56,6 +56,9 @@ class SimpleNetMeteringStrategy(IBillingPolicyStrategy):
         energy_charges = 0.0
         if net_usage_kwh > 0:
             energy_charges = net_usage_kwh * retail_rate
+
+        gross_import_charges = total_imported_units * retail_rate
+        gross_export_credit = total_exported_units * retail_rate
 
         # credit_amount_calc = 0.0 # Future scope
         # if net_usage_kwh < 0:
@@ -92,7 +95,8 @@ class SimpleNetMeteringStrategy(IBillingPolicyStrategy):
             "net_usage_kwh": round(net_usage_kwh, 2),
             "retail_rate_per_kwh": retail_rate,
             "energy_charges": round(energy_charges, 2),
-            # "credit_amount_calculated": round(credit_amount_calc, 2), # Future
+            "imported_energy_charges": round(gross_import_charges, 2),
+            "exported_energy_credit": round(gross_export_credit, 2),
             "fixed_charge_per_kw": policy_config["fixed_charge_per_kw"],
             "sanctioned_load_kw": sanctioned_load_kw,
             "fixed_charges": round(fixed_charges, 2),
@@ -153,7 +157,7 @@ class SimpleNetMeteringStrategy(IBillingPolicyStrategy):
         )
         if not house_bill_service:
             logger.error(
-                "house_bill_service not provided to"
+                "house_bill_service not provided to "
                 "SimpleNetMeteringStrategy store_bill_details"
             )
             # Or raise an exception
@@ -194,12 +198,12 @@ class SimpleNetMeteringStrategy(IBillingPolicyStrategy):
         try:
             house_bill_service.create(user_id=None, **house_bill_record)
             logger.info(
-                f"  Successfully stored bill for house {house_node_id}"
+                f"  Successfully stored bill for house {house_node_id} "
                 f"via SimpleNetMeteringStrategy."
             )
         except Exception as e:
             logger.error(
-                f"  Error storing bill for house {house_node_id}"
+                f"  Error storing bill for house {house_node_id} "
                 f"via SimpleNetMeteringStrategy: {e}"
             )
             raise
