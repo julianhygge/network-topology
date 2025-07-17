@@ -26,11 +26,11 @@ class SimulationRuns(BaseModel):
     topology_root_node_id = ForeignKeyField(
         Node, backref="simulation", column_name="topology_root_node_id"
     )
-    simulation_algorithm_type_id = ForeignKeyField(
-        SimulationAlgorithm,
-        backref="simulation_algo",
-        column_name="simulation_algorithm_type_id",
-    )
+    # simulation_algorithm_type_id = ForeignKeyField(
+    #     SimulationAlgorithm,
+    #     backref="simulation_algo",
+    #     column_name="simulation_algorithm_type_id")
+    simulation_algorithm_type_id = UUIDField()
     billing_cycle_month = IntegerField()
     billing_cycle_year = IntegerField()
     status = CharField()
