@@ -159,7 +159,7 @@ class EnergySummaryService:
             f"for period {start_datetime} to {end_datetime}."
         )
         house_entity = self._net_topology_service.get_node_by_id(house_id)
-        if not house_entity or house_entity.node_type != "HOUSE":
+        if not house_entity or house_entity.node_type != "house":
             raise NotFoundException(f"House with id {house_id} not found.")
 
         return self.get_house_energy_sum_for_period(
