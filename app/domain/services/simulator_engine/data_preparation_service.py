@@ -55,9 +55,12 @@ class DataPreparationService(IDataPreparationService):
         loads_data_tuples: List[Tuple[datetime, float]] = (
             self._get_loads_by_house_id(house.id)
         )
-        solar_data_tuples: List[Tuple[datetime, float]] = (
-            self._get_solar_by_house_id(house.id)
-        )
+        try:
+            solar_data_tuples: List[Tuple[datetime, float]] = (
+                self._get_solar_by_house_id(house.id)
+            )
+        except NotFoundException:
+            solar_data_tuples = [(ts, 0.0) for ts, _ in loads_data_tuples]
 
         profile_timestamps: List[datetime] = []
         profile_load_values: List[float] = []
