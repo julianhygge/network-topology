@@ -215,19 +215,15 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         children = self.node_repo.get_children(parent)
         node_number = 0
         names = [x.nomenclature for x in children if x.node_type == node_type]
-        print(f"DEBUG: All names found: {names}")
         if names:
             names.sort(key=lambda name: int(name.split(".")[-1]))
             last_node = names[-1]
             nodes = last_node.split(".")
             node_number = int(nodes[-1])
-            print(f"DEBUG: Last node: {last_node}, node_number: {node_number}")
 
         name_parent = parent.nomenclature.replace(" ", "")
         initial = self.INITIALS.get(node_type, "N")
         words = name_parent.split("-")
-        result = f"{initial}-{words[1]}.{node_number + 1}"
-        print(f"DEBUG: Generated name: {result}")
         return f"{initial}-{words[1]}.{node_number + 1}"
 
     @staticmethod
