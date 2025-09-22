@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Union
 from uuid import UUID
-
+import re
 from app.data.interfaces.i_repository import IRepository
 from app.data.interfaces.load.i_load_load_profile_repository import (
     ILoadProfileRepository,
@@ -72,12 +72,15 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
 
         root_node = self.node_repo.read(substation_id)
 
+        nodes_details = self._get_node_details(root_node)
+        nodes = self.sort_houses_under_transformers(nodes_details)
+
         return {
             "substation_id": str(substation.id),
             "substation_name": substation.name,
             "locality_id": str(substation.locality.id),
             "locality_name": substation.locality.name,
-            "nodes": self._get_node_details(root_node),
+            "nodes": nodes,
         }
 
     def _get_node_details(
@@ -100,6 +103,7 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
             node_details["children"] = [
                 self._get_node_details(child) for child in children
             ]
+
 
         return node_details
 
@@ -468,3 +472,24 @@ class NetTopologyService(TopologyServiceBase, INetTopologyService):
         houses: List[Node] = []
         self._get_house_nodes(parent_node, houses)
         return houses
+
+    @staticmethod
+    def extract_house_number(nomenclature):
+        """Extract the last number from house nomenclature for sorting"""
+        match = re.search(r'H-\d+\.\d+\.(\d+)', nomenclature)
+        return int(match.group(1)) if match else 0
+
+    def sort_houses_under_transformers(self,transformers):
+        """Sort houses under each transformer by their nomenclature number"""
+        sorted_data = []
+
+        for transformer in transformers:
+            sorted_transformer = transformer.copy()
+            sorted_transformer['children'] = sorted(
+                transformer['children'],
+                key=lambda house: self.extract_house_number(house['nomenclature'])
+            )
+
+            sorted_data.append(sorted_transformer)
+
+        return sorted_data
