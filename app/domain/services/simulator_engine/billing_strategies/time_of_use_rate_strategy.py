@@ -19,6 +19,11 @@ class TimeOfUseRateStrategy(IBillingPolicyStrategy):
     Implements billing calculations for Time of Use (TOU) Rate.
     """
 
+    # House profile data always uses the 2023 reference year regardless of
+    # the configured billing_cycle_year (same convention as
+    # EnergySummaryService.get_house_energy_sum_for_period).
+    DATA_REFERENCE_YEAR = 2023
+
     def __init__(
         self,
         tou_rate_policy_params_repo: IRepository,
@@ -120,10 +125,11 @@ class TimeOfUseRateStrategy(IBillingPolicyStrategy):
             current_period_exported_kwh = 0.0
 
             for i, ts_datetime_val in enumerate(timestamps):
-                # Ensure we are in the correct billing month and year (year is fixed to 2023 later)
+                # Profile data lives in the 2023 reference year, not in the
+                # user-facing billing_cycle_year.
                 if not (
                     ts_datetime_val.month == billing_month
-                    and ts_datetime_val.year == billing_year
+                    and ts_datetime_val.year == self.DATA_REFERENCE_YEAR
                 ):
                     continue
 

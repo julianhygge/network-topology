@@ -3,7 +3,7 @@ import io
 import os
 import zipfile
 from datetime import datetime
-from typing import List, Tuple, cast
+from typing import Any, Dict, List, Tuple, cast
 from uuid import UUID
 
 from app.data.interfaces.i_repository import IRepository
@@ -108,6 +108,43 @@ class DataPreparationService(IDataPreparationService):
             exported_units=profile_exported_units,
             net_usage=profile_net_usage,
         )
+
+    def get_topology_readiness(self, substation_id: UUID) -> Dict[str, Any]:
+        """
+        Checks whether every house under the given topology root has the
+        data required to run a billing simulation:
+          - a load profile (required by the billing engine)
+          - a solar profile (optional; missing solar is treated as 0)
+        """
+        houses = self._topology_service.get_houses_by_substation_id(
+            substation_id
+        )
+
+        houses_status: List[Dict[str, Any]] = []
+        for house in houses:
+            has_load = (
+                self._load_profile_repo.get_by_house_id(house.id) is not None
+            )
+            has_solar = bool(
+                self._solar_profile_repo.filter(house_id=house.id)
+            )
+            houses_status.append(
+                {
+                    "house_id": str(house.id),
+                    "house_name": house.name,
+                    "has_load_profile": has_load,
+                    "has_solar_profile": has_solar,
+                }
+            )
+
+        ready = bool(houses_status) and all(
+            h["has_load_profile"] for h in houses_status
+        )
+        return {
+            "ready": ready,
+            "total_houses": len(houses_status),
+            "houses": houses_status,
+        }
 
     @staticmethod
     def _create_house_profile_csv_content(house_profile: HouseProfile) -> str:

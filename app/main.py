@@ -61,7 +61,6 @@ app = FastAPI(
     },
     servers=hygge_servers,
 )
-
 app.servers = hygge_servers
 add_app_middleware(app)
 add_routes(app)

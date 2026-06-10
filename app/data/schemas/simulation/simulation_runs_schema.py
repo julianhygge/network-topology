@@ -25,37 +25,39 @@ from app.data.schemas.transactional.user_schema import User
 class SimulationRuns(BaseModel):
     id = UUIDField(primary_key=True, default=uuid.uuid4)
     run_name = CharField()
-    topology_root_node_id = UUIDField()
+    topology_root_node_id = UUIDField(null=True)
     simulation_algorithm_type_id = ForeignKeyField(
         SimulationAlgorithm,
         backref="simulation_algo",
         column_name="simulation_algorithm_type_id",
+        null=True,
     )
-    simulation_algorithm_type_id = UUIDField()
-    billing_cycle_month = IntegerField()
-    billing_cycle_year = IntegerField()
-    status = CharField()
+    simulation_algorithm_type_id = UUIDField(null=True)
+    billing_cycle_month = IntegerField(null=True)
+    billing_cycle_year = IntegerField(null=True)
+    status = CharField(null=True)
     created_by = ForeignKeyField(
         User,
         backref="created",
         on_delete="SET NULL",
         lazy_load=False,
         column_name="created_by",
+        null=True,
     )
     created_on = DateTimeField(default=datetime.datetime.utcnow)
     modified_on = DateTimeField(default=datetime.datetime.utcnow)
-    simulation_start_timestamp = DateTimeField()
-    simulation_end_timestamp = DateTimeField()
+    simulation_start_timestamp = DateTimeField(null=True)
+    simulation_end_timestamp = DateTimeField(null=True)
     locality_id = ForeignKeyField(
-        Locality, backref="simulation", column_name="locality_id"
+        Locality, backref="simulation", column_name="locality_id", null=True
     )
     simulation_container_id = ForeignKeyField(
         SimulationContainer,
         on_delete="CASCADE",
         column_name="simulation_container_id",
     )
-    description = CharField()
-    run_sequence_identifier = CharField()
+    description = CharField(null=True)
+    run_sequence_identifier = CharField(null=True)
 
     class Meta:
         schema = "simulation_engine"

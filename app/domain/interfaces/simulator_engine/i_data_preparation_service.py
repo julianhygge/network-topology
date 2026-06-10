@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Any, Dict, List
 from uuid import UUID
 
 from app.domain.entities.house_profile import HouseProfile
@@ -11,6 +11,11 @@ class IDataPreparationService(ABC):
     def get_house_profile(self, house: Node) -> HouseProfile:
         """Get the solar profile of a house in
         15 minutes intervals for a full year"""
+
+    @abstractmethod
+    def get_topology_readiness(self, substation_id: UUID) -> Dict[str, Any]:
+        """Check whether every house under a topology root has the
+        profiles required to run a billing simulation."""
 
     @abstractmethod
     def get_houses_profile_by_substation_id(

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
@@ -60,6 +60,38 @@ async def get_simulation_container_list(
             ]
         )
         return response
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@container_router.delete(
+    path="/container/{container_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_simulation_container(
+    container_id: UUID,
+    service: ISimulationContainerService = GetSimulationContainerServiceDep,
+    _: UUID = SimulationContainerCreatePermissionDep,
+):
+    """
+    Delete a simulation container and all its runs (cascade).
+
+    Args:
+        container_id: Unique ID of the simulation container to delete
+        service: The simulation container service.
+        _: Dependency to check permission.
+
+    Raises:
+        HTTPException: 404 if the container is not found, 400 otherwise.
+    """
+    try:
+        result = service.delete(container_id)
+        if not result:
+            raise HTTPException(
+                status_code=404, detail="Simulation container not found"
+            )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

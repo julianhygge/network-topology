@@ -1,13 +1,17 @@
 from typing import List
 from uuid import UUID
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.authorization.authorization import permission
 from app.api.authorization.enums import Permission, Resources
 from app.api.v1.dependencies.container_instance import (
     get_bill_simulation_service,
+    get_data_preparation_service,
     get_simulation_runs_service,
+)
+from app.domain.interfaces.simulator_engine.i_data_preparation_service import (
+    IDataPreparationService,
 )
 from app.api.v1.models.requests.simulation_request import (
     SimulationRunsRequestModel,
@@ -108,6 +112,59 @@ async def get_simulation_runs_by_locality(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+@runs_router.get(path="/topology/{root_node_id}/readiness")
+async def get_topology_readiness(
+    root_node_id: UUID,
+    service: IDataPreparationService = Depends(
+        get_data_preparation_service
+    ),
+    _: UUID = SimulationRetrievePermissionDep,
+):
+    """
+    Check whether every house under the given topology root has the
+    profiles required to run a billing simulation (load profile required,
+    solar profile optional).
+    """
+    try:
+        return service.get_topology_readiness(root_node_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@runs_router.get(
+    path="/simulations-runs/{simulation_run_id}",
+    response_model=SimulationRunsResponse,
+)
+async def get_simulation_run(
+    simulation_run_id: UUID,
+    service: IService = GetSimulationRunServiceDep,
+    _: UUID = SimulationRetrievePermissionDep,
+):
+    """
+    Retrieve a single simulation run by its ID.
+
+    Args:
+        simulation_run_id: Unique ID of the simulation run.
+        service: The simulation run service.
+        _: Dependency to check permission.
+
+    Returns:
+        The simulation run.
+
+    Raises:
+        HTTPException: 404 if the run is not found.
+    """
+    try:
+        response = service.read_or_none(simulation_run_id)
+        return SimulationRunsResponse.model_validate(response)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
 @runs_router.post(
     path="/simulations-runs", response_model=SimulationRunsResponse
 )
@@ -134,6 +191,38 @@ async def create_simulation_runs(
         data_dicts = data.model_dump()
         response = service.create(user_id, **data_dicts)
         return SimulationRunsResponse.model_validate(response)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@runs_router.delete(
+    path="/{simulation_run_id}/simulations-runs",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_simulation_runs(
+    simulation_run_id: UUID,
+    service: IService = GetSimulationRunServiceDep,
+    _: UUID = SimulationCreatePermissionDep,
+):
+    """
+    Delete a simulation run by its ID.
+
+    Args:
+        simulation_run_id: Unique ID of Simulation run to delete
+        service: The simulation run service.
+        _: Dependency to check permission.
+
+    Raises:
+        HTTPException: 404 if the run is not found, 400 for other errors.
+    """
+    try:
+        result = service.delete(simulation_run_id)
+        if not result:
+            raise HTTPException(
+                status_code=404, detail="Simulation run not found"
+            )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

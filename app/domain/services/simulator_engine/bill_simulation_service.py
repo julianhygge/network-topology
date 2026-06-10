@@ -64,19 +64,29 @@ class BillSimulationService:
         self._data_preparation_service = data_preparation_service
         self._energy_service = energy_summary_service
 
+        net_metering_strategy = SimpleNetMeteringStrategy(
+            net_metering_policy_repo=self._net_metering_policy_repo,
+            selected_policy_repository=self._selected_policy_repository,
+        )
+        gross_metering_strategy = GrossMeteringStrategy(
+            gross_metering_policy_repo=self._gross_metering_policy_repo,
+            selected_policy_repository=self._selected_policy_repository,
+        )
+        tou_rate_strategy = TimeOfUseRateStrategy(
+            tou_rate_policy_params_repo=self._tou_rate_policy_repo,
+            selected_policy_repository=self._selected_policy_repository,
+        )
+
+        # Both code styles are accepted: the internal codes (SIMPLE_NET...)
+        # and the policy_code values stored in
+        # master.net_metering_policy_types (net_metering_standard...).
         self._billing_strategies: Dict[str, IBillingPolicyStrategy] = {
-            "SIMPLE_NET": SimpleNetMeteringStrategy(
-                net_metering_policy_repo=self._net_metering_policy_repo,
-                selected_policy_repository=self._selected_policy_repository,
-            ),
-            "GROSS_METERING": GrossMeteringStrategy(
-                gross_metering_policy_repo=self._gross_metering_policy_repo,
-                selected_policy_repository=self._selected_policy_repository,
-            ),
-            "TOU_RATE": TimeOfUseRateStrategy(
-                tou_rate_policy_params_repo=self._tou_rate_policy_repo,
-                selected_policy_repository=self._selected_policy_repository,
-            ),
+            "SIMPLE_NET": net_metering_strategy,
+            "net_metering_standard": net_metering_strategy,
+            "GROSS_METERING": gross_metering_strategy,
+            "gross_metering_standard": gross_metering_strategy,
+            "TOU_RATE": tou_rate_strategy,
+            "tou_rate_standard": tou_rate_strategy,
         }
 
     def _get_billing_strategy(
@@ -157,6 +167,33 @@ class BillSimulationService:
             "policy_config": policy_specific_params,
         }
 
+    def _get_sanctioned_load_kw(self, house_entity) -> float:
+        """
+        Resolves the sanctioned load (connection_kw) for a house.
+
+        The topology Node entity does not carry connection_kw, so the
+        value is read from the houses table; falls back to
+        DEFAULT_SANCTIONED_LOAD_KW when missing.
+        """
+        connection_kw = getattr(house_entity, "connection_kw", None)
+        if connection_kw is None:
+            try:
+                house_record = (
+                    self._net_topology_service.house_repo.read_or_none(
+                        house_entity.id
+                    )
+                )
+                if house_record is not None:
+                    connection_kw = house_record.connection_kw
+            except Exception as e:
+                logger.warning(
+                    f"Could not read house record for "
+                    f"{house_entity.id}: {e}"
+                )
+        if connection_kw is None:
+            return self.DEFAULT_SANCTIONED_LOAD_KW
+        return float(connection_kw)
+
     def _get_houses_in_topology(self, substation_id: UUID) -> List[Node]:
         """
         Identifies all houses belonging to the given topology root node.
@@ -229,9 +266,7 @@ class BillSimulationService:
         # Placeholder for next steps (Phase 1, Steps 3, 4, 5)
         for house_entity in houses:  # house_entity is a Node (House) object
             house_node_id = str(house_entity.id)  # Get ID from the entity
-            sanctioned_load_kw = getattr(
-                house_entity, "connection_kw", self.DEFAULT_SANCTIONED_LOAD_KW
-            )
+            sanctioned_load_kw = self._get_sanctioned_load_kw(house_entity)
             logger.info(f"Processing house: {house_node_id}")
 
             # 3. Aggregate Energy Data for the Billing Cycle for Each House
