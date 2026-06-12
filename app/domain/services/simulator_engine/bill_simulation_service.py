@@ -26,7 +26,10 @@ from app.domain.services.simulator_engine.billing_strategies import (
 from app.domain.services.simulator_engine.energy_summary_service import (
     EnergySummaryService,
 )
-from app.exceptions.hygge_exceptions import ServiceException
+from app.exceptions.hygge_exceptions import (
+    NotFoundException,
+    ServiceException,
+)
 from app.utils.datetime_util import get_billing_period_datetimes, utc_now_iso
 from app.utils.logger import logger
 
@@ -224,6 +227,64 @@ class BillSimulationService:
             return []
         return houses_in_substation
 
+    def _delete_existing_bills(self, run_id: UUID) -> int:
+        """
+        Deletes any house bills previously generated for the run, so a
+        new calculation replaces them instead of appending duplicates.
+        """
+        existing_bills = self._house_bill_service.repository.filter(
+            simulation_run_id=run_id
+        )
+        for bill in existing_bills:
+            self._house_bill_service.repository.delete(bill.id)
+        if existing_bills:
+            logger.info(
+                f"Deleted {len(existing_bills)} previous house bills "
+                f"for simulation run {run_id}."
+            )
+        return len(existing_bills)
+
+    def reset_run_configuration(self, run_id: UUID) -> Dict[str, Any]:
+        """
+        Removes everything configured for a simulation run so it can be
+        set up from scratch: generated house bills, the selected policy
+        and its policy-specific parameters, and the chosen allocation
+        algorithm.
+        """
+        sim_run = self._sim_runs_repo.read_or_none(run_id)
+        if not sim_run:
+            raise NotFoundException(
+                f"Simulation run {run_id} not found."
+            )
+
+        deleted_bills = self._delete_existing_bills(run_id)
+
+        # Per-policy parameter tables keyed by simulation_run_id
+        self._net_metering_policy_repo.delete(run_id)
+        self._gross_metering_policy_repo.delete(run_id)
+        tou_rows = self._tou_rate_policy_repo.filter(
+            simulation_run_id=run_id
+        )
+        for row in tou_rows:
+            self._tou_rate_policy_repo.delete(row.id)
+        self._selected_policy_repository.delete(run_id)
+
+        self._sim_runs_repo.update(
+            run_id,
+            {
+                "simulation_algorithm_type_id": None,
+                "status": None,
+                "simulation_start_timestamp": None,
+                "simulation_end_timestamp": None,
+                "modified_on": utc_now_iso(),
+            },
+        )
+        logger.info(
+            f"Simulation run {run_id} configuration reset "
+            f"({deleted_bills} bills removed)."
+        )
+        return {"deleted_bills": deleted_bills}
+
     def calculate_bills_for_simulation_run(self, run_id: UUID) -> None:
         """
         Calculates bills for all houses in a given simulation run.
@@ -262,6 +323,9 @@ class BillSimulationService:
             )
             # Potentially update simulation_runs status
             return
+
+        # Replace bills from any previous calculation of this run
+        self._delete_existing_bills(run_id)
 
         # Placeholder for next steps (Phase 1, Steps 3, 4, 5)
         for house_entity in houses:  # house_entity is a Node (House) object

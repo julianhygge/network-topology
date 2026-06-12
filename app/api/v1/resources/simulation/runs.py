@@ -26,6 +26,7 @@ from app.domain.services.simulator_engine.bill_simulation_service import (
     BillSimulationService,
 )
 from app.domain.services.simulator_engine.simulation_container_service import SimulationContainerService
+from app.exceptions.hygge_exceptions import NotFoundException
 
 runs_router = APIRouter()
 
@@ -79,6 +80,38 @@ async def trigger_bill_calculation(
             status_code=500,
             detail=f"Error triggering bill calculation: {str(e)}",
         ) from e
+
+
+@runs_router.delete(
+    path="/{simulation_run_id}/allocation",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def reset_run_allocation(
+    simulation_run_id: UUID,
+    service: BillSimulationService = GetBillSimulationServiceDep,
+    _: UUID = SimulationCreatePermissionDep,
+):
+    """
+    Reset the configuration of a simulation run: deletes the generated
+    house bills, the selected policy and its parameters, and clears the
+    configured allocation algorithm, so the run can be set up again.
+
+    Args:
+        simulation_run_id: The ID of the simulation run to reset.
+        service: The BillSimulationService instance.
+        _: Dependency to check permission.
+
+    Raises:
+        HTTPException: 404 if the run is not found, 400 for other errors.
+    """
+    try:
+        service.reset_run_configuration(simulation_run_id)
+    except HTTPException:
+        raise
+    except NotFoundException as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @runs_router.get(
