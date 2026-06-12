@@ -57,7 +57,7 @@ class SimulationRunsResponse(BaseModel):
     simulation_algorithm_type_id: Optional[UUID]
     billing_cycle_month: Optional[int]
     billing_cycle_year: Optional[int]
-    status: str
+    status: Optional[str]
     simulation_start_timestamp: Optional[datetime]
     simulation_end_timestamp: Optional[datetime]
     locality_id: Optional[UUID]

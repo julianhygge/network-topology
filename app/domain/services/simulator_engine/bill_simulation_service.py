@@ -273,7 +273,7 @@ class BillSimulationService:
             run_id,
             {
                 "simulation_algorithm_type_id": None,
-                "status": None,
+                "status": "PENDING",
                 "simulation_start_timestamp": None,
                 "simulation_end_timestamp": None,
                 "modified_on": utc_now_iso(),
