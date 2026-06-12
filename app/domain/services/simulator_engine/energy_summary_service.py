@@ -2,6 +2,7 @@
 Service for handling energy summaries for houses and nodes in the simulation.
 """
 
+import calendar
 import datetime
 from typing import Dict, List
 from uuid import UUID
@@ -27,6 +28,22 @@ class EnergySummaryService:
     """
     Service responsible for aggregating energy data for houses and nodes.
     """
+
+    DATA_REFERENCE_YEAR = 2023
+
+    @classmethod
+    def _to_reference_year(
+        cls, dt: datetime.datetime
+    ) -> datetime.datetime:
+        """
+        Maps a datetime to the reference data year, clamping the day so
+        that e.g. Feb 29 of a leap year lands on Feb 28 of a non-leap
+        reference year instead of raising ValueError.
+        """
+        last_day = calendar.monthrange(cls.DATA_REFERENCE_YEAR, dt.month)[1]
+        return dt.replace(
+            year=cls.DATA_REFERENCE_YEAR, day=min(dt.day, last_day)
+        )
 
     def __init__(
         self,
@@ -63,11 +80,11 @@ class EnergySummaryService:
         # simulation.
         # It's applied here as per existing logic.
 
-        start_dt_processed = start_datetime.replace(year=2023)
+        start_dt_processed = self._to_reference_year(start_datetime)
         start_dt_processed = start_of_day(start_dt_processed)
         start_dt_processed = ensure_naive(start_dt_processed)
 
-        end_dt_processed = end_datetime.replace(year=2023)
+        end_dt_processed = self._to_reference_year(end_datetime)
         end_dt_processed = end_of_day(end_dt_processed)
         end_dt_processed = ensure_naive(end_dt_processed)
 
